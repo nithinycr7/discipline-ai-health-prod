@@ -1,0 +1,15 @@
+.git
+.gitignore
+node_modules/
+apps/web/.next/
+apps/web/node_modules/
+_bmad/
+_bmad-output/
+_bmad_config/
+.claude/
+.cursor/
+**/*.md
+**/*.spec.ts
+**/coverage/
+**/.env
+**/.env.local
