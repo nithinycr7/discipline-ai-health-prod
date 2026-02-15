@@ -89,7 +89,7 @@
 | Influencer partnerships | NRI lifestyle creators, health influencers | INR 30K/month |
 | **Total** | | **INR 1.3L/month** |
 
-**Target CAC:** INR 300-500 per paying user (at INR 999/month subscription, payback in <1 month)
+**Target CAC:** INR 300-500 per paying user (at ₹1,350-1,800/month subscription, payback in <1 month)
 
 ---
 
@@ -360,7 +360,7 @@ Ready to discuss scaling to your full outpatient list?
 |-----------|----------|
 | "My parents won't talk to a robot" | "The AI sounds like a real person calling in their own language. It uses their name — 'Namaste Bauji!' Most patients love the daily check-in. Try free for 7 days and see." |
 | "They already have a reminder app" | "Can your parent use it? 200M elderly Indians can't operate smartphone apps. Our AI calls them — they just pick up the phone. Zero tech needed." |
-| "It's expensive" | "Less than INR 33/day — less than a cup of chai. Compare that to a hospital readmission because they missed their BP medicine for a week." |
+| "It's expensive" | "Less than ₹45/day — less than a cup of chai. Compare that to a hospital readmission because they missed their BP medicine for a week." |
 | "What if they don't pick up?" | "We retry twice at 30-minute intervals. If still no answer, you get an immediate WhatsApp alert so you can check on them." |
 | "Is their data safe?" | "DPDP Act compliant. Data encrypted in transit and at rest. You can export or delete all data anytime from the dashboard." |
 | "I can just call them myself" | "You can! But can you call at 8:30 AM IST from a different timezone, every single day, and track which medicines were taken? We supplement your calls, not replace your relationship." |

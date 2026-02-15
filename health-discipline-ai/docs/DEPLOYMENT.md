@@ -86,32 +86,51 @@ EXOTEL_SIP_ADDRESS: "pstn.in2.exotel.com:5070"
 
 ### Deploy Commands
 
+**Directory:** You must run `gcloud` from the **monorepo root** (`health-discipline-ai/`).
+
+**gcloud path on this machine:**
+```
+/c/Users/nithi/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud
+```
+
 ```bash
-# First time: authenticate and set project
+# cd to monorepo root first
+cd /c/Users/nithi/repos/discipline\ health/health-discipline-ai
+
+# First time only: authenticate and set project
 gcloud auth login
 gcloud config set project discipline-ai-health
-
-# Enable required APIs (first time only)
 gcloud services enable run.googleapis.com cloudbuild.googleapis.com artifactregistry.googleapis.com
 
-# Deploy with env vars file
+# Deploy (from monorepo root — uses --source .)
 gcloud run deploy discipline-ai-api \
-  --source ./health-discipline-ai \
+  --source . \
+  --region us-central1 \
+  --allow-unauthenticated
+
+# First deploy or when env vars change — add env vars file
+gcloud run deploy discipline-ai-api \
+  --source . \
   --region us-central1 \
   --allow-unauthenticated \
   --env-vars-file env.yaml
 
-# Or update just env vars (no redeploy)
+# Update just env vars without redeploying code
 gcloud run services update discipline-ai-api \
   --region us-central1 \
   --update-env-vars "KEY=value"
 ```
 
+**Quick copy-paste deploy command (full path):**
+```bash
+"/c/Users/nithi/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud" run deploy discipline-ai-api --source . --region us-central1 --allow-unauthenticated
+```
+
 ### After Deploy — Verify
 
 ```bash
-# Health check
 curl https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/health
+# Expected: {"status":"ok", ...}
 
 # Swagger docs
 open https://discipline-ai-api-337728476024.us-central1.run.app/api/docs
@@ -245,9 +264,11 @@ FRONTEND_URL=http://localhost:3000
 
 ### Backend (Cloud Run)
 ```bash
-# Push code to GitHub, then:
+# From monorepo root (health-discipline-ai/):
+cd /c/Users/nithi/repos/discipline\ health/health-discipline-ai
+
 gcloud run deploy discipline-ai-api \
-  --source ./health-discipline-ai \
+  --source . \
   --region us-central1 \
   --allow-unauthenticated
 ```
@@ -275,3 +296,5 @@ cd health-discipline-ai/apps/web && npx vercel --prod
 | CORS errors | Check `FRONTEND_URL` env var on Cloud Run matches your Vercel domain |
 | Webhook not updating calls | Verify webhook is attached to agent in ElevenLabs dashboard |
 | Calls not auto-triggering | Check that patient has a `callconfig` document in MongoDB |
+| `node: command not found` on Cloud Run | A non-Node.js directory (e.g. `services/` with Python files) is confusing the buildpack. Add it to `.gcloudignore` |
+| Buildpack detects Python instead of Node.js | Check `.gcloudignore` — any directory with `requirements.txt` or `.py` files must be excluded |

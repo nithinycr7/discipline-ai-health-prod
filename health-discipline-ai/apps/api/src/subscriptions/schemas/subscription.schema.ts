@@ -11,7 +11,7 @@ export class Subscription {
   @Prop({ type: Types.ObjectId, ref: 'Patient', required: true })
   patientId: Types.ObjectId;
 
-  @Prop({ required: true, enum: ['saathi', 'suraksha', 'sampurna'] })
+  @Prop({ required: true, enum: ['suraksha', 'sampurna'] })
   plan: string;
 
   @Prop({ required: true })

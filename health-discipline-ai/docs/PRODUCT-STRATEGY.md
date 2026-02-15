@@ -102,12 +102,11 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 
 | Plan | Price | Positioning | Features |
 |------|-------|-------------|----------|
-| **Saathi** (साथी) | INR 499/month | Entry-level, price-sensitive | 1 morning call (Mon-Fri), weekly report |
-| **Suraksha** (सुरक्षा) | INR 999/month | Most Popular | 2 calls daily (7 days), real-time alerts, up to 3 family members |
-| **Sampurna** (सम्पूर्ण) | INR 1,999/month | Premium | Everything + weekly deep check-in, doctor reports, priority support |
+| **Suraksha** (सुरक्षा) | ₹1,350/month ($15) | Essential Care | 1 call daily (7 days), real-time alerts, up to 3 family members |
+| **Sampurna** (सम्पूर्ण) | ₹1,800/month ($20) | Complete Care — Most Popular | 2 calls daily (7 days), weekly deep check-in, doctor reports, priority support |
 
 **Pricing Psychology:**
-- Suraksha at INR 33/day — "Less than a cup of chai per day for your parent's health"
+- Suraksha at ₹45/day — "Less than a cup of chai per day for your parent's health"
 - All plans: 7-day free trial, cancel anytime via WhatsApp message
 - NRI payment via Stripe (USD/GBP/AED), India via Razorpay (UPI/cards)
 
@@ -123,14 +122,16 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 
 | Metric | Value |
 |--------|-------|
-| Avg call duration | 2-3 minutes |
-| ElevenLabs cost per call | ~INR 17 ($0.20) |
-| Twilio cost per call | ~INR 7 ($0.08) |
-| Cost per patient per day (2 calls) | ~INR 48 |
-| Suraksha revenue per patient per day | INR 33 |
-| **Break-even** | ~38 users on Suraksha plan |
+| Avg call duration | 2 minutes |
+| ElevenLabs cost per call | ~₹18 ($0.20) |
+| Twilio cost per call | ~₹7.29 ($0.08) |
+| Cost per patient per day (1 call, Suraksha) | ~₹26 |
+| Cost per patient per day (2 calls, Sampurna) | ~₹52 |
+| Suraksha revenue per patient per day | ₹45 |
+| Sampurna revenue per patient per day | ₹60 |
+| **Break-even** | ~34 users (blended plan mix) |
 
-> **Key insight:** At scale, 99% of costs are Twilio + ElevenLabs. Negotiate enterprise pricing early for profitability.
+> **Key insight:** Both plans are profitable at unit level. At scale, 99% of costs are Twilio + ElevenLabs. Negotiate enterprise pricing early for higher margins.
 
 ### Cost Optimization Path
 
@@ -184,12 +185,13 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 
 ### Break-Even Analysis
 
-| Users | Monthly Revenue (INR 999/user) | Monthly Cost | Profit |
+| Users | Monthly Revenue (blended ₹1,575/user) | Monthly Cost | Profit |
 |:-----:|:------------------------------:|:------------:|:------:|
-| 50 | INR 50K | INR 38K | +INR 12K |
-| 100 | INR 1L | INR 72K | +INR 28K |
-| 500 | INR 5L | INR 2.9L | +INR 2.1L |
-| 1000 | INR 10L | INR 5.8L | +INR 4.2L |
+| 10 | ₹15.8K | ₹20K | -₹4.3K |
+| 50 | ₹78.8K | ₹66.7K | +₹12K |
+| 100 | ₹1.58L | ₹1.57L | +₹0.9K |
+| 500 | ₹7.88L | ₹6.44L | +₹1.44L |
+| 1000 | ₹15.75L | ₹10.45L | +₹5.3L |
 
 ---
 

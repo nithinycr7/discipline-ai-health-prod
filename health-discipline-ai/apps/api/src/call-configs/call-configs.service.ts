@@ -62,7 +62,7 @@ export class CallConfigsService {
   /**
    * Auto-create or update a CallConfig when a medicine is added.
    * Sampurna plan: auto-set default times.
-   * Saathi/Suraksha: set 'pending' — user must provide the time.
+   * Suraksha: set 'pending' — user must provide the time.
    */
   async createOrUpdateForMedicine(
     patientId: string,

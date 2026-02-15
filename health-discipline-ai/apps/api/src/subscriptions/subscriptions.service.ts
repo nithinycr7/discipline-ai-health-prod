@@ -4,9 +4,8 @@ import { Model, Types } from 'mongoose';
 import { Subscription, SubscriptionDocument } from './schemas/subscription.schema';
 
 const PLAN_PRICES: Record<string, number> = {
-  saathi: 499,
-  suraksha: 999,
-  sampurna: 1999,
+  suraksha: 1350,
+  sampurna: 1800,
 };
 
 const FREE_TRIAL_DAYS = 7;
@@ -142,16 +141,12 @@ export class SubscriptionsService {
   async getPlans() {
     return [
       {
-        id: 'saathi', name: 'Saathi', price: 499, currency: 'INR',
-        features: ['1 morning call (Mon-Fri)', 'Weekly health report', 'WhatsApp notifications', 'Basic adherence tracking'],
+        id: 'suraksha', name: 'Suraksha', price: 1350, currency: 'INR',
+        features: ['1 call daily (7 days)', 'Real-time alerts', 'Up to 3 family members', 'Daily & weekly reports', 'Vitals tracking'],
       },
       {
-        id: 'suraksha', name: 'Suraksha', price: 999, currency: 'INR', popular: true,
-        features: ['2 calls daily (7 days)', 'Real-time alerts', 'Up to 3 family members', 'Daily & weekly reports', 'Vitals tracking'],
-      },
-      {
-        id: 'sampurna', name: 'Sampurna', price: 1999, currency: 'INR',
-        features: ['Everything in Suraksha', 'Weekly deep check-in', 'Doctor-ready reports', 'Priority support', 'Unlimited family members'],
+        id: 'sampurna', name: 'Sampurna', price: 1800, currency: 'INR', popular: true,
+        features: ['2 calls daily (7 days)', 'Weekly deep check-in', 'Doctor-ready reports', 'Priority support', 'Unlimited family members'],
       },
     ];
   }

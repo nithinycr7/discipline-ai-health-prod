@@ -13,3 +13,4 @@ _bmad_config/
 **/coverage/
 **/.env
 **/.env.local
+services/

@@ -2,24 +2,12 @@ import { PlanInfo } from '../types';
 
 export const SUBSCRIPTION_PLANS: PlanInfo[] = [
   {
-    id: 'saathi',
-    name: 'Saathi',
-    price: 499,
-    currency: 'INR',
-    features: [
-      '1 morning call (Mon-Fri)',
-      'Weekly health report',
-      'WhatsApp notifications',
-      'Basic adherence tracking',
-    ],
-  },
-  {
     id: 'suraksha',
     name: 'Suraksha',
-    price: 999,
+    price: 1350,
     currency: 'INR',
     features: [
-      '2 calls daily (7 days)',
+      '1 call daily (7 days)',
       'Real-time alerts for missed medicines',
       'Up to 3 family members',
       'Daily & weekly reports',
@@ -29,10 +17,11 @@ export const SUBSCRIPTION_PLANS: PlanInfo[] = [
   {
     id: 'sampurna',
     name: 'Sampurna',
-    price: 1999,
+    price: 1800,
     currency: 'INR',
+    popular: true,
     features: [
-      'Everything in Suraksha',
+      '2 calls daily (7 days)',
       'Weekly deep check-in call',
       'Doctor-ready reports (PDF)',
       'Priority support',

@@ -61,7 +61,7 @@ export default function Home() {
               </Link>
             </div>
             <p className="text-sm text-muted-foreground mt-5">
-              No credit card required. Starting at INR 499/month.
+              No credit card required. Starting at ₹1,350/month ($15).
             </p>
           </div>
         </section>

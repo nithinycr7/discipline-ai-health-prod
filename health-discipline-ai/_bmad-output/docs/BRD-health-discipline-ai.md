@@ -107,7 +107,7 @@ The onboarding is a **conversational WhatsApp-based flow** (not a traditional fo
 | 5 | Medicine Setup | 3-5 min | YES | Per medicine: brand name, generic name, dosage, timing (morning/afternoon/evening/night), with food (before/after/with), patient's nickname for medicine |
 | 6 | Family Network | 1-2 min | No | Additional family members (name, phone, relationship), notification preferences per member |
 | 7 | Call Schedule | 1 min | No | Call times (mapped to patient's routine), preferred voice gender (male/female) |
-| 8 | Payment | 1-2 min | YES | Plan selection (Saathi/Suraksha/Sampurna), payment method |
+| 8 | Payment | 1-2 min | YES | Plan selection (Suraksha/Sampurna), payment method |
 | 9 | Test Call | 3-5 min | YES | Patient verbal consent (DPDP Act), voice familiarization, data sharing consent |
 | 10 | First 48 Hours | Day 1-2 | YES | First 3 call completions, first payer report delivered |
 
@@ -171,13 +171,12 @@ The onboarding is a **conversational WhatsApp-based flow** (not a traditional fo
 
 | Plan | Price | Features |
 |------|-------|----------|
-| Saathi | INR 499/mo | 1 morning call (Mon-Fri), weekly report |
-| Suraksha (Most Popular) | INR 999/mo | 2 calls daily (7 days), real-time alerts, up to 3 family members |
-| Sampurna | INR 1,999/mo | Everything in Suraksha + weekly deep check-in + doctor reports + priority support |
+| Suraksha (सुरक्षा) | ₹1,350/mo ($15) | 1 call daily (7 days), real-time alerts, up to 3 family members |
+| Sampurna (सम्पूर्ण) — Most Popular | ₹1,800/mo ($20) | 2 calls daily (7 days), weekly deep check-in, doctor reports, priority support |
 
 **Free Trial:** 7 days for all plans. Cancel anytime with one message.
 
-**Payment:** Razorpay (India cards) + Stripe (international cards for NRI payments)
+**Payment:** Razorpay (India cards/UPI) + Stripe (international cards for NRI payments)
 
 ---
 
@@ -260,7 +259,7 @@ The onboarding is a **conversational WhatsApp-based flow** (not a traditional fo
 | ID | Requirement | Details |
 |----|-------------|---------|
 | FR-45 | Free trial | 7-day free trial for all plans |
-| FR-46 | B2C tiered pricing | 3 plans: Saathi (INR 499), Suraksha (INR 999), Sampurna (INR 1,999) |
+| FR-46 | B2C tiered pricing | 2 plans: Suraksha (₹1,350/$15), Sampurna (₹1,800/$20) |
 | FR-47 | B2B pricing | Custom per-patient pricing for hospitals |
 | FR-48 | Dual payment gateway | Razorpay (India) + Stripe (international NRI cards) |
 | FR-49 | Cancel anytime | One-message cancellation via WhatsApp |
