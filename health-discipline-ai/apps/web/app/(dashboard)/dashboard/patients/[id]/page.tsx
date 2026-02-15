@@ -19,6 +19,10 @@ export default function PatientDetailPage() {
   const [medicines, setMedicines] = useState<any[]>([]);
   const [adherence, setAdherence] = useState<any>(null);
   const [calls, setCalls] = useState<any[]>([]);
+  const [callsTotal, setCallsTotal] = useState(0);
+  const [callsPage, setCallsPage] = useState(1);
+  const [callsLoading, setCallsLoading] = useState(false);
+  const CALLS_PER_PAGE = 3;
   const [calendar, setCalendar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
   const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'calls' | 'medicines'>('today');
@@ -36,14 +40,17 @@ export default function PatientDetailPage() {
         patientsApi.get(id as string, token!),
         medicinesApi.list(id as string, token!),
         patientsApi.getAdherenceToday(id as string, token!).catch(() => null),
-        callsApi.list(id as string, 'limit=10', token!).catch(() => ({ data: { calls: [] } })),
+        callsApi.list(id as string, `page=1&limit=${CALLS_PER_PAGE}`, token!).catch(() => ({ data: { calls: [], total: 0 } })),
         patientsApi.getAdherenceCalendar(id as string, new Date().toISOString().slice(0, 7), token!).catch(() => null),
       ]);
 
       setPatient(patientRes.data || patientRes);
       setMedicines((medsRes.data || medsRes) || []);
       setAdherence(adherenceRes?.data || adherenceRes);
-      setCalls((callsRes.data || callsRes)?.calls || []);
+      const callsData = callsRes.data || callsRes;
+      setCalls(callsData?.calls || []);
+      setCallsTotal(callsData?.total || 0);
+      setCallsPage(1);
       setCalendar(calendarRes?.data || calendarRes);
     } catch (err) {
       console.error('Failed to load patient data', err);
@@ -51,6 +58,24 @@ export default function PatientDetailPage() {
       setLoading(false);
     }
   };
+
+  const loadCallsPage = async (page: number) => {
+    if (!token || !id) return;
+    setCallsLoading(true);
+    try {
+      const res = await callsApi.list(id as string, `page=${page}&limit=${CALLS_PER_PAGE}`, token);
+      const data = res.data || res;
+      setCalls(data?.calls || []);
+      setCallsTotal(data?.total || 0);
+      setCallsPage(page);
+    } catch (err) {
+      console.error('Failed to load calls', err);
+    } finally {
+      setCallsLoading(false);
+    }
+  };
+
+  const totalCallPages = Math.ceil(callsTotal / CALLS_PER_PAGE);
 
   const handlePause = async () => {
     if (!token || !id) return;
@@ -281,37 +306,82 @@ export default function PatientDetailPage() {
       {/* Calls Tab */}
       {activeTab === 'calls' && (
         <Card className="border-border/50">
-          <CardHeader>
-            <CardTitle className="text-lg">Call History</CardTitle>
+          <CardHeader className="flex flex-row items-center justify-between">
+            <div>
+              <CardTitle className="text-lg">Call History</CardTitle>
+              {callsTotal > 0 && (
+                <CardDescription>{callsTotal} total call{callsTotal !== 1 ? 's' : ''}</CardDescription>
+              )}
+            </div>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              {calls.map((call: any) => (
-                <div key={call._id} className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/50">
-                  <div>
-                    <p className="font-medium">
-                      {new Date(call.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })} at{' '}
-                      {new Date(call.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </p>
-                    <p className="text-sm text-muted-foreground">
-                      Duration: {call.duration ? `${Math.round(call.duration / 60)}m ${call.duration % 60}s` : 'N/A'}
-                    </p>
-                  </div>
-                  <Badge
-                    variant={
-                      call.status === 'completed' ? 'success' :
-                      call.status === 'no_answer' ? 'warning' :
-                      call.status === 'failed' ? 'destructive' : 'secondary'
-                    }
-                  >
-                    {call.status}
-                  </Badge>
+              {callsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-primary"></div>
                 </div>
-              ))}
-              {calls.length === 0 && (
-                <p className="text-muted-foreground text-center py-6">No calls yet</p>
+              ) : (
+                <>
+                  {calls.map((call: any) => (
+                    <div key={call._id} className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/50">
+                      <div>
+                        <p className="font-medium">
+                          {new Date(call.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })} at{' '}
+                          {new Date(call.scheduledAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </p>
+                        <p className="text-sm text-muted-foreground">
+                          Duration: {call.duration ? `${Math.floor(call.duration / 60)}m ${call.duration % 60}s` : 'N/A'}
+                          {call.medicinesChecked?.length > 0 && (
+                            <> &middot; {call.medicinesChecked.filter((m: any) => m.response === 'taken').length}/{call.medicinesChecked.length} taken</>
+                          )}
+                        </p>
+                      </div>
+                      <Badge
+                        variant={
+                          call.status === 'completed' ? 'success' :
+                          call.status === 'no_answer' ? 'warning' :
+                          call.status === 'failed' ? 'destructive' : 'secondary'
+                        }
+                      >
+                        {call.status?.replace('_', ' ')}
+                      </Badge>
+                    </div>
+                  ))}
+                  {calls.length === 0 && (
+                    <p className="text-muted-foreground text-center py-6">No calls yet</p>
+                  )}
+                </>
               )}
             </div>
+
+            {/* Pagination */}
+            {totalCallPages > 1 && (
+              <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50">
+                <p className="text-sm text-muted-foreground">
+                  Page {callsPage} of {totalCallPages}
+                </p>
+                <div className="flex gap-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                    disabled={callsPage <= 1 || callsLoading}
+                    onClick={() => loadCallsPage(callsPage - 1)}
+                  >
+                    Previous
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="rounded-lg"
+                    disabled={callsPage >= totalCallPages || callsLoading}
+                    onClick={() => loadCallsPage(callsPage + 1)}
+                  >
+                    Next
+                  </Button>
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
       )}
