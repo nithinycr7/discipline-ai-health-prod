@@ -5,6 +5,22 @@
 
 ---
 
+## Product Overview
+
+**Health Discipline AI** is an AI-powered medication adherence platform that makes automated voice calls to elderly patients in India to check whether they've taken their daily medicines. The core insight is that voice is the most inclusive interface — no app download, no smartphone, and no tech skills are required. The patient simply answers a phone call.
+
+**How it works:** A family member (typically an NRI child living abroad) registers on the web portal and adds their parent's details — name, medicines, preferred language, and call schedule. The AI then calls the patient daily at the configured times, greets them by name in their preferred language (Hindi, Telugu, Tamil, Marathi, Bengali, Kannada, Gujarati, or English), asks about each medicine individually, checks vitals and general wellness, and notes any complaints. After each call, a structured report with medicine-by-medicine adherence data is sent to the family via WhatsApp. The family can also view detailed trends, transcripts, and health insights on a web dashboard.
+
+**Target market:** NRI children (25–45 years) in the US, UK, UAE, Canada, and Australia who can't physically ensure their parents take medicines daily. Secondary markets include working professionals in Indian metros with elderly parents in smaller cities, and hospitals looking to replace expensive manual nurse follow-up calls with AI at 1/100th the cost.
+
+**Pricing (B2C):** Two plans — Suraksha (₹1,350/month or $15, 1 call/day with real-time alerts) and Sampurna (₹1,800/month or $20, 2 calls/day with premium features). B2B hospital pricing starts at ₹150–200 per patient per month.
+
+**Tech stack:** NestJS backend on Google Cloud Run, Next.js frontend on Vercel, MongoDB (Azure Cosmos DB) for data, and a dual voice-AI stack — ElevenLabs Conversational AI (fully managed, higher cost) or Sarvam STT/TTS + Gemini LLM on LiveKit (modular, 57% cheaper). Outbound calls route via Twilio (US SIP) or Exotel (Indian SIP trunk), and WhatsApp notifications go through Twilio's Business API.
+
+This document analyses the infrastructure costs for both voice stacks at every scale — from 10 patients to 1,000+ — and identifies the optimization path to profitability.
+
+---
+
 ## Table of Contents
 
 1. [Current Subscriptions & Fixed Costs](#1-current-subscriptions--fixed-costs)
@@ -16,6 +32,7 @@
 7. [Cost Optimization Roadmap](#7-cost-optimization-roadmap)
 8. [When to Upgrade Each Service](#8-when-to-upgrade-each-service)
 9. [Future Verticals — Incremental Cost Impact](#9-future-verticals--incremental-cost-impact)
+10. [Sarvam Stack — Full Cost Comparison](#10-sarvam-stack--full-cost-comparison)
 
 ---
 
@@ -488,7 +505,7 @@ The single highest-impact optimization. Reducing average call from 2.5 min to 1.
 | Pricing           | $0.08-0.10/min                    | Not publicly listed for voice agents |
 | Maturity          | Production-ready                  | Early stage                          |
 
-> **Worth evaluating at 500+ patients.** Sarvam is purpose-built for Indian languages and could significantly reduce costs if their voice agent quality matches ElevenLabs.
+> **Worth evaluating at 500+ patients.** Sarvam is purpose-built for Indian languages and could significantly reduce costs if their voice agent quality matches ElevenLabs. See [Section 10](#10-sarvam-stack--full-cost-comparison) for the detailed analysis.
 
 ---
 
@@ -577,6 +594,279 @@ The single highest-impact optimization. Reducing average call from 2.5 min to 1.
 
 ---
 
+## 10. Sarvam Stack — Full Cost Comparison
+
+> **Added:** February 2026. Compares the production-ready Sarvam voice stack (LiveKit + Sarvam STT/TTS + Gemini LLM + Exotel SIP) against the current ElevenLabs stack.
+
+The system supports switchable voice stacks via the `VOICE_STACK` environment variable (`elevenlabs` or `sarvam`), enabling A/B testing and graceful fallback.
+
+### 10.1 Stack Component Mapping
+
+| Function | ElevenLabs Stack | Sarvam Stack |
+|---|---|---|
+| **STT** | Built-in (ElevenLabs ConvAI) | Sarvam STT saaras:v3 — ₹30/hr (₹0.50/min) |
+| **TTS** | Built-in (ElevenLabs ConvAI) | Sarvam TTS bulbul:v3 — ₹30/10K chars |
+| **LLM** | Built-in (Gemini via ElevenLabs) | Google Gemini 1.5 Flash — $0.075/$0.30 per 1M tokens |
+| **Real-time comms** | ElevenLabs Conversational AI | LiveKit Cloud — $0.01/min agent session |
+| **Telephony** | Twilio US→India ($0.0143/min) | Exotel India→India (₹1.27/min) |
+| **Agent hosting** | Fully managed by ElevenLabs | Self-managed Python worker on Cloud Run |
+| **WhatsApp** | Twilio | Twilio (unchanged) |
+
+### 10.2 Per-Call Variable Cost Comparison (2.5 min avg)
+
+#### ElevenLabs Stack — ₹26.34/call
+
+| Component | Cost/call (₹) | % of Total |
+|---|:---:|:---:|
+| ElevenLabs Conversational AI | ₹22.50 | 85.5% |
+| Twilio Voice (US→India) | ₹3.22 | 12.2% |
+| WhatsApp post-call + alerts | ₹0.62 | 2.4% |
+| **Total** | **₹26.34** | **100%** |
+
+#### Sarvam Stack (LiveKit Cloud) — ₹11.31/call
+
+| Component | Rate | Cost/call (₹) | % of Total |
+|---|---|:---:|:---:|
+| Sarvam STT (saaras:v3) | ₹0.50/min × 2.5 min | ₹1.25 | 11.0% |
+| Sarvam TTS (bulbul:v3) | ₹30/10K chars × ~1,000 chars | ₹3.00 | 26.5% |
+| Gemini 1.5 Flash | ~12K input + 3K output tokens | ₹0.11 | 1.0% |
+| LiveKit agent session | $0.01/min × 2.5 min | ₹2.25 | 19.9% |
+| LiveKit SIP (3rd-party) | $0.004/min × 2.5 min | ₹0.90 | 8.0% |
+| Exotel telephony | ₹1.27/min × 2.5 min | ₹3.18 | 28.1% |
+| WhatsApp | same | ₹0.62 | 5.5% |
+| **Total** | | **₹11.31** | **100%** |
+
+> **Per-call savings: ₹15.03 (57%).** ElevenLabs bundles STT+TTS+LLM+hosting into one ₹22.50 charge. Sarvam unbundles these — STT (₹1.25) + TTS (₹3.00) + LLM (₹0.11) + LiveKit (₹3.15) = **₹7.51** for the same functions, a **67% reduction** on voice AI alone.
+
+### 10.3 Fixed Monthly Costs Comparison
+
+#### ElevenLabs Stack — ₹8,359/month
+
+| Service | ₹/month |
+|---|:---:|
+| ElevenLabs Creator | ₹1,936 |
+| Cloud Run (API server) | ₹4,433 |
+| Cosmos DB | ₹0 |
+| Twilio number | ₹90 |
+| Vercel Pro | ₹1,800 |
+| Domain | ₹100 |
+| **Total** | **₹8,359** |
+
+#### Sarvam Stack (LiveKit Cloud, Ship plan) — ₹15,533/month
+
+| Service | ₹/month | Notes |
+|---|:---:|---|
+| LiveKit Cloud (Ship) | ₹4,500 | Includes 5,000 agent min + 5,000 SIP min |
+| Python agent worker (Cloud Run) | ₹2,200 | 0.5 vCPU, 256 MiB, always-on |
+| Cloud Run (API server) | ₹4,433 | Same |
+| Cosmos DB | ₹0 | Same |
+| Exotel base plan | ₹2,500 | SIP trunk subscription |
+| Vercel Pro | ₹1,800 | Same |
+| Domain | ₹100 | Same |
+| **Total** | **₹15,533** | |
+
+> **Fixed cost delta: +₹7,174/month.** Sarvam has higher fixed costs, but the variable savings (₹15.03/call) compensate at just **~478 calls/month (~11 patients)**.
+
+### 10.4 Scenario Analysis — Side by Side
+
+Assumptions: Same as Section 4 (50/50 plan mix, 2.5 min avg, 80% answer rate, ~45 calls/patient/month).
+
+LiveKit Ship plan includes 5,000 agent minutes and 5,000 SIP minutes. Calls within the included allowance cost ₹8.16/call (no LiveKit per-minute charges). Calls exceeding the allowance cost ₹11.31/call.
+
+#### 10 Patients (~450 calls/month, 1,125 agent min — within LiveKit included)
+
+| | ElevenLabs | Sarvam | Delta |
+|---|:---:|:---:|:---:|
+| Fixed | ₹8,359 | ₹15,533 | +₹7,174 |
+| Variable (450 calls) | ₹11,853 | ₹3,672 | -₹8,181 |
+| **Total** | **₹20,212** | **₹19,205** | **-₹1,007 (5%)** |
+| Revenue | ₹15,750 | ₹15,750 | |
+| **P/L** | **-₹4,462** | **-₹3,455** | **+₹1,007 better** |
+
+#### 50 Patients (~2,250 calls/month, 5,625 agent min — 625 min overage)
+
+| | ElevenLabs | Sarvam | Delta |
+|---|:---:|:---:|:---:|
+| Fixed | ₹8,359 | ₹15,533 | +₹7,174 |
+| Variable | ₹59,265 | ₹19,148 | -₹40,117 |
+| **Total** | **₹67,624** | **₹34,681** | **-₹32,943 (49%)** |
+| Revenue | ₹78,750 | ₹78,750 | |
+| **P/L** | **+₹11,126** | **+₹44,069** | **+₹32,943 better** |
+
+#### 100 Patients (~4,500 calls/month, 11,250 agent min — 6,250 min overage)
+
+ElevenLabs requires Scale plan upgrade (₹29,040). Sarvam stays on Ship + overages (₹7,875).
+
+| | ElevenLabs | Sarvam | Delta |
+|---|:---:|:---:|:---:|
+| Fixed | ₹39,895 | ₹15,533 | -₹24,362 |
+| Variable | ₹1,18,647 | ₹44,595 | -₹74,052 |
+| **Total** | **₹1,58,542** | **₹60,128** | **-₹98,414 (62%)** |
+| Revenue | ₹1,57,500 | ₹1,57,500 | |
+| **P/L** | **-₹1,042** | **+₹97,372** | **+₹98,414 better** |
+
+> **The most dramatic difference.** At 100 patients, ElevenLabs is break-even. Sarvam generates **₹97K/month profit**.
+
+#### 500 Patients (~22,500 calls/month, 56,250 agent min)
+
+LiveKit Scale plan ($500/mo = ₹45,000) with 50,000 included min becomes optimal. Ship + overages at this scale would cost ₹69,075 vs Scale at ₹52,313.
+
+| | ElevenLabs | Sarvam | Delta |
+|---|:---:|:---:|:---:|
+| Fixed | ₹1,41,010 | ₹76,660 | -₹64,350 |
+| Variable | ₹4,91,985 | ₹1,90,925 | -₹3,01,060 |
+| **Total** | **₹6,32,995** | **₹2,67,585** | **-₹3,65,410 (58%)** |
+| Revenue | ₹7,87,500 | ₹7,87,500 | |
+| **P/L** | **+₹1,54,505** | **+₹5,19,915** | **+₹3,65,410 better** |
+
+*Fixed includes: LiveKit Scale ₹45,000, Python worker ₹4,400, Cloud Run 2× instances ₹17,730, Atlas M10 ₹5,130, Exotel ₹2,500, Vercel ₹1,800, Domain ₹100.*
+
+#### 1,000 Patients (~45,000 calls/month, 112,500 agent min)
+
+| | ElevenLabs | Sarvam | Delta |
+|---|:---:|:---:|:---:|
+| Fixed | ₹2,02,085 | ₹98,295 | -₹1,03,790 |
+| Variable | ₹7,81,470 | ₹4,40,450 | -₹3,41,020 |
+| **Total** | **₹9,83,555** | **₹5,38,745** | **-₹4,44,810 (45%)** |
+| Revenue | ₹15,75,000 | ₹15,75,000 | |
+| **P/L** | **+₹5,91,445** | **+₹10,36,255** | **+₹4,44,810 better** |
+
+*Fixed includes: LiveKit Scale ₹45,000 + overages, Python worker 2× ₹8,800, Cloud Run 3× ₹26,595, Atlas M20 ₹13,500, Exotel ₹2,500, Vercel ₹1,800, Domain ₹100.*
+
+### 10.5 Summary — Monthly Costs at Scale (Both Stacks)
+
+| Patients | ElevenLabs Cost | Sarvam Cost | Savings | EL Profit | Sarvam Profit |
+|:---:|:---:|:---:|:---:|:---:|:---:|
+| 10 | ₹20,212 | ₹19,205 | ₹1,007 (5%) | -₹4,462 | -₹3,455 |
+| 50 | ₹67,624 | ₹34,681 | ₹32,943 (49%) | +₹11,126 | +₹44,069 |
+| **100** | **₹1,58,542** | **₹60,128** | **₹98,414 (62%)** | **-₹1,042** | **+₹97,372** |
+| 500 | ₹6,32,995 | ₹2,67,585 | ₹3,65,410 (58%) | +₹1,54,505 | +₹5,19,915 |
+| 1,000 | ₹9,83,555 | ₹5,38,745 | ₹4,44,810 (45%) | +₹5,91,445 | +₹10,36,255 |
+
+### 10.6 Per-Patient Unit Economics (Sarvam Stack)
+
+#### Variable Margins — Sarvam vs ElevenLabs
+
+| | Sarvam Suraksha | Sarvam Sampurna | EL Suraksha | EL Sampurna |
+|---|:---:|:---:|:---:|:---:|
+| Revenue | ₹1,350 | ₹1,800 | ₹1,350 | ₹1,800 |
+| STT (Sarvam) | -₹37 | -₹75 | — | — |
+| TTS (Sarvam) | -₹90 | -₹180 | — | — |
+| LLM (Gemini) | -₹3 | -₹7 | — | — |
+| Exotel Voice | -₹95 | -₹191 | — | — |
+| ElevenLabs | — | — | -₹675 | -₹1,350 |
+| Twilio Voice | — | — | -₹97 | -₹194 |
+| WhatsApp | -₹22 | -₹41 | -₹22 | -₹41 |
+| **Variable margin** | **+₹1,103** | **+₹1,306** | **+₹556** | **+₹215** |
+| **Margin %** | **81.7%** | **72.6%** | **41.2%** | **11.9%** |
+
+> **Sampurna (2 calls/day) goes from 12% margin to 73% margin.** This is the single biggest improvement — the plan that was barely profitable with ElevenLabs becomes highly profitable with Sarvam.
+
+#### Break-Even Comparison
+
+| Scenario | Break-Even Users |
+|----------|:---:|
+| ElevenLabs (Creator, 2.5 min) | ~22 users |
+| **Sarvam (LiveKit Ship, 2.5 min)** | **~9 users** |
+| ElevenLabs (90-sec calls) | ~10 users |
+| **Sarvam (90-sec calls)** | **~6 users** |
+
+### 10.7 No Subscription Cliffs
+
+One of the biggest structural advantages of the Sarvam stack — no plan-upgrade cliffs:
+
+| Scale | ElevenLabs Plan (Fixed) | Sarvam Stack (Fixed) |
+|---|---|---|
+| 1–30 patients | Creator ₹1,936 | Pay-as-you-go ₹0 (Sarvam) + LiveKit Build ₹0 |
+| 30–100 patients | **Scale ₹29,040 (15× jump)** | LiveKit Ship ₹4,500 |
+| 100–300 patients | Scale ₹29,040 | LiveKit Ship ₹4,500 + overages |
+| 300–1,000 patients | **Business ₹1,16,160 (4× jump)** | LiveKit Scale ₹45,000 |
+
+ElevenLabs has **15× jumps** (Creator→Scale) that temporarily destroy margins at transition points. Sarvam costs scale linearly with usage.
+
+### 10.8 Further Optimizations (Sarvam Stack)
+
+#### Knowlarity SIP (₹0.40/min) instead of Exotel (₹1.27/min)
+
+| | Exotel | Knowlarity | Savings |
+|---|:---:|:---:|:---:|
+| Telephony per call (2.5 min) | ₹3.18 | ₹1.00 | ₹2.18 (69%) |
+| **Total per call** | **₹11.31** | **₹9.13** | **₹2.18** |
+| vs ElevenLabs | 57% cheaper | **65% cheaper** | |
+
+#### 90-Second Calls (Sarvam Stack)
+
+| Component | 2.5 min call | 1.5 min call | Savings |
+|---|:---:|:---:|:---:|
+| Sarvam STT | ₹1.25 | ₹0.75 | 40% |
+| Sarvam TTS (~600 chars) | ₹3.00 | ₹1.80 | 40% |
+| Gemini Flash | ₹0.11 | ₹0.07 | 36% |
+| LiveKit (agent + SIP) | ₹3.15 | ₹1.89 | 40% |
+| Exotel | ₹3.18 | ₹1.91 | 40% |
+| WhatsApp | ₹0.62 | ₹0.62 | 0% |
+| **Total** | **₹11.31** | **₹7.04** | **38%** |
+
+#### Best-Case: Sarvam + Knowlarity + 90-Second Calls
+
+| | Per Call | Suraksha Margin | Sampurna Margin |
+|---|:---:|:---:|:---:|
+| **₹4.86/call** | | **+₹1,204 (89%)** | **+₹1,508 (84%)** |
+
+vs ElevenLabs best-case (Enterprise + SIP + 90s): ₹10.01/call, margins ₹1,047/₹1,217.
+
+### 10.9 Trade-offs & Risks
+
+| Factor | ElevenLabs | Sarvam Stack |
+|---|---|---|
+| **TTS quality** | Excellent (industry-leading) | Good (Bulbul v3 — purpose-built for Indian langs) |
+| **Maturity** | Production-proven, 3+ years | Newer platform, rapidly improving |
+| **Ops complexity** | Fully managed (zero infra) | Manage Python worker + LiveKit + Exotel SIP |
+| **Indian language quality** | Good (multilingual model) | Better (native Indian language models, 11+ langs) |
+| **Latency** | ~500ms first token | ~300–400ms (India-local infra potential) |
+| **Vendor lock-in** | High (proprietary ConvAI platform) | Low (swap any component independently) |
+| **Fallback** | Single vendor dependency | Dual-stack via `VOICE_STACK` config |
+| **Concurrent calls** | Limited by ElevenLabs plan (2 on Creator) | Limited by LiveKit plan + Exotel trunk CPM |
+
+### 10.10 LiveKit Plan Selection Guide
+
+| Plan | Monthly | Included Agent Min | Included SIP Min | Optimal For |
+|---|:---:|:---:|:---:|---|
+| Build (Free) | ₹0 | 1,000 | 1,000 | Testing (< 7 patients) |
+| Ship | ₹4,500 ($50) | 5,000 | 5,000 | 7–80 patients |
+| Scale | ₹45,000 ($500) | 50,000 | 50,000 | 330+ patients |
+| Enterprise | Custom | Custom | Custom | 1,000+ patients |
+
+Overage rates: Agent $0.01/min, SIP $0.004/min (Ship) or $0.003/min (Scale).
+
+Scale plan becomes cheaper than Ship + overages at **~330 patients** (37,143 total agent min/month).
+
+### 10.11 Sarvam AI Credit Plan Guide
+
+| Plan | Cost | Credits | Bonus | Rate Limit | Optimal For |
+|---|:---:|:---:|:---:|:---:|---|
+| Starter | Pay-as-you-go | ₹1,000 free | — | 60 req/min | < 50 patients |
+| Pro | ₹10,000 | ₹11,000 | 10% | 200 req/min | 50–200 patients |
+| Business | ₹50,000 | ₹57,500 | 15% | 1,000 req/min | 200+ patients |
+
+Monthly Sarvam spend (STT+TTS) per call: ~₹4.25. Pro plan is worthwhile at ~₹10K/month spend (~52 patients).
+
+### 10.12 Verdict
+
+| Metric | ElevenLabs | Sarvam | Winner |
+|---|---|---|---|
+| Cost at 50 patients | ₹67,624/mo | ₹34,681/mo | **Sarvam (49% cheaper)** |
+| Cost at 100 patients | ₹1,58,542/mo | ₹60,128/mo | **Sarvam (62% cheaper)** |
+| Sampurna plan margin | 12% | 73% | **Sarvam (6× better)** |
+| Break-even (patients) | ~22 | ~9 | **Sarvam** |
+| Scaling linearity | Subscription cliffs | Linear pay-as-you-go | **Sarvam** |
+| Ops simplicity | Fully managed | Self-managed worker | **ElevenLabs** |
+| Voice quality | Excellent | Good (improving) | **ElevenLabs** |
+| Indian language fit | Good | Purpose-built | **Sarvam** |
+
+> **Recommended approach:** Use the dual-stack architecture. Start with ElevenLabs for quality assurance during early patients. Run Sarvam in parallel for A/B testing. Once Sarvam call quality is validated with real patients, switch primary traffic to Sarvam for **57–62% cost savings**. Keep ElevenLabs as fallback.
+
+---
+
 ## Appendix A: Detailed Service Pricing Reference
 
 ### ElevenLabs (Verified from pricing page, Feb 2026)
@@ -647,6 +937,38 @@ The single highest-impact optimization. Reducing average call from 2.5 min to 1.
 | Exotel     | Influencer |    ₹1.27/min    |
 | Exotel     | Dabbler    |    ₹2.00/min    |
 
+### Sarvam AI (Verified from sarvam.ai/api-pricing, Feb 2026)
+
+| Service                    |          Rate          |
+| -------------------------- | :--------------------: |
+| STT (saaras:v3)            | ₹30/hour (₹0.50/min)  |
+| STT + Diarization          |       ₹45/hour        |
+| TTS (bulbul:v2)            |    ₹15/10K chars      |
+| TTS (bulbul:v3 Beta)       |    ₹30/10K chars      |
+| Translation (Mayura)       |    ₹20/10K chars      |
+| Chat LLM (Sarvam-M)        |    Free               |
+| Language Identification     |    ₹3.50/10K chars    |
+
+Plans: Starter (pay-as-you-go, 60 req/min), Pro ₹10K (₹11K credits, 200 req/min), Business ₹50K (₹57.5K credits, 1000 req/min). All plans include ₹1,000 free starting credits. Credits never expire.
+
+### LiveKit Cloud (Verified from livekit.io/pricing, Feb 2026)
+
+| Plan       | Monthly Cost | Agent Min Included | SIP Min (3rd-party) | Agent Overage | SIP Overage |
+| ---------- | :----------: | :----------------: | :-----------------: | :-----------: | :---------: |
+| Build      |      $0      |       1,000        |        1,000        |   $0.01/min   |  $0.004/min |
+| Ship       |     $50      |       5,000        |        5,000        |   $0.01/min   |  $0.004/min |
+| Scale      |     $500     |      50,000        |       50,000        |   $0.01/min   |  $0.003/min |
+| Enterprise |    Custom    |       Custom       |       Custom        |   Custom      |   Custom    |
+
+### Google Gemini API (Verified from ai.google.dev, Feb 2026)
+
+| Model                    | Input (per 1M tokens) | Output (per 1M tokens) |
+| ------------------------ | :-------------------: | :--------------------: |
+| Gemini 1.5 Flash         |        $0.075         |         $0.30          |
+| Gemini 2.5 Flash         |        $0.30          |         $2.50          |
+
+Free tier available. Context caching at 10% of base input price.
+
 ### Vercel
 
 | Plan                   |   Monthly Cost    |
@@ -679,6 +1001,12 @@ The single highest-impact optimization. Reducing average call from 2.5 min to 1.
 | WhatsApp messages per patient/month | ~34 (Suraksha) to ~65 (Sampurna) | 1 per call + weekly + alerts |
 | ElevenLabs credit consumption | ~350 credits/min for Conversational AI | Estimate — verify from dashboard |
 | Cloud Run month | 2,592,000 seconds (30 days) | Standard |
+| Sarvam TTS chars per call | ~1,000 characters | Estimated from agent conversation flow |
+| Sarvam agent speaking ratio | ~40% of call duration | Agent asks short questions, patient responds |
+| Gemini tokens per call | ~12K input, ~3K output (across all turns) | Estimate from 7-turn conversation + context |
+| LiveKit Ship included minutes | 5,000 agent + 5,000 SIP | LiveKit pricing page |
+| Exotel SIP base plan | ₹2,500/month | Estimate — verify with Exotel sales |
+| Python worker Cloud Run | 0.5 vCPU, 256 MiB, always-on | Minimum for LiveKit agent worker |
 
 ---
 
@@ -691,5 +1019,10 @@ The single highest-impact optimization. Reducing average call from 2.5 min to 1.
 | Scale plan + 2.5 min calls (100+ users) | **~103 users** | Higher fixed costs (₹39,895) but within Scale plan credits |
 | Enterprise ElevenLabs + Indian SIP (2.5 min) | **~227 users** | High fixed costs (₹2L+) require scale for Enterprise pricing |
 | Enterprise + SIP + 90-sec calls | **~179 users** | Best margins at scale, weighted margin ₹1,132/patient |
+| | | |
+| **Sarvam Stack Scenarios** | | |
+| Sarvam (LiveKit Ship, 2.5 min calls) | **~9 users** | Variable margin ₹1,103–₹1,306/patient, higher fixed costs offset by 57% cheaper calls |
+| Sarvam (LiveKit Ship, 90-sec calls) | **~6 users** | Best early-stage break-even across all scenarios |
+| Sarvam + Knowlarity + 90-sec calls | **~5 users** | Theoretical best-case: ₹4.86/call, margins 84–89% |
 
-> **Recommended path:** Start with Creator plan — profitable at ~22 patients out of the box with $15/$20 pricing. Add 90-second call optimization (free) to drop break-even to ~10 patients. Upgrade to Scale plan at ~40+ patients, Enterprise + SIP at 200+.
+> **Recommended path:** Start with ElevenLabs Creator plan for quality assurance. Run Sarvam in parallel via `VOICE_STACK` config for A/B testing. Once validated, switch primary traffic to Sarvam for 57–62% cost savings (break-even drops to ~9 patients). Add 90-second call optimization to drop break-even to ~6 patients.

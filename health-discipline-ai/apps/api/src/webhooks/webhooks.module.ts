@@ -1,6 +1,7 @@
 import { Module } from '@nestjs/common';
 import { ElevenLabsWebhookController } from '../integrations/elevenlabs/elevenlabs-webhook.controller';
 import { ElevenLabsSetupController } from '../integrations/elevenlabs/elevenlabs-setup.controller';
+import { SarvamWebhookController } from '../integrations/sarvam/sarvam-webhook.controller';
 import { CallsModule } from '../calls/calls.module';
 import { PatientsModule } from '../patients/patients.module';
 import { MedicinesModule } from '../medicines/medicines.module';
@@ -22,6 +23,6 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     NotificationsModule,
     IntegrationsModule,
   ],
-  controllers: [ElevenLabsWebhookController, ElevenLabsSetupController],
+  controllers: [ElevenLabsWebhookController, ElevenLabsSetupController, SarvamWebhookController],
 })
 export class WebhooksModule {}
