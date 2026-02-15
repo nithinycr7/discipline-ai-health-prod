@@ -28,6 +28,15 @@ class ApiClient {
 
     if (!response.ok) {
       const error = await response.json().catch(() => ({ message: 'Request failed' }));
+
+      // Auto-logout on 401 when a token was used (expired/invalid session)
+      if (response.status === 401 && token) {
+        localStorage.removeItem('token');
+        localStorage.removeItem('refreshToken');
+        window.location.href = '/login?session=expired';
+        throw new ApiError(401, 'Session expired');
+      }
+
       throw new ApiError(response.status, error.message);
     }
 
