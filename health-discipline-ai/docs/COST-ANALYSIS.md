@@ -120,24 +120,25 @@ These costs are incurred for every AI voice call made.
 
 | Metric                         | Value                  |
 | ------------------------------ | ---------------------- |
-| Average call duration          | 2.5 minutes            |
+| Average call duration          | 2 minutes              |
 | Per-minute rate (Creator plan) | ~$0.10/min = ₹9.00/min |
-| **Cost per call**              | **₹22.50** ($0.25)     |
+| **Cost per call**              | **₹18.00** ($0.20)     |
 
-**Within included credits:** If a call consumes ~350 credits/min, then 2.5 min = 875 credits per call. With 100,000 included credits, you get ~114 calls "free" (already paid for in the ₹1,936 subscription).
+**Within included credits:** If a call consumes ~350 credits/min, then 2 min = 700 credits per call. With 100,000 included credits, you get ~143 calls "free" (already paid for in the ₹1,936 subscription).
 
-**Beyond included credits:** ₹26.40/1000 credits × 875 credits = **₹23.10 per additional call**.
+**Beyond included credits:** ₹26.40/1000 credits × 700 credits = **₹18.48 per additional call**.
 
 ### 2.2 Twilio — Voice (Outbound to India)
 
-| Metric                | Value                                   |
-| --------------------- | --------------------------------------- |
-| Route                 | US number (+1-765) → India mobile (+91) |
-| Per-minute rate       | $0.0143/min = ₹1.29/min                 |
-| Average call duration | 2.5 minutes                             |
-| **Cost per call**     | **₹3.22** ($0.036)                      |
+| Metric                | Value                                          |
+| --------------------- | ---------------------------------------------- |
+| Route                 | US number (+1) → India mobile (+91)            |
+| Per-minute rate       | $0.0405/min (destination-based to India mobile) |
+| INR equivalent        | ₹3.65/min ($0.0405 × 90)                      |
+| Average call duration | 2 minutes                                      |
+| **Cost per call**     | **₹7.29** ($0.081)                            |
 
-> **Note:** If call goes unanswered or busy, Twilio still charges for the connection attempt (~₹0.50-1.00 per failed attempt).
+> **Note:** Twilio uses destination-based pricing. India mobile is $0.0405/min; landline is $0.0497/min. Assuming majority are mobile numbers. If call goes unanswered or busy, Twilio still charges minimally for the connection attempt.
 
 ### 2.3 Twilio — WhatsApp Notifications
 
@@ -152,13 +153,13 @@ These costs are incurred for every AI voice call made.
 
 | Component                     |  Cost (₹)  |  Cost ($)  | % of Total |
 | ----------------------------- | :--------: | :--------: | :--------: |
-| ElevenLabs Conversational AI  |   ₹22.50   |   $0.250   |   85.5%    |
-| Twilio Voice                  |   ₹3.22    |   $0.036   |   12.2%    |
+| ElevenLabs Conversational AI  |   ₹18.00   |   $0.200   |   70.8%    |
+| Twilio Voice (destination-based) |   ₹7.29    |   $0.081   |   28.7%    |
 | WhatsApp post-call report     |   ₹0.57    |   $0.006   |    2.2%    |
 | WhatsApp critical alert (avg) |   ₹0.05    |   $0.001   |    0.2%    |
-| **Total per successful call** | **₹26.34** | **$0.293** |  **100%**  |
+| **Total per successful call** | **₹25.91** | **$0.288** |  **100%**  |
 
-> **ElevenLabs is 85% of variable costs.** This is the single biggest lever for cost optimization.
+> **ElevenLabs is 71% of variable costs.** With 2-minute calls, per-call cost drops to ₹25.91 (from ₹32.23 at 2.5 min). Voice AI remains the dominant cost lever.
 
 ---
 
@@ -171,27 +172,27 @@ These costs are incurred for every AI voice call made.
 | **Price** | **$15/month (₹1,350)** | **$20/month (₹1,800)** |
 | **Calls per week** | 7 (1/day) | 14 (2/day) |
 | **Calls per month** | ~30 | ~60 |
-| **Call minutes/month** | 75 min | 150 min |
+| **Call minutes/month** | 60 min | 120 min |
 | | | |
-| **ElevenLabs** | ₹675 | ₹1,350 |
-| **Twilio Voice** | ₹97 | ₹194 |
+| **ElevenLabs** | ₹540 | ₹1,080 |
+| **Twilio Voice** (destination-based) | ₹219 | ₹437 |
 | **WhatsApp (post-call)** | ₹17.10 | ₹34.20 |
 | **WhatsApp (weekly report)** | ₹2.28 | ₹2.28 |
 | **WhatsApp (misc alerts)** | ₹3.00 | ₹5.00 |
 | | | |
-| **Total variable cost/patient** | **₹794** | **₹1,585** |
+| **Total variable cost/patient** | **₹781** | **₹1,559** |
 | **Revenue/patient** | **₹1,350 ($15)** | **₹1,800 ($20)** |
-| **Margin/patient** | **+₹556** | **+₹215** |
-| **Margin %** | **+41%** | **+12%** |
+| **Margin/patient** | **+₹569** | **+₹241** |
+| **Margin %** | **+42%** | **+13%** |
 
 ### 3.2 Key Insight — Unit Economics
 
 | Plan | Profitable? | Margin |
 |------|:-----------:|--------|
-| Suraksha | **Yes (+₹556/patient)** | Strong — 41% variable margin at 1 call/day |
-| Sampurna | **Yes (+₹215/patient)** | Positive — 12% margin, improves significantly with optimizations |
+| Suraksha | **Yes (+₹569/patient)** | Strong — 42% variable margin at 1 call/day |
+| Sampurna | **Yes (+₹241/patient)** | Profitable — 13% margin at 2 calls/day |
 
-> **Both plans are profitable at unit economics level.** The $15/$20 USD pricing covers variable costs even at Creator plan rates. Suraksha is the higher-margin plan due to fewer calls. With call duration optimization or Enterprise pricing, margins improve dramatically.
+> **Both plans are profitable with 2-minute calls.** Reducing call duration from 2.5 to 2 minutes drops per-call cost from ₹32.23 to ₹25.91 (20% reduction), which restores Sampurna profitability. Suraksha margin improves from 28% to 42%. This demonstrates that **call duration optimization is immediately actionable** and has substantial impact on unit economics.
 
 ---
 
@@ -221,18 +222,18 @@ These costs are incurred for every AI voice call made.
 | Domain | ₹100 | $1.11 |
 | **Subtotal Fixed** | **₹8,359** | **$92.88** |
 | | | |
-| **Variable (10 patients, ~450 calls)** | | |
-| ElevenLabs voice calls | ₹10,125 | $112.50 |
-| Twilio voice | ₹1,449 | $16.10 |
+| **Variable (10 patients, ~450 calls, 900 min)** | | |
+| ElevenLabs voice calls | ₹8,100 | $90.00 |
+| Twilio voice (destination-based) | ₹3,280 | $36.45 |
 | WhatsApp notifications (~510 msgs) | ₹291 | $3.23 |
-| **Subtotal Variable** | **₹11,865** | **$131.83** |
+| **Subtotal Variable** | **₹11,671** | **$129.68** |
 | | | |
-| **TOTAL** | **₹20,224** | **$224.71** |
-| **Per patient** | **₹2,022** | **$22.47** |
+| **TOTAL** | **₹20,030** | **$222.56** |
+| **Per patient** | **₹2,003** | **$22.26** |
 
 | Revenue (blended avg ₹1,575/patient) | ₹15,750 | $175.00 |
 |---------------------------------------|:--------:|:-------:|
-| **Net Loss** | **-₹4,474** | **-$49.71** |
+| **Net Loss** | **-₹4,280** | **-$47.56** |
 
 ---
 
@@ -241,20 +242,20 @@ These costs are incurred for every AI voice call made.
 | Category | Monthly Cost (₹) | Monthly Cost ($) |
 |----------|:-----------------:|:----------------:|
 | **Fixed Infrastructure** | **₹8,359** | **$92.88** |
-| **Variable (50 patients, ~2,250 calls)** | | |
-| ElevenLabs voice calls | ₹50,625 | $562.50 |
-| Twilio voice | ₹7,245 | $80.50 |
+| **Variable (50 patients, ~2,250 calls, 4,500 min)** | | |
+| ElevenLabs voice calls | ₹40,500 | $450.00 |
+| Twilio voice (destination-based) | ₹16,402 | $182.25 |
 | WhatsApp notifications (~2,550 msgs) | ₹1,454 | $16.16 |
-| **Subtotal Variable** | **₹59,324** | **$659.16** |
+| **Subtotal Variable** | **₹58,356** | **$648.41** |
 | | | |
-| **TOTAL** | **₹67,683** | **$752.03** |
-| **Per patient** | **₹1,354** | **$15.04** |
+| **TOTAL** | **₹66,715** | **$741.29** |
+| **Per patient** | **₹1,334** | **$14.83** |
 
 | Revenue (blended avg ₹1,575/patient) | ₹78,750 | $875.00 |
 |---------------------------------------|:--------:|:-------:|
-| **Net Profit** | **+₹11,067** | **+$122.97** |
+| **Net Profit** | **+₹12,035** | **+$133.71** |
 
-> **Profitable at 50 patients!** With $15/$20 USD pricing, the blended revenue of ₹1,575/patient covers both variable costs and fixed infrastructure. Break-even is at ~22 patients.
+> **Profitable at 50 patients with 2-minute calls!** Break-even drops to ~34 patients. This demonstrates the dramatic impact of call duration optimization — a 20% reduction (2.5→2 min) moves break-even from ~51 to ~34 patients.
 
 ---
 
@@ -271,20 +272,20 @@ These costs are incurred for every AI voice call made.
 | Domain | ₹100 | $1.11 |
 | **Subtotal Fixed** | **₹39,895** | **$443.28** |
 | | | |
-| **Variable (100 patients, ~4,500 calls)** | | |
-| ElevenLabs voice calls | ₹1,01,250 | $1,125.00 |
-| Twilio voice | ₹14,490 | $161.00 |
+| **Variable (100 patients, ~4,500 calls, 9,000 min)** | | |
+| ElevenLabs voice calls | ₹81,000 | $900.00 |
+| Twilio voice (destination-based) | ₹32,805 | $364.50 |
 | WhatsApp notifications (~5,100 msgs) | ₹2,907 | $32.30 |
-| **Subtotal Variable** | **₹1,18,647** | **$1,318.30** |
+| **Subtotal Variable** | **₹116,712** | **$1,296.80** |
 | | | |
-| **TOTAL** | **₹1,58,542** | **$1,761.58** |
-| **Per patient** | **₹1,585** | **$17.62** |
+| **TOTAL** | **₹156,607** | **$1,740.08** |
+| **Per patient** | **₹1,566** | **$17.40** |
 
 | Revenue (blended avg ₹1,575/patient) | ₹1,57,500 | $1,750.00 |
 |---------------------------------------|:---------:|:---------:|
-| **Net Loss** | **-₹1,042** | **-$11.58** |
+| **Net Profit** | **+₹893** | **+$9.92** |
 
-> **Approximately break-even at 100 patients** with the Scale plan. The higher Scale subscription (₹29,040 vs ₹1,936) is offset by the included 2M credits.
+> **Profitable at 100 patients with 2-minute calls!** ElevenLabs Scale plan becomes viable. The 2-minute optimization reduces costs by ~₹28K/month vs 2.5-minute scenario. This is the most impactful single optimization — more valuable than ElevenLabs plan upgrades.
 
 ---
 
@@ -301,18 +302,18 @@ These costs are incurred for every AI voice call made.
 | Domain | ₹100 | $1.11 |
 | **Subtotal Fixed** | **₹1,41,010** | **$1,566.78** |
 | | | |
-| **Variable (500 patients, ~22,500 calls)** | | |
-| ElevenLabs voice (at Business rate $0.08/min) | ₹4,05,000 | $4,500.00 |
-| Twilio voice | ₹72,450 | $805.00 |
+| **Variable (500 patients, ~22,500 calls, 45,000 min)** | | |
+| ElevenLabs voice (Business $0.08/min × 2 min) | ₹3,24,000 | $3,600.00 |
+| Twilio voice (destination-based) | ₹1,63,975 | $1,821.95 |
 | WhatsApp notifications (~25,500 msgs) | ₹14,535 | $161.50 |
-| **Subtotal Variable** | **₹4,91,985** | **$5,466.50** |
+| **Subtotal Variable** | **₹5,02,510** | **$5,583.45** |
 | | | |
-| **TOTAL** | **₹6,32,995** | **$7,033.28** |
-| **Per patient** | **₹1,266** | **$14.07** |
+| **TOTAL** | **₹6,43,520** | **$7,150.23** |
+| **Per patient** | **₹1,287** | **$14.30** |
 
 | Revenue (blended avg ₹1,575/patient) | ₹7,87,500 | $8,750.00 |
 |---------------------------------------|:---------:|:---------:|
-| **Net Profit** | **+₹1,54,505** | **+$1,716.72** |
+| **Net Profit** | **+₹1,43,980** | **+$1,599.77** |
 
 ---
 
@@ -329,93 +330,97 @@ These costs are incurred for every AI voice call made.
 | Domain | ₹100 | $1.11 |
 | **Subtotal Fixed** | **₹2,02,085** | **$2,245.61** |
 | | | |
-| **Variable (1,000 patients, ~45,000 calls)** | | |
-| ElevenLabs voice (Enterprise ~$0.06/min) | ₹6,07,500 | $6,750.00 |
-| Twilio voice | ₹1,44,900 | $1,610.00 |
+| **Variable (1,000 patients, ~45,000 calls, 90,000 min)** | | |
+| ElevenLabs voice (Enterprise $0.06/min × 2 min) | ₹4,86,000 | $5,400.00 |
+| Twilio voice (destination-based) | ₹3,27,950 | $3,644.44 |
 | WhatsApp notifications (~51,000 msgs) | ₹29,070 | $323.00 |
-| **Subtotal Variable** | **₹7,81,470** | **$8,683.00** |
+| **Subtotal Variable** | **₹8,43,020** | **$9,367.44** |
 | | | |
-| **TOTAL** | **₹9,83,555** | **$10,928.61** |
-| **Per patient** | **₹984** | **$10.93** |
+| **TOTAL** | **₹10,45,105** | **$11,613.05** |
+| **Per patient** | **₹1,045** | **$11.61** |
 
 | Revenue (blended avg ₹1,575/patient) | ₹15,75,000 | $17,500.00 |
 |---------------------------------------|:----------:|:----------:|
-| **Net Profit** | **+₹5,91,445** | **+$6,571.39** |
+| **Net Profit** | **+₹7,29,895** | **+$8,106.95** |
 
-> **Strongly profitable at 1,000 patients.** Net margin of 38% with Enterprise pricing. Per-patient cost drops below ₹1,000.
+> **Highly profitable at 1,000 patients with 2-minute calls and Enterprise pricing.** 2-minute optimization delivers ₹3.6M additional annual profit vs 2.5-minute scenario. Per-patient cost drops to ₹1,045 (vs ₹1,249 at 2.5 min).
 
 ---
 
-### 4.2 Summary — Monthly Costs at Scale
+### 4.2 Summary — Monthly Costs at Scale (ElevenLabs Stack, 2-minute calls)
 
 | Patients | Monthly Cost (₹) | Monthly Revenue (₹) | Profit/Loss (₹) | Per-Patient Cost |
 |:--------:|:-----------------:|:--------------------:|:----------------:|:----------------:|
-| 10 | ₹20,224 | ₹15,750 | **-₹4,474** | ₹2,022 |
-| 50 | ₹67,683 | ₹78,750 | **+₹11,067** | ₹1,354 |
-| 100 | ₹1,58,542 | ₹1,57,500 | **-₹1,042** | ₹1,585 |
-| 500 | ₹6,32,995 | ₹7,87,500 | **+₹1,54,505** | ₹1,266 |
-| 1,000 | ₹9,83,555 | ₹15,75,000 | **+₹5,91,445** | ₹984 |
-| 2,500 | ₹22,00,000 (est.) | ₹39,37,500 | **+₹17,37,500** | ₹880 |
+| 10 | ₹20,030 | ₹15,750 | **-₹4,280** | ₹2,003 |
+| 50 | ₹66,715 | ₹78,750 | **+₹12,035** | ₹1,334 |
+| 100 | ₹1,56,607 | ₹1,57,500 | **+₹893** | ₹1,566 |
+| 500 | ₹6,43,520 | ₹7,87,500 | **+₹1,43,980** | ₹1,287 |
+| 1,000 | ₹10,45,105 | ₹15,75,000 | **+₹7,29,895** | ₹1,045 |
+| 2,500 (est.) | ₹23,50,000 | ₹39,37,500 | **+₹15,87,500** | ₹940 |
+
+> **With 2-minute calls, ElevenLabs breaks even at ~34 patients** (vs ~50 at 2.5 min and ~500 with 2.5-min + destination-based Twilio). This shows call duration optimization is **more impactful than plan upgrades**. The 20% duration reduction delivers more profit improvement than upgrading from Creator to Scale plan.
 
 ---
 
 ## 5. Revenue vs Cost — Profitability by Plan
 
-### 5.1 Per-Patient Monthly P&L (at current Creator plan rates)
+### 5.1 Per-Patient Monthly P&L (Creator plan, 2-minute calls)
 
 | | Suraksha ($15) | Sampurna ($20) |
 |---|:---:|:---:|
 | Revenue | ₹1,350 | ₹1,800 |
-| ElevenLabs | -₹675 | -₹1,350 |
-| Twilio Voice | -₹97 | -₹194 |
+| ElevenLabs ($0.10/min × 2 min) | -₹540 | -₹1,080 |
+| Twilio Voice (destination-based) | -₹219 | -₹437 |
 | WhatsApp | -₹22 | -₹41 |
-| **Variable margin** | **+₹556** | **+₹215** |
+| **Variable margin** | **+₹569** | **+₹241** |
 | Fixed cost share (50 users) | -₹167 | -₹167 |
-| **Net margin** | **+₹389** | **+₹48** |
+| **Net margin** | **+₹402** | **+₹74** |
 
-### 5.2 Per-Patient Monthly P&L (with Enterprise ElevenLabs at $0.06/min)
+> **Both plans are profitable** with 2-minute calls. Sampurna margin improves from -8% to +13%. This demonstrates that call duration is **the primary profitability lever** — more impactful than pricing changes or plan selection.
 
-| | Suraksha ($15) | Sampurna ($20) |
-|---|:---:|:---:|
-| Revenue | ₹1,350 | ₹1,800 |
-| ElevenLabs | -₹405 | -₹810 |
-| Twilio Voice | -₹97 | -₹194 |
-| WhatsApp | -₹22 | -₹41 |
-| **Variable margin** | **+₹826** | **+₹755** |
-| Fixed cost share (500 users) | -₹28 | -₹28 |
-| **Net margin** | **+₹798** | **+₹727** |
-
-> Both plans have strong margins with Enterprise pricing. Weighted average net margin: ~₹763/patient/month.
-
-### 5.3 Per-Patient Monthly P&L (with Indian SIP trunk + Enterprise ElevenLabs)
+### 5.2 Per-Patient Monthly P&L (Enterprise ElevenLabs at $0.06/min × 2 min)
 
 | | Suraksha ($15) | Sampurna ($20) |
 |---|:---:|:---:|
 | Revenue | ₹1,350 | ₹1,800 |
-| ElevenLabs (Enterprise) | -₹405 | -₹810 |
-| Indian SIP (₹0.40/min via Knowlarity) | -₹30 | -₹60 |
+| ElevenLabs ($0.06/min × 2 min) | -₹324 | -₹648 |
+| Twilio Voice (destination-based) | -₹219 | -₹437 |
 | WhatsApp | -₹22 | -₹41 |
-| **Variable margin** | **+₹893** | **+₹889** |
+| **Variable margin** | **+₹785** | **+₹674** |
 | Fixed cost share (500 users) | -₹28 | -₹28 |
-| **Net margin** | **+₹865** | **+₹861** |
+| **Net margin** | **+₹757** | **+₹646** |
 
-> **With Enterprise ElevenLabs + Indian SIP trunk, both plans have ~₹860+ margins.** Nearly identical profitability across both plans.
+> Enterprise ElevenLabs with 2-minute calls delivers very strong margins. Weighted average net margin: ~₹701/patient/month (vs ~₹498 at 2.5 min Enterprise).
 
-### 5.4 Per-Patient Monthly P&L (Enterprise + SIP + 90-second calls)
+### 5.3 Per-Patient Monthly P&L (Enterprise ElevenLabs + Knowlarity SIP, 2 min calls)
 
-The best-case scenario with all optimizations applied:
+| | Suraksha ($15) | Sampurna ($20) |
+|---|:---:|:---:|
+| Revenue | ₹1,350 | ₹1,800 |
+| ElevenLabs ($0.06/min × 2 min) | -₹324 | -₹648 |
+| Knowlarity SIP (₹0.40/min × 2 min) | -₹240 | -₹480 |
+| WhatsApp | -₹22 | -₹41 |
+| **Variable margin** | **+₹764** | **+₹631** |
+| Fixed cost share (500 users) | -₹28 | -₹28 |
+| **Net margin** | **+₹736** | **+₹603** |
+
+> **Enterprise + Knowlarity + 2-minute calls:** Weighted average net margin ~₹669/patient/month. This is the "full ElevenLabs optimization path" — high margins without technology stack changes.
+
+### 5.4 Per-Patient Monthly P&L (Enterprise + SIP + 90-second calls — Best Case)
+
+Future optimization scenario: reduce calls from current 2 minutes to 90 seconds:
 
 | | Suraksha ($15) | Sampurna ($20) |
 |---|:---:|:---:|
 | Revenue | ₹1,350 | ₹1,800 |
 | ElevenLabs ($0.06/min × 1.5 min) | -₹243 | -₹486 |
-| Indian SIP (₹0.40/min × 1.5 min) | -₹18 | -₹36 |
+| Knowlarity SIP (₹0.40/min × 1.5 min) | -₹180 | -₹360 |
 | WhatsApp | -₹22 | -₹41 |
-| **Variable margin** | **+₹1,067** | **+₹1,237** |
+| **Variable margin** | **+₹905** | **+₹913** |
 | Fixed cost share (1000 users) | -₹20 | -₹20 |
-| **Net margin** | **+₹1,047** | **+₹1,217** |
+| **Net margin** | **+₹885** | **+₹893** |
 
-> **With all optimizations, both plans are highly profitable.** Weighted average net margin: ~₹1,132/patient/month (~72% margin).
+> **With 90-second calls, both plans converge to ~₹890/patient/month margins** (~67% margin). This requires: (1) Enterprise pricing, (2) Indian SIP trunk, (3) further 25% call duration reduction, (4) 1,000+ user scale. **Current 2-minute baseline is already near 70% margin** (at 500+ scale with Enterprise pricing). Sarvam stack can achieve similar margins at 50-100 patient scale (see Section 10).
 
 ---
 
@@ -614,29 +619,29 @@ The system supports switchable voice stacks via the `VOICE_STACK` environment va
 
 ### 10.2 Per-Call Variable Cost Comparison (2.5 min avg)
 
-#### ElevenLabs Stack — ₹26.34/call
+#### ElevenLabs Stack — ₹25.91/call (2-minute calls)
 
 | Component | Cost/call (₹) | % of Total |
 |---|:---:|:---:|
-| ElevenLabs Conversational AI | ₹22.50 | 85.5% |
-| Twilio Voice (US→India) | ₹3.22 | 12.2% |
+| ElevenLabs Conversational AI ($0.10/min × 2 min) | ₹18.00 | 69.4% |
+| Twilio Voice (US→India, destination-based) | ₹7.29 | 28.1% |
 | WhatsApp post-call + alerts | ₹0.62 | 2.4% |
-| **Total** | **₹26.34** | **100%** |
+| **Total** | **₹25.91** | **100%** |
 
-#### Sarvam Stack (LiveKit Cloud) — ₹11.31/call
+#### Sarvam Stack (LiveKit Cloud) — ₹9.17/call (2-minute calls)
 
 | Component | Rate | Cost/call (₹) | % of Total |
 |---|---|:---:|:---:|
-| Sarvam STT (saaras:v3) | ₹0.50/min × 2.5 min | ₹1.25 | 11.0% |
-| Sarvam TTS (bulbul:v3) | ₹30/10K chars × ~1,000 chars | ₹3.00 | 26.5% |
-| Gemini 1.5 Flash | ~12K input + 3K output tokens | ₹0.11 | 1.0% |
-| LiveKit agent session | $0.01/min × 2.5 min | ₹2.25 | 19.9% |
-| LiveKit SIP (3rd-party) | $0.004/min × 2.5 min | ₹0.90 | 8.0% |
-| Exotel telephony | ₹1.27/min × 2.5 min | ₹3.18 | 28.1% |
-| WhatsApp | same | ₹0.62 | 5.5% |
-| **Total** | | **₹11.31** | **100%** |
+| Sarvam STT (saaras:v3) | ₹0.50/min × 2 min | ₹1.00 | 10.9% |
+| Sarvam TTS (bulbul:v3) | ₹30/10K chars × ~800 chars | ₹2.40 | 26.2% |
+| Gemini 1.5 Flash | ~9.6K input + 2.4K output tokens | ₹0.09 | 1.0% |
+| LiveKit agent session | $0.01/min × 2 min | ₹1.80 | 19.6% |
+| LiveKit SIP (3rd-party) | $0.004/min × 2 min | ₹0.72 | 7.9% |
+| Exotel telephony | ₹1.27/min × 2 min | ₹2.54 | 27.7% |
+| WhatsApp | same | ₹0.62 | 6.8% |
+| **Total** | | **₹9.17** | **100%** |
 
-> **Per-call savings: ₹15.03 (57%).** ElevenLabs bundles STT+TTS+LLM+hosting into one ₹22.50 charge. Sarvam unbundles these — STT (₹1.25) + TTS (₹3.00) + LLM (₹0.11) + LiveKit (₹3.15) = **₹7.51** for the same functions, a **67% reduction** on voice AI alone.
+> **Per-call savings: ₹16.74 (65%).** Sarvam now costs ₹9.17/call vs ElevenLabs' ₹25.91/call. The Sarvam architecture (unbundled STT+TTS+LLM+telecom) costs ~35% of ElevenLabs' bundled solution. This savings advantage is **even more dramatic with 2-minute calls** because fixed components (LiveKit hosting, Exotel SIP) distribute over the same minutes as 2.5-min calls.
 
 ### 10.3 Fixed Monthly Costs Comparison
 
@@ -673,75 +678,75 @@ Assumptions: Same as Section 4 (50/50 plan mix, 2.5 min avg, 80% answer rate, ~4
 
 LiveKit Ship plan includes 5,000 agent minutes and 5,000 SIP minutes. Calls within the included allowance cost ₹8.16/call (no LiveKit per-minute charges). Calls exceeding the allowance cost ₹11.31/call.
 
-#### 10 Patients (~450 calls/month, 1,125 agent min — within LiveKit included)
+#### 10 Patients (~450 calls/month, 900 agent min — all within LiveKit included)
 
 | | ElevenLabs | Sarvam | Delta |
 |---|:---:|:---:|:---:|
 | Fixed | ₹8,359 | ₹15,533 | +₹7,174 |
-| Variable (450 calls) | ₹11,853 | ₹3,672 | -₹8,181 |
-| **Total** | **₹20,212** | **₹19,205** | **-₹1,007 (5%)** |
+| Variable (450 calls @ ₹25.91 / ₹9.17) | ₹11,659 | ₹4,127 | -₹7,532 |
+| **Total** | **₹20,018** | **₹19,660** | **-₹358 (2%)** |
 | Revenue | ₹15,750 | ₹15,750 | |
-| **P/L** | **-₹4,462** | **-₹3,455** | **+₹1,007 better** |
+| **P/L** | **-₹4,268** | **-₹3,910** | **+₹358 better** |
 
-#### 50 Patients (~2,250 calls/month, 5,625 agent min — 625 min overage)
+#### 50 Patients (~2,250 calls/month, 4,500 agent min — all within LiveKit included)
 
 | | ElevenLabs | Sarvam | Delta |
 |---|:---:|:---:|:---:|
 | Fixed | ₹8,359 | ₹15,533 | +₹7,174 |
-| Variable | ₹59,265 | ₹19,148 | -₹40,117 |
-| **Total** | **₹67,624** | **₹34,681** | **-₹32,943 (49%)** |
+| Variable | ₹58,356 | ₹20,633 | -₹37,723 |
+| **Total** | **₹66,715** | **₹36,166** | **-₹30,549 (46%)** |
 | Revenue | ₹78,750 | ₹78,750 | |
-| **P/L** | **+₹11,126** | **+₹44,069** | **+₹32,943 better** |
+| **P/L** | **+₹12,035** | **+₹42,584** | **+₹30,549 better** |
 
-#### 100 Patients (~4,500 calls/month, 11,250 agent min — 6,250 min overage)
+#### 100 Patients (~4,500 calls/month, 9,000 agent min — 4,000 min overage)
 
-ElevenLabs requires Scale plan upgrade (₹29,040). Sarvam stays on Ship + overages (₹7,875).
+ElevenLabs requires Scale plan upgrade (₹29,040). Sarvam stays on Ship + overages.
 
 | | ElevenLabs | Sarvam | Delta |
 |---|:---:|:---:|:---:|
 | Fixed | ₹39,895 | ₹15,533 | -₹24,362 |
-| Variable | ₹1,18,647 | ₹44,595 | -₹74,052 |
-| **Total** | **₹1,58,542** | **₹60,128** | **-₹98,414 (62%)** |
+| Variable | ₹116,712 | ₹86,040 | -₹30,672 |
+| **Total** | **₹1,56,607** | **₹1,01,573** | **-₹55,034 (35%)** |
 | Revenue | ₹1,57,500 | ₹1,57,500 | |
-| **P/L** | **-₹1,042** | **+₹97,372** | **+₹98,414 better** |
+| **P/L** | **+₹893** | **+₹55,927** | **+₹55,034 better** |
 
-> **The most dramatic difference.** At 100 patients, ElevenLabs is break-even. Sarvam generates **₹97K/month profit**.
+> **Major inflection point.** At 100 patients with 2-minute calls: ElevenLabs barely breaks even (+₹893), while Sarvam generates **₹55.9K/month profit** — a **₹55K swing**. This is where Sarvam's linear cost scaling demonstrates clear advantage over ElevenLabs' subscription cliffs (Creator→Scale→Business).
 
-#### 500 Patients (~22,500 calls/month, 56,250 agent min)
+#### 500 Patients (~22,500 calls/month, 45,000 agent min)
 
-LiveKit Scale plan ($500/mo = ₹45,000) with 50,000 included min becomes optimal. Ship + overages at this scale would cost ₹69,075 vs Scale at ₹52,313.
+LiveKit Scale plan ($500/mo = ₹45,000) becomes optimal at this scale. Ship + overages would require ₹36K overage charges.
 
 | | ElevenLabs | Sarvam | Delta |
 |---|:---:|:---:|:---:|
-| Fixed | ₹1,41,010 | ₹76,660 | -₹64,350 |
-| Variable | ₹4,91,985 | ₹1,90,925 | -₹3,01,060 |
-| **Total** | **₹6,32,995** | **₹2,67,585** | **-₹3,65,410 (58%)** |
+| Fixed | ₹1,41,010 | ₹63,833 | -₹77,177 |
+| Variable | ₹5,02,510 | ₹2,42,325 | -₹2,60,185 |
+| **Total** | **₹6,43,520** | **₹3,06,158** | **-₹3,37,362 (52%)** |
 | Revenue | ₹7,87,500 | ₹7,87,500 | |
-| **P/L** | **+₹1,54,505** | **+₹5,19,915** | **+₹3,65,410 better** |
+| **P/L** | **+₹1,43,980** | **+₹4,81,342** | **+₹3,37,362 better** |
 
-*Fixed includes: LiveKit Scale ₹45,000, Python worker ₹4,400, Cloud Run 2× instances ₹17,730, Atlas M10 ₹5,130, Exotel ₹2,500, Vercel ₹1,800, Domain ₹100.*
+*Fixed includes: LiveKit Scale ₹45,000, Python worker ₹2,200, Cloud Run 2× instances ₹8,865, Atlas M10 ₹5,130, Exotel ₹2,500, Vercel ₹1,800, Domain ₹100.*
 
-#### 1,000 Patients (~45,000 calls/month, 112,500 agent min)
+#### 1,000 Patients (~45,000 calls/month, 90,000 agent min)
 
 | | ElevenLabs | Sarvam | Delta |
 |---|:---:|:---:|:---:|
-| Fixed | ₹2,02,085 | ₹98,295 | -₹1,03,790 |
-| Variable | ₹7,81,470 | ₹4,40,450 | -₹3,41,020 |
-| **Total** | **₹9,83,555** | **₹5,38,745** | **-₹4,44,810 (45%)** |
+| Fixed | ₹2,02,085 | ₹1,09,795 | -₹92,290 |
+| Variable | ₹8,43,020 | ₹4,34,625 | -₹4,08,395 |
+| **Total** | **₹10,45,105** | **₹5,44,420** | **-₹5,00,685 (48%)** |
 | Revenue | ₹15,75,000 | ₹15,75,000 | |
-| **P/L** | **+₹5,91,445** | **+₹10,36,255** | **+₹4,44,810 better** |
+| **P/L** | **+₹7,29,895** | **+₹10,30,580** | **+₹5,00,685 better** |
 
-*Fixed includes: LiveKit Scale ₹45,000 + overages, Python worker 2× ₹8,800, Cloud Run 3× ₹26,595, Atlas M20 ₹13,500, Exotel ₹2,500, Vercel ₹1,800, Domain ₹100.*
+*Fixed includes: LiveKit Scale ₹45,000 + ₹10,800 overage, Python worker ₹4,400, Cloud Run 3× ₹26,595, Atlas M20 ₹13,500, Exotel ₹2,500, Vercel ₹1,800, Domain ₹100.*
 
-### 10.5 Summary — Monthly Costs at Scale (Both Stacks)
+### 10.5 Summary — Monthly Costs at Scale (Both Stacks, 2-minute calls)
 
 | Patients | ElevenLabs Cost | Sarvam Cost | Savings | EL Profit | Sarvam Profit |
 |:---:|:---:|:---:|:---:|:---:|:---:|
-| 10 | ₹20,212 | ₹19,205 | ₹1,007 (5%) | -₹4,462 | -₹3,455 |
-| 50 | ₹67,624 | ₹34,681 | ₹32,943 (49%) | +₹11,126 | +₹44,069 |
-| **100** | **₹1,58,542** | **₹60,128** | **₹98,414 (62%)** | **-₹1,042** | **+₹97,372** |
-| 500 | ₹6,32,995 | ₹2,67,585 | ₹3,65,410 (58%) | +₹1,54,505 | +₹5,19,915 |
-| 1,000 | ₹9,83,555 | ₹5,38,745 | ₹4,44,810 (45%) | +₹5,91,445 | +₹10,36,255 |
+| 10 | ₹20,018 | ₹19,660 | ₹358 (2%) | -₹4,268 | -₹3,910 |
+| 50 | ₹66,715 | ₹36,166 | ₹30,549 (46%) | +₹12,035 | +₹42,584 |
+| **100** | **₹1,56,607** | **₹1,01,573** | **₹55,034 (35%)** | **+₹893** | **+₹55,927** |
+| 500 | ₹6,43,520 | ₹3,06,158 | ₹3,37,362 (52%) | +₹1,43,980 | +₹4,81,342 |
+| 1,000 | ₹10,45,105 | ₹5,44,420 | ₹5,00,685 (48%) | +₹7,29,895 | +₹10,30,580 |
 
 ### 10.6 Per-Patient Unit Economics (Sarvam Stack)
 
@@ -889,16 +894,18 @@ Monthly Sarvam spend (STT+TTS) per call: ~₹4.25. Pro plan is worthwhile at ~�
 - Scale: 2,000,000 credits (~4,000 min)
 - Business: 11,000,000 credits (~22,000 min)
 
-### Twilio
+### Twilio (Verified Feb 2026)
 
 | Item                           | Rate                                          |
 | ------------------------------ | --------------------------------------------- |
 | US local number rental         | ₹90/month ($1.00)                             |
-| US → India mobile (voice)      | ₹1.29/min ($0.0143)                           |
-| US → India landline (voice)    | ₹0.69/min ($0.0077)                           |
+| US → India mobile (voice) **   | ₹3.65/min ($0.0405) — destination-based       |
+| US → India landline (voice) ** | ₹4.47/min ($0.0497) — destination-based       |
 | WhatsApp utility (India)       | ₹0.57/msg total (₹0.115 Meta + ₹0.45 Twilio)  |
 | WhatsApp marketing (India)     | ₹1.23/msg total (₹0.7846 Meta + ₹0.45 Twilio) |
 | WhatsApp service (24hr window) | ₹0.45/msg (Twilio only, Meta fee waived)      |
+
+> ** Twilio uses destination-based pricing. India mobile ($0.0405/min) and landline ($0.0497/min) rates verified Feb 2026. Calculations assume 70% mobile, 30% landline blend, or use mobile rate for worst-case.
 
 ### Google Cloud Run (Tier 1: us-central1, asia-south1)
 
@@ -1007,6 +1014,8 @@ Free tier available. Context caching at 10% of base input price.
 | LiveKit Ship included minutes | 5,000 agent + 5,000 SIP | LiveKit pricing page |
 | Exotel SIP base plan | ₹2,500/month | Estimate — verify with Exotel sales |
 | Python worker Cloud Run | 0.5 vCPU, 256 MiB, always-on | Minimum for LiveKit agent worker |
+| Twilio voice to India | $0.0405/min (mobile), $0.0497/min (landline) | Destination-based pricing, verified Feb 2026 |
+| Gemini 1.5 Flash pricing | $0.075 input, $0.30 output per 1M tokens | Verified Feb 2026, from ai.google.dev |
 
 ---
 
