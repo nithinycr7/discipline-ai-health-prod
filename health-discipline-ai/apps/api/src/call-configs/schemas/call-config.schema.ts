@@ -8,11 +8,17 @@ export class CallConfig {
   @Prop({ type: Types.ObjectId, ref: 'Patient', required: true, unique: true })
   patientId: Types.ObjectId;
 
-  @Prop({ required: true, default: '08:30' })
-  morningCallTime: string;
+  @Prop()
+  morningCallTime?: string;
+
+  @Prop()
+  afternoonCallTime?: string;
 
   @Prop()
   eveningCallTime?: string;
+
+  @Prop()
+  nightCallTime?: string;
 
   @Prop({ required: true, default: 'Asia/Kolkata' })
   timezone: string;

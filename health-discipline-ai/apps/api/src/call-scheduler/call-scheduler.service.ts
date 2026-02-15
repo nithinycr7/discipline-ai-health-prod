@@ -23,29 +23,38 @@ export class CallSchedulerService {
       const now = DateTime.now();
       const configs = await this.callConfigsService.getActiveConfigs();
 
+      const SLOT_CONFIG = [
+        { field: 'morningCallTime', timing: 'morning' },
+        { field: 'afternoonCallTime', timing: 'afternoon' },
+        { field: 'eveningCallTime', timing: 'evening' },
+        { field: 'nightCallTime', timing: 'night' },
+      ];
+
       const dueCalls = [];
 
       for (const config of configs) {
         const patientTime = now.setZone(config.timezone);
         const currentTime = `${String(patientTime.hour).padStart(2, '0')}:${String(patientTime.minute).padStart(2, '0')}`;
 
-        const isMorningDue = config.morningCallTime === currentTime;
-        const isEveningDue = config.eveningCallTime === currentTime;
+        for (const slot of SLOT_CONFIG) {
+          const slotTime = config[slot.field];
+          if (!slotTime || slotTime === 'pending') continue;
 
-        if (isMorningDue || isEveningDue) {
-          try {
-            const patient = await this.patientsService.findById(config.patientId.toString());
+          if (slotTime === currentTime) {
+            try {
+              const patient = await this.patientsService.findById(config.patientId.toString());
 
-            if (patient.isPaused) continue;
-            if (patient.phoneStatus === 'invalid') continue;
+              if (patient.isPaused) continue;
+              if (patient.phoneStatus === 'invalid') continue;
 
-            dueCalls.push({
-              config,
-              patient,
-              timing: isMorningDue ? 'morning' : 'evening',
-            });
-          } catch (err) {
-            this.logger.warn(`Patient ${config.patientId} not found for call config`);
+              dueCalls.push({
+                config,
+                patient,
+                timing: slot.timing,
+              });
+            } catch (err) {
+              this.logger.warn(`Patient ${config.patientId} not found for call config`);
+            }
           }
         }
       }

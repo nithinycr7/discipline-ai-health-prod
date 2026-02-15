@@ -6,6 +6,8 @@ import { MedicineCatalogService } from './medicine-catalog.service';
 import { Medicine, MedicineSchema } from './schemas/medicine.schema';
 import { MedicineCatalog, MedicineCatalogSchema } from './schemas/medicine-catalog.schema';
 import { PatientsModule } from '../patients/patients.module';
+import { CallConfigsModule } from '../call-configs/call-configs.module';
+import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 
 @Module({
   imports: [
@@ -14,6 +16,8 @@ import { PatientsModule } from '../patients/patients.module';
       { name: MedicineCatalog.name, schema: MedicineCatalogSchema },
     ]),
     forwardRef(() => PatientsModule),
+    CallConfigsModule,
+    SubscriptionsModule,
   ],
   controllers: [MedicinesController],
   providers: [MedicinesService, MedicineCatalogService],
