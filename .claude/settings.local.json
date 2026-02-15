@@ -1,0 +1,28 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx tsc:*)",
+      "Bash(npx nest build:*)",
+      "Bash(npx next build)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTkwODhmYjg5YTVlMjExZWViZTAxZTMiLCJyb2xlIjoicGF5ZXIiLCJpYXQiOjE3NzEwNzk5MzIsImV4cCI6MTc3MTA4MDgzMn0.CcM0viNZw3qVk09XM8OIykGaiiMy4zJIUS3WU3feqFE\")",
+      "Bash(curl:*)",
+      "Bash(npx nest start --watch)",
+      "Bash(start:*)",
+      "WebFetch(domain:elevenlabs.io)",
+      "Bash(npx nest start:*)",
+      "Bash(python -m json.tool:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTkwYTExMTA0NjA3YzY5OTVkNzhiNDMiLCJyb2xlIjoicGF5ZXIiLCJpYXQiOjE3NzEwODYwOTcsImV4cCI6MTc3MTA4Njk5N30.TCFWaZHlgYWXhI7wcO8SipkTkzpbis_Za50x7Akm_y0\")",
+      "Bash(PATIENT_ID=\"6990a18304607c6995d78b49\")",
+      "Bash(python:*)",
+      "Bash(cd:*)",
+      "WebFetch(domain:azure.microsoft.com)",
+      "WebFetch(domain:vercel.com)",
+      "WebFetch(domain:azure-finops-essentials.mindbyte.nl)",
+      "WebFetch(domain:help.elevenlabs.io)",
+      "WebFetch(domain:flexprice.io)",
+      "WebFetch(domain:mkdev.me)",
+      "WebFetch(domain:docs.cloud.google.com)",
+      "WebFetch(domain:raw.githubusercontent.com)"
+    ]
+  }
+}
