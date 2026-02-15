@@ -22,7 +22,14 @@
       "WebFetch(domain:flexprice.io)",
       "WebFetch(domain:mkdev.me)",
       "WebFetch(domain:docs.cloud.google.com)",
-      "WebFetch(domain:raw.githubusercontent.com)"
+      "WebFetch(domain:raw.githubusercontent.com)",
+      "WebFetch(domain:www.pump.co)",
+      "Bash(gh repo view:*)",
+      "Bash(git ls-remote:*)",
+      "Bash(git remote set-url:*)",
+      "Bash(git ls-tree:*)",
+      "Bash(git rm:*)",
+      "Bash(git add:*)"
     ]
   }
 }

@@ -1,0 +1,10 @@
+import { Module } from '@nestjs/common';
+import { TwilioService } from './twilio.service';
+import { TwilioWebhookController } from './twilio-webhook.controller';
+
+@Module({
+  controllers: [TwilioWebhookController],
+  providers: [TwilioService],
+  exports: [TwilioService],
+})
+export class TwilioModule {}
