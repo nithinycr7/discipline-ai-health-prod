@@ -47,12 +47,12 @@ Health Discipline AI is an AI-powered medication adherence monitoring platform t
 | **Backend** | NestJS (TypeScript) | REST API, business logic, scheduling |
 | **Database** | MongoDB Atlas (Mongoose ODM) | All persistent data |
 | **AI Voice** | ElevenLabs Conversational AI | Autonomous voice agent for patient calls |
-| **TTS** | ElevenLabs Multilingual v2 | Hindi text-to-speech for voice generation |
+| **TTS** | ElevenLabs v3 Conversational (`eleven_v3_conversational`) | Multilingual text-to-speech for voice generation |
+| **LLM (Agent)** | Google Gemini 1.5 Flash (`gemini-1.5-flash`) | Fast, low-cost LLM for voice conversations |
 | **Telephony** | Twilio | Outbound phone calls, WhatsApp messaging |
 | **Build System** | Turborepo | Monorepo management |
 | **Styling** | Tailwind CSS + Shadcn UI | Component library |
-| **State Management** | TanStack Query | Client-side caching and data fetching |
-| **Auth** | JWT (httpOnly cookies) | Access + refresh token authentication |
+| **Auth** | JWT (localStorage) | Access + refresh token authentication |
 | **Scheduling** | @nestjs/schedule (Cron) | Minute-by-minute call scheduler |
 | **Timezone** | Luxon | Patient timezone conversions |
 | **Payments** | Razorpay (India) + Stripe (International) | Subscription billing |
@@ -225,15 +225,17 @@ health-discipline-ai/
        │                                     │ duration     │
        │                                     └──────────────┘
        │
-       │         1:1     ┌──────────────┐
-       └────────────────>│ call_configs │
-       │                 │              │
-       │                 │ morningTime  │
-       │                 │ eveningTime  │
-       │                 │ timezone     │
-       │                 │ retryEnabled │
-       │                 │ maxRetries   │
-       │                 └──────────────┘
+       │         1:1     ┌────────────────┐
+       └────────────────>│  call_configs  │
+       │                 │                │
+       │                 │ morningTime    │
+       │                 │ afternoonTime  │
+       │                 │ eveningTime    │
+       │                 │ nightTime      │
+       │                 │ timezone       │
+       │                 │ retryEnabled   │
+       │                 │ maxRetries     │
+       │                 └────────────────┘
        │
        │         1:N     ┌───────────────┐
        └────────────────>│ subscriptions │
@@ -319,12 +321,19 @@ health-discipline-ai/
 | Field | Type | Description |
 |-------|------|-------------|
 | patientId | ObjectId → Patient (unique) | One config per patient |
-| morningCallTime | String (default: '08:30') | HH:MM format |
-| eveningCallTime | String | HH:MM format (optional) |
+| morningCallTime | String (optional) | HH:MM format — auto-set to '08:30' for Sampurna plan |
+| afternoonCallTime | String (optional) | HH:MM format — auto-set to '13:30' for Sampurna plan |
+| eveningCallTime | String (optional) | HH:MM format — auto-set to '19:30' for Sampurna plan |
+| nightCallTime | String (optional) | HH:MM format — auto-set to '21:30' for Sampurna plan |
 | timezone | String (default: 'Asia/Kolkata') | Patient's timezone |
 | retryEnabled | Boolean (default: true) | |
 | retryIntervalMinutes | Number (default: 30) | Minutes between retries |
 | maxRetries | Number (default: 2) | Max 2 retries = 3 total attempts |
+| useSlowerSpeechRate | Boolean (default: false) | Slower TTS for elderly patients |
+| callDurationTarget | Number (default: 180) | Target call duration in seconds |
+| isActive | Boolean (default: true) | Whether calls are active |
+
+**Auto-creation:** When a medicine is added via `MedicinesService.create()`, a CallConfig is automatically created or updated for the medicine's timing slot. Sampurna plan gets default times; other plans get `'pending'` (user must configure).
 
 #### `subscriptions`
 | Field | Type | Description |
@@ -372,12 +381,15 @@ health-discipline-ai/
 │  (Next.js) │<─tokens──│  (NestJS)  │<─user────│            │
 └────────────┘          └────────────┘          └────────────┘
       │
-      │  Stores JWT in httpOnly cookie
+      │  Stores JWT in localStorage
       │
       ▼
-  Subsequent requests include cookie automatically
+  Subsequent requests include Bearer token in Authorization header
   → JwtAuthGuard validates on every protected route
   → RolesGuard checks user.role against @Roles() decorator
+  → 401 responses auto-redirect to /login?session=expired
+  → Dashboard layout has auth guard (redirects to /login if no user)
+  → Logout clears localStorage and redirects to /login
 ```
 
 ### Two Auth Modes
@@ -496,8 +508,9 @@ This is the **core feature** of the platform. Here's exactly what happens from s
 │  7. Warm goodbye: "Bahut accha! Apna khayal rakhiye..."           │
 │                                                                     │
 │  All powered by the system prompt (see "AI Agent & Prompt Control") │
-│  Voice: ElevenLabs Multilingual v2 (Hindi, female)                  │
-│  LLM: GPT-4o-mini (temperature: 0.3)                              │
+│  Voice: ElevenLabs v3 Conversational (multilingual, female)         │
+│  LLM: Gemini 1.5 Flash (temperature: 0.3)                         │
+│  Language: Dynamically set via {{preferred_language}} variable      │
 │  Max duration: 5 minutes                                           │
 └────────┬────────────────────────────────────────────────────────────┘
          │
@@ -522,7 +535,7 @@ This is the **core feature** of the platform. Here's exactly what happens from s
 │    data_collection: {                                               │
 │      medicine_responses: "Metformin:taken, Amlodipine:taken",      │
 │      vitals_checked: "not_applicable",                             │
-│      mood: "good",                                                  │
+│      wellness: "good",                                              │
 │      complaints: "none"                                             │
 │    },                                                               │
 │    metadata: { duration: 106 }                                      │
@@ -539,7 +552,7 @@ This is the **core feature** of the platform. Here's exactly what happens from s
 │                                                                     │
 │  1. Parse medicine responses → normalize to taken/missed/unclear   │
 │  2. Parse vitals → yes/no/not_asked                                │
-│  3. Parse mood → good/okay/not_well                                │
+│  3. Parse wellness (or mood) → good/okay/not_well                  │
 │  4. Parse complaints → string[]                                    │
 │  5. Update Call record:                                             │
 │     - status → 'completed'                                         │
@@ -612,11 +625,16 @@ The webhook controller normalizes Hindi/English responses:
 
 ### Layer 1: System Prompt (Current)
 
-This is the full prompt that controls the AI's behavior:
+This is the full prompt that controls the AI's behavior. **Key change:** The prompt is now fully multilingual — the agent speaks in whatever language is set via `{{preferred_language}}`.
 
 ```
-You are a caring health assistant who calls elderly patients in India
-to check on their daily medicine intake. You speak in simple Hindi (Hinglish).
+You MUST speak in {{preferred_language}} throughout the entire conversation.
+Do not switch to any other language unless the patient speaks to you in a
+different language first.
+
+You are a caretaker who calls elderly patients every day to check on their
+medicine intake and well-being. You genuinely care about the patient — like
+a trusted person from their own family.
 
 The patient's name is {{patient_name}}.
 Their medicines to check today: {{medicines_list}}.
@@ -625,43 +643,52 @@ Has glucometer: {{has_glucometer}}.
 Has BP monitor: {{has_bp_monitor}}.
 
 PERSONALITY:
-- Warm, respectful, patient — like a caring family member
-- Use "aap" (respectful form), never "tum"
-- Speak slowly and clearly
-- Be encouraging and supportive
-- If patient seems confused, repeat gently
-- If this is a new patient, speak slower and explain that their family
-  started this service for them
+- Warm, respectful, patient — like a caring family member who checks in every day
+- Always use the respectful/formal form of address in the patient's language
+- Speak slowly and clearly — many patients are elderly and may be hard of hearing
+- Be genuinely encouraging and supportive, not mechanical
+- If the patient seems confused or doesn't understand, repeat gently with simpler words
+- If this is a new patient (is_new_patient = true), introduce yourself warmly:
+  explain that their family has arranged for you to call every day to help them
+  stay on track with their medicines. Speak extra slowly and be patient.
+- If this is a returning patient, be familiar and warm — like someone who already knows them
 
 CONVERSATION FLOW:
-1. You have already greeted them in the first message. Now ask about
-   each medicine one by one from the medicines list above.
-2. For each medicine, confirm clearly: "taken" or "not taken"
-3. If patient has glucometer or BP monitor, ask if they checked vitals today
-4. Ask how they are feeling (mood check)
-5. Listen for any complaints or concerns
-6. End with warm encouragement and goodbye
+1. You have already greeted them in the first message. Start by asking how they
+   are feeling today — genuinely, like a caretaker would.
+2. Based on their response, acknowledge what they said before moving to medicines.
+   If they mention feeling unwell, show concern and ask a brief follow-up.
+3. Then check on each medicine one by one from the medicines list. Use the medicine
+   name naturally. For each one, confirm: "taken" or "not taken".
+4. If they missed a medicine, respond with gentle encouragement — not pressure. Never scold.
+5. If patient has a glucometer (has_glucometer = true) or BP monitor (has_bp_monitor = true),
+   ask if they checked their readings today.
+6. Listen for any health complaints or concerns they bring up. Acknowledge them.
+7. End with warm encouragement — remind them you will call again tomorrow.
+   Say goodbye affectionately.
 
 RULES:
 - Keep the conversation under 3 minutes
-- Do NOT give medical advice
-- Do NOT change medicine dosage
+- Do NOT give any medical advice whatsoever
+- Do NOT suggest changing medicine dosage or timing
+- Do NOT diagnose or interpret symptoms
 - If patient reports emergency symptoms (chest pain, breathlessness,
-  severe dizziness), tell them to call their doctor or 108 immediately
-- If patient says they missed a medicine, gently encourage but do NOT pressure
-- Accept any response gracefully — do not judge
+  severe dizziness, loss of consciousness), immediately tell them to call
+  their doctor or 108
+- Accept any response gracefully — never judge or scold
+- If the patient wants to chat about their day, allow a brief moment,
+  then gently steer back to medicines
+- If the patient says someone else gives them their medicines, still confirm
+  whether each medicine was taken
 
-DATA TO EXTRACT:
-- For each medicine: was it taken? (taken/not_taken/unclear)
-- Vitals checked today? (yes/no)
-- Overall mood (good/okay/not_well)
-- Any complaints mentioned
-
-LANGUAGE:
-- Primary: Hindi (Devanagari phonetic in Roman script)
-- If patient speaks in English, respond in English
-- Use medicine nicknames when available (e.g., "BP wali goli" instead
-  of "Amlodipine")
+DATA TO EXTRACT (fill these accurately based on the conversation):
+- medicine_responses: For each medicine, record "medicine_name:taken" or
+  "medicine_name:not_taken" or "medicine_name:unclear", comma-separated
+- vitals_checked: Whether patient checked vitals today — "yes", "no", or
+  "not_applicable" (if they have no devices)
+- wellness: Patient's overall state — "good" (happy, healthy, normal),
+  "okay" (fine but not great), "not_well" (complaints, pain, low energy, sad)
+- complaints: Comma-separated list of any health complaints mentioned, or "none"
 ```
 
 ### Layer 2: Dynamic Variables
@@ -675,6 +702,7 @@ These variables are substituted into the prompt at call time:
 | `{{is_new_patient}}` | "true" | `patient.isNewPatient` |
 | `{{has_glucometer}}` | "false" | `patient.hasGlucometer` |
 | `{{has_bp_monitor}}` | "false" | `patient.hasBPMonitor` |
+| `{{preferred_language}}` | "te" (Telugu) | `patient.preferredLanguage` (ISO code: hi, en, te, ta, mr, bn, kn, gu) |
 | `{{call_id}}` | "6990a183..." | `call._id` (for webhook correlation) |
 | `{{webhook_url}}` | "https://..." | Post-call webhook endpoint |
 
@@ -691,31 +719,33 @@ data_collection: {
     type: 'string',
     description: 'Whether patient checked vitals today (yes/no/not_applicable)',
   },
-  mood: {
+  wellness: {
     type: 'string',
-    description: 'Patient mood assessment (good/okay/not_well)',
+    description: 'Patient overall state (good/okay/not_well)',
   },
   complaints: {
     type: 'string',
-    description: 'Comma-separated list of any health complaints, or "none"',
+    description: 'Comma-separated list of any health complaints mentioned by patient, or "none"',
   },
 }
 ```
+
+> **Note:** The webhook controller accepts both `wellness` and `mood` field names for backward compatibility.
 
 ### Layer 4: LLM & Voice Settings
 
 ```javascript
 // LLM settings
-llm: 'gpt-4o-mini',      // Fast + cheap. Upgrade to 'gpt-4o' for better Hindi
+llm: 'gemini-1.5-flash',  // Google Gemini — fast, cheap, good multilingual support
 temperature: 0.3,          // Low = follows script closely (good for medical)
 max_tokens: 300,           // Max response per turn
 
 // Voice settings
-voice_id: 'TRnaQb7q41oL7sV0w6Bu',  // ElevenLabs Hindi female voice
-model_id: 'eleven_multilingual_v2',  // Multilingual TTS model
-stability: 0.5,                       // Voice consistency
-similarity_boost: 0.75,               // Voice clarity
-speed: 0.9,                           // Slightly slower for elderly patients
+voice_id: 'TRnaQb7q41oL7sV0w6Bu',     // ElevenLabs Hindi female voice
+model_id: 'eleven_v3_conversational',    // v3 conversational model (better for dialogue)
+stability: 0.5,                          // Voice consistency
+similarity_boost: 0.75,                  // Voice clarity
+speed: 0.9,                              // Slightly slower for elderly patients
 
 // Call settings
 max_duration_seconds: 300,  // 5 minutes max
@@ -741,14 +771,14 @@ This is the very first thing the AI says when the patient picks up. It uses the 
 | Change greeting | `first_message` in agentConfig (line 48) | Add "Good morning" variant |
 | Change conversation order | `CONVERSATION FLOW` section in prompt | Ask about mood first |
 | Add new question | Add step to `CONVERSATION FLOW` + add field to `data_collection` | "Did you eat breakfast?" |
-| Change language | `LANGUAGE` section + `language` field | Switch to Telugu |
+| Change language | Set `patient.preferredLanguage` (auto-injected as `{{preferred_language}}`) | Switch to Telugu ('te') |
 | Make agent more chatty | Increase `temperature` to 0.5-0.7 | More natural responses |
 | Make agent faster | Increase `speed` to 1.0 | Normal speaking speed |
 | Change voice | Change `voice_id` | Use male voice |
 | Ask about specific medicines by name | Make prompt say "You MUST ask about each medicine by its exact name from the list" | "Kya aapne Metformin li?" |
 | Add emergency protocol | Expand `RULES` section | Specific symptom triggers |
 | Change max call duration | `max_duration_seconds` | 180 for 3 minutes |
-| Switch LLM | Change `llm` | 'gpt-4o' for better comprehension |
+| Switch LLM | Change `llm` | 'gpt-4o' for better comprehension, 'gemini-1.5-flash' (current) |
 
 #### Step-by-Step: Making a Prompt Change
 
@@ -803,10 +833,13 @@ File: call-scheduler.service.ts
 │  processScheduledCalls()                                 │
 │                                                         │
 │  1. Get all active call_configs                         │
-│  2. For each config:                                    │
-│     a. Convert current UTC time → patient's timezone    │
-│     b. Compare with morningCallTime / eveningCallTime   │
-│     c. If time matches (HH:MM), add to dueCalls[]      │
+│  2. For each config, loop over 4 time slots:            │
+│     [morningCallTime, afternoonCallTime,                │
+│      eveningCallTime, nightCallTime]                    │
+│     a. Skip null/empty/'pending' slots                  │
+│     b. Convert current UTC time → patient's timezone    │
+│     c. Compare with slot time (HH:MM)                   │
+│     d. If time matches, add to dueCalls[]               │
 │  3. Filter out: isPaused, phoneStatus='invalid'         │
 │  4. Send dueCalls to CallOrchestrator.processBatch()    │
 └─────────────────────────────────────────────────────────┘
@@ -1151,39 +1184,37 @@ NEXT_PUBLIC_APP_ENV=development
 
 ## Deployment & Scaling
 
-### Current Setup (Development)
+### Current Production Setup
 
 ```
-Local machine → Azure Cosmos DB (MongoDB API, cloud)
-             → ElevenLabs API (cloud)
-             → Twilio API (cloud)
+┌─────────────────────────┐     ┌──────────────────────────────┐
+│   Frontend (Next.js)    │────▶│   Backend API (NestJS)       │
+│   Vercel                │     │   Google Cloud Run           │
+│   Auto-deploy: master   │     │   us-central1                │
+└─────────────────────────┘     └──────────┬───────────────────┘
+                                           │
+                          ┌────────────────┼────────────────┐
+                          ▼                ▼                ▼
+                   ┌────────────┐  ┌─────────────┐  ┌────────────┐
+                   │  MongoDB   │  │  ElevenLabs  │  │   Twilio   │
+                   │  Azure     │  │  Voice AI    │  │  Telephony │
+                   │  Cosmos DB │  │              │  │            │
+                   └────────────┘  └─────────────┘  └────────────┘
 ```
 
-### Recommended Production Architecture
+| Component | Service | URL |
+|-----------|---------|-----|
+| Frontend | Vercel | `https://discipline-ai-health-prod.vercel.app` |
+| Backend | GCP Cloud Run | `https://discipline-ai-api-337728476024.us-central1.run.app` |
+| Database | Azure Cosmos DB (MongoDB API) | Connection string in env |
+| Swagger Docs | Cloud Run | `https://discipline-ai-api-337728476024.us-central1.run.app/api/docs` |
 
-```
-                         ┌────────────────┐
-                         │   Cloudflare   │
-                         │   (CDN + DDoS) │
-                         └───────┬────────┘
-                                 │
-                ┌────────────────┼────────────────┐
-                │                                 │
-     ┌──────────▼──────────┐          ┌──────────▼──────────────┐
-     │    Vercel            │          │  Azure App Service B1   │
-     │    (Next.js 14)      │          │  Linux (India Central)  │
-     │    Frontend          │          │  NestJS API             │
-     │    Free → $20/mo     │          │  Always-On              │
-     └─────────────────────┘          │  ~$13/month             │
-                                       └──────────┬─────────────┘
-                                                   │
-                                       ┌───────────▼──────────┐
-                                       │  Azure Cosmos DB     │
-                                       │  (MongoDB API)       │
-                                       │  Already configured  │
-                                       │  ~$23/month          │
-                                       └──────────────────────┘
-```
+**CORS:** Backend uses dynamic origin callback — allows `localhost:3000`, production Vercel URL, and any `discipline-ai-health-prod*.vercel.app` preview URL via regex.
+
+**Deployment:**
+- Frontend: Push to `master` → Vercel auto-deploys
+- Backend: `gcloud run deploy discipline-ai-api --source . --region us-central1 --allow-unauthenticated` (from monorepo root)
+- See [DEPLOYMENT.md](./DEPLOYMENT.md) for full deployment guide
 
 ### Why This Stack (Decision Matrix)
 
@@ -1515,5 +1546,20 @@ This is what ElevenLabs uses for the post-call webhook. Without a public URL, ca
 | Twilio Phone Number | `+17655227476` |
 | Twilio Account SID | `<REDACTED>` |
 | ElevenLabs Voice (Female) | `TRnaQb7q41oL7sV0w6Bu` |
+| ElevenLabs TTS Model | `eleven_v3_conversational` |
+| ElevenLabs LLM | `gemini-1.5-flash` |
 | Test Patient (Bauji) | `6990a18304607c6995d78b49` |
+| Test Patient (Surya) | `69918c72fe77af5a45ab34a9` (Telugu) |
+| GCP Project | `discipline-ai-health` |
+| Cloud Run Service URL | `https://discipline-ai-api-337728476024.us-central1.run.app` |
+| Vercel Production URL | `https://discipline-ai-health-prod.vercel.app` |
+| GitHub Repo | `https://github.com/nithinycr7/discipline-ai-health-prod` |
 | MongoDB | Azure Cosmos DB (MongoDB API) |
+
+## Frontend Architecture Notes
+
+- **Theme:** Warm green healthcare palette (primary: `hsl(152 55% 36%)`), earthy backgrounds, `0.75rem` border radius
+- **Auth flow:** Token stored in localStorage, 401 auto-redirect to `/login?session=expired`, logout clears state + redirects
+- **Dashboard auth guard:** `useEffect` in layout redirects to `/login` when not authenticated
+- **Call History:** Paginated (3 per page) with server-side pagination via `?page=N&limit=3`
+- **Supported languages:** Hindi (hi), Telugu (te), Tamil (ta), Marathi (mr), Bengali (bn), Kannada (kn), Gujarati (gu), English (en)
