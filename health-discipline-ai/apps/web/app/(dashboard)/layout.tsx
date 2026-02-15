@@ -34,12 +34,15 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
   }
 
   return (
-    <div className="min-h-screen bg-muted/30">
-      <header className="bg-background border-b sticky top-0 z-50">
-        <div className="container mx-auto px-4 flex items-center justify-between h-16">
+    <div className="min-h-screen bg-background">
+      <header className="bg-card border-b border-border/50 sticky top-0 z-50">
+        <div className="container mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
-            <Link href="/dashboard" className="text-xl font-bold text-primary">
-              Health Discipline AI
+            <Link href="/dashboard" className="flex items-center gap-2">
+              <div className="w-7 h-7 rounded-lg bg-primary flex items-center justify-center">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+              </div>
+              <span className="font-semibold tracking-tight hidden sm:block">Health Discipline</span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               {navigation.map((item) => (
@@ -47,10 +50,10 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'px-3 py-2 text-sm font-medium rounded-md transition-colors',
+                    'px-3.5 py-2 text-sm font-medium rounded-lg transition-colors',
                     pathname === item.href
                       ? 'bg-primary/10 text-primary'
-                      : 'text-muted-foreground hover:text-foreground hover:bg-muted'
+                      : 'text-muted-foreground hover:text-foreground hover:bg-secondary'
                   )}
                 >
                   {item.name}
@@ -59,16 +62,23 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </nav>
           </div>
           <div className="flex items-center gap-4">
-            <span className="text-sm text-muted-foreground hidden sm:inline">
-              {user?.name}
-            </span>
-            <Button variant="ghost" size="sm" onClick={logout}>
-              Logout
+            <div className="hidden sm:flex items-center gap-2">
+              <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                <span className="text-sm font-medium text-primary">
+                  {user?.name?.charAt(0)?.toUpperCase()}
+                </span>
+              </div>
+              <span className="text-sm font-medium">
+                {user?.name}
+              </span>
+            </div>
+            <Button variant="ghost" size="sm" onClick={logout} className="text-muted-foreground">
+              Sign out
             </Button>
           </div>
         </div>
       </header>
-      <main className="container mx-auto px-4 py-6">{children}</main>
+      <main className="container mx-auto px-6 py-8">{children}</main>
     </div>
   );
 }

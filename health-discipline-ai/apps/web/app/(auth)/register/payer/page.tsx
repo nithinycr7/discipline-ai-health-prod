@@ -32,14 +32,16 @@ export default function PayerRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-md">
-        <CardHeader className="text-center">
-          <CardTitle className="text-2xl">Set Up Health Monitoring</CardTitle>
-          <CardDescription>
-            Create your account to start monitoring your parent's medicine adherence
-          </CardDescription>
-        </CardHeader>
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <div className="w-full max-w-md">
+      <div className="text-center mb-8">
+        <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
+        </div>
+        <h1 className="text-2xl font-bold tracking-tight">Set Up Health Monitoring</h1>
+        <p className="text-muted-foreground text-sm mt-1">Create your account to start monitoring your parent&apos;s medicines</p>
+      </div>
+      <Card className="border-border/50">
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (
@@ -89,6 +91,7 @@ export default function PayerRegisterPage() {
           </CardFooter>
         </form>
       </Card>
+      </div>
     </div>
   );
 }

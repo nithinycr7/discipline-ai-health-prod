@@ -38,20 +38,20 @@ export default function PatientsListPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Patients</h1>
+      <div className="flex items-center justify-between mb-8">
+        <h1 className="text-2xl font-bold tracking-tight">Patients</h1>
         <Link href="/onboarding/patient-info">
-          <Button>Add Patient</Button>
+          <Button className="rounded-lg">Add Patient</Button>
         </Link>
       </div>
 
       {user?.role === 'hospital_admin' && (
-        <div className="mb-4">
+        <div className="mb-6">
           <Input
             placeholder="Search patients..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
-            className="max-w-sm"
+            className="max-w-sm rounded-lg"
           />
         </div>
       )}
@@ -59,17 +59,24 @@ export default function PatientsListPage() {
       <div className="space-y-3">
         {filtered.map((patient: any) => (
           <Link key={patient._id} href={`/dashboard/patients/${patient._id}`}>
-            <Card className="hover:shadow-md transition-shadow cursor-pointer mb-3">
-              <CardContent className="flex items-center justify-between p-4">
-                <div>
-                  <p className="font-medium">{patient.preferredName}</p>
-                  <p className="text-sm text-muted-foreground">
-                    {patient.fullName} | Age: {patient.age} | {patient.preferredLanguage.toUpperCase()}
-                  </p>
-                  <div className="flex gap-2 mt-1">
-                    {patient.healthConditions?.map((c: string) => (
-                      <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
-                    ))}
+            <Card className="hover:shadow-md transition-all cursor-pointer mb-3 border-border/50 hover:border-border">
+              <CardContent className="flex items-center justify-between p-5">
+                <div className="flex items-center gap-4">
+                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-sm font-semibold text-primary">
+                      {patient.preferredName?.charAt(0)?.toUpperCase()}
+                    </span>
+                  </div>
+                  <div>
+                    <p className="font-semibold">{patient.preferredName}</p>
+                    <p className="text-sm text-muted-foreground">
+                      {patient.fullName} &middot; Age {patient.age} &middot; {patient.preferredLanguage?.toUpperCase()}
+                    </p>
+                    <div className="flex gap-1.5 mt-1.5">
+                      {patient.healthConditions?.map((c: string) => (
+                        <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
+                      ))}
+                    </div>
                   </div>
                 </div>
                 <div className="text-right">
@@ -78,8 +85,8 @@ export default function PatientsListPage() {
                   ) : (
                     <Badge variant="success">Active</Badge>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1">
-                    {patient.callsCompletedCount} calls completed
+                  <p className="text-xs text-muted-foreground mt-1.5">
+                    {patient.callsCompletedCount} calls
                   </p>
                 </div>
               </CardContent>
