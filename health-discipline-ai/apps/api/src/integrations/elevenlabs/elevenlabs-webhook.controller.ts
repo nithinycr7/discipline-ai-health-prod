@@ -1,5 +1,5 @@
 import { Controller, Post, Body, Logger, Get } from '@nestjs/common';
-import { ApiTags, ApiOperation, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { ApiTags, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { CallsService } from '../../calls/calls.service';
 import { PatientsService } from '../../patients/patients.service';
@@ -8,12 +8,14 @@ import { NotificationsService } from '../../notifications/notifications.service'
 /**
  * ElevenLabs Post-Call Webhook Controller
  *
- * After each AI voice call completes, ElevenLabs sends a POST webhook with:
- *   - Full conversation transcript
- *   - Extracted data (medicine responses, vitals, mood)
- *   - Call metadata (duration, conversation_id)
+ * After each AI voice call completes, ElevenLabs sends a POST webhook with
+ * the same structure as GET /convai/conversations/{id}:
+ *   - transcript[]
+ *   - analysis.data_collection_results (medicine_responses, vitals, mood, complaints)
+ *   - metadata (call_duration_secs, termination_reason, etc.)
+ *   - conversation_initiation_client_data.dynamic_variables (call_id, patient_name, etc.)
  *
- * We parse this data and save it to our call records in MongoDB.
+ * The payload may arrive raw or wrapped in { type, event_timestamp, data: {...} }.
  */
 @ApiTags('Webhooks')
 @Controller('webhooks/elevenlabs')
@@ -26,93 +28,115 @@ export class ElevenLabsWebhookController {
     private notificationsService: NotificationsService,
   ) {}
 
-  /**
-   * Post-call webhook — ElevenLabs calls this when a conversation ends.
-   * Payload includes transcript, data collection, and metadata.
-   */
   @Public()
   @Post('post-call')
   @ApiExcludeEndpoint()
   async handlePostCall(@Body() body: any) {
-    this.logger.log(`ElevenLabs post-call webhook received`);
-    this.logger.debug(`Payload: ${JSON.stringify(body).substring(0, 500)}`);
+    this.logger.log('ElevenLabs post-call webhook received');
+    this.logger.debug(`Payload keys: ${Object.keys(body).join(', ')}`);
 
     try {
-      // Extract key fields from the webhook payload
-      const conversationId = body.conversation_id
-        || body.data?.conversation_id
-        || body.conversation_initiation_client_data?.dynamic_variables?.system__conversation_id;
+      // Unwrap envelope if present (webhook may wrap in { type, data })
+      const payload = body.data && body.type ? body.data : body;
 
-      const callId = body.conversation_initiation_client_data?.dynamic_variables?.call_id
-        || body.data?.dynamic_variables?.call_id;
+      // Extract identifiers
+      const conversationId =
+        payload.conversation_id ||
+        payload.conversation_initiation_client_data?.dynamic_variables?.system__conversation_id;
 
-      const transcript = body.transcript || body.data?.transcript || [];
-      const analysis = body.analysis || body.data?.analysis || {};
-      const dataCollection = body.data_collection || body.data?.data_collection || {};
-      const metadata = body.metadata || body.data?.metadata || {};
+      const callId =
+        payload.conversation_initiation_client_data?.dynamic_variables?.call_id;
+
+      const transcript = payload.transcript || [];
+      const analysis = payload.analysis || {};
+      const dcResults = analysis.data_collection_results || {};
+      const metadata = payload.metadata || {};
 
       if (!callId) {
-        this.logger.warn(`Post-call webhook missing call_id. ConversationId: ${conversationId}`);
+        this.logger.warn(
+          `Post-call webhook missing call_id. ConversationId: ${conversationId}`,
+        );
         return { received: true, warning: 'no_call_id' };
       }
 
-      // Parse medicine responses from the agent's data collection
-      const medicineResponses = this.parseMedicineResponses(dataCollection, transcript);
-      const vitalsChecked = this.parseVitals(dataCollection, transcript);
-      const mood = this.parseMood(dataCollection, transcript);
-      const complaints = this.parseComplaints(dataCollection, transcript);
+      // Parse extracted data from analysis.data_collection_results
+      // Each field has { value, rationale, ... } — we read .value
+      const medicineResponsesStr = dcResults.medicine_responses?.value || '';
+      const vitalsChecked = dcResults.vitals_checked?.value || null;
+      const mood = dcResults.mood?.value || null;
+      const complaintsStr = dcResults.complaints?.value || '';
 
-      // Build the full transcript text
+      // Parse medicine string: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
+      const medicineResponses = this.parseMedicineString(medicineResponsesStr);
+
+      // Parse complaints string: "fever, headache" or "none"
+      const complaints = this.parseComplaintsString(complaintsStr);
+
+      // Build transcript text
       const transcriptText = this.buildTranscriptText(transcript);
 
-      // Update the call record with all extracted data
+      // Fetch the call record
       const call = await this.callsService.findById(callId);
 
-      // Update medicine responses
-      for (const medResponse of medicineResponses) {
-        await this.callsService.addMedicineResponse(
-          callId,
-          medResponse.medicineId,
-          medResponse.medicineName,
-          medResponse.nickname || medResponse.medicineName,
-          medResponse.response, // 'taken' | 'missed' | 'unclear'
-        );
+      // Update each medicine's response on the existing medicinesChecked array
+      // The call record already has medicinesChecked from when the call was created.
+      // Match by name and update the response.
+      if (call.medicinesChecked && call.medicinesChecked.length > 0) {
+        for (const existingMed of call.medicinesChecked) {
+          const match = medicineResponses.find(
+            (mr) =>
+              mr.medicineName.toLowerCase() ===
+                (existingMed.nickname || existingMed.medicineName || '')
+                  .toLowerCase() ||
+              mr.medicineName.toLowerCase() ===
+                (existingMed.medicineName || '').toLowerCase(),
+          );
+          if (match) {
+            existingMed.response = match.response;
+            existingMed.timestamp = new Date();
+          }
+        }
       }
 
-      // Update vitals if reported
-      if (vitalsChecked === 'yes') {
-        await this.callsService.addVitals(callId, {
-          capturedAt: new Date(),
-          // Actual values would need voice-to-number parsing
-          // For now, mark as "checked"
-        });
-      }
-
-      // Update call status to completed with all metadata
+      // Update call status to completed with all data
       await this.callsService.updateCallStatus(callId, 'completed', {
         endedAt: new Date(),
-        duration: metadata.duration || metadata.call_duration || 0,
+        duration: metadata.call_duration_secs || 0,
         moodNotes: mood || undefined,
         complaints: complaints.length > 0 ? complaints : undefined,
         transcriptUrl: conversationId
           ? `elevenlabs:conversation:${conversationId}`
           : undefined,
-        twilioCallSid: conversationId, // Store conversationId in this field
+        twilioCallSid: conversationId,
+        medicinesChecked: call.medicinesChecked,
+        transcript: transcriptText || undefined,
       } as any);
 
+      // Update vitals if patient reported checking them
+      if (vitalsChecked === 'yes') {
+        await this.callsService.addVitals(callId, { capturedAt: new Date() });
+      }
+
       // Track first call and increment count
-      const patient = await this.patientsService.findById(call.patientId.toString());
+      const patient = await this.patientsService.findById(
+        call.patientId.toString(),
+      );
       await this.patientsService.setFirstCallAt(patient._id.toString());
       await this.patientsService.incrementCallCount(patient._id.toString());
 
-      // Send post-call WhatsApp report to payer
-      const updatedCall = await this.callsService.findById(callId);
-      await this.notificationsService.sendPostCallReport(updatedCall, patient);
+      // Send post-call report to payer
+      try {
+        const updatedCall = await this.callsService.findById(callId);
+        await this.notificationsService.sendPostCallReport(updatedCall, patient);
+      } catch (notifErr: any) {
+        this.logger.warn(`Post-call notification failed: ${notifErr.message}`);
+      }
 
       this.logger.log(
-        `Post-call processed for call ${callId}: ` +
-        `${medicineResponses.length} medicines, mood=${mood}, ` +
-        `vitals=${vitalsChecked}, complaints=${complaints.length}`,
+        `Post-call processed: call=${callId}, ` +
+          `medicines=${medicineResponses.length}, mood=${mood}, ` +
+          `vitals=${vitalsChecked}, complaints=${complaints.length}, ` +
+          `duration=${metadata.call_duration_secs}s`,
       );
 
       return {
@@ -122,14 +146,11 @@ export class ElevenLabsWebhookController {
         medicinesProcessed: medicineResponses.length,
       };
     } catch (error: any) {
-      this.logger.error(`Post-call webhook processing error: ${error.message}`);
+      this.logger.error(`Post-call webhook error: ${error.message}`, error.stack);
       return { received: true, error: error.message };
     }
   }
 
-  /**
-   * Webhook verification endpoint (GET) — some providers ping this first.
-   */
   @Public()
   @Get('post-call')
   @ApiExcludeEndpoint()
@@ -138,114 +159,71 @@ export class ElevenLabsWebhookController {
   }
 
   /**
-   * Parse medicine responses from ElevenLabs data collection or transcript.
+   * Parse ElevenLabs medicine response string.
+   * Format: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
    */
-  private parseMedicineResponses(
-    dataCollection: any,
-    transcript: any[],
-  ): Array<{ medicineId: string; medicineName: string; nickname?: string; response: string }> {
-    const responses: Array<{ medicineId: string; medicineName: string; nickname?: string; response: string }> = [];
+  private parseMedicineString(
+    str: string,
+  ): Array<{ medicineName: string; response: string }> {
+    if (!str || str === 'null' || str === 'undefined') return [];
 
-    // Try structured data collection first
-    if (dataCollection.medicine_responses) {
-      const medResponses = Array.isArray(dataCollection.medicine_responses)
-        ? dataCollection.medicine_responses
-        : [dataCollection.medicine_responses];
-
-      for (const med of medResponses) {
-        if (med && typeof med === 'object') {
-          responses.push({
-            medicineId: med.medicine_id || med.medicineId || '',
-            medicineName: med.medicine_name || med.medicineName || med.name || '',
-            nickname: med.nickname,
-            response: this.normalizeResponse(med.status || med.response || 'unclear'),
-          });
-        }
-      }
-    }
-
-    // If no structured data, try to parse from transcript analysis
-    if (responses.length === 0 && dataCollection) {
-      for (const [key, value] of Object.entries(dataCollection)) {
-        if (key.includes('medicine') || key.includes('med_') || key.includes('dawai')) {
-          const strValue = String(value).toLowerCase();
-          responses.push({
-            medicineId: '',
-            medicineName: key.replace(/_/g, ' '),
-            response: this.normalizeResponse(strValue),
-          });
-        }
-      }
-    }
-
-    return responses;
+    return str
+      .split(',')
+      .map((part) => part.trim())
+      .filter((part) => part.includes(':'))
+      .map((part) => {
+        const colonIdx = part.indexOf(':');
+        const name = part.substring(0, colonIdx).trim();
+        const rawResponse = part.substring(colonIdx + 1).trim();
+        return {
+          medicineName: name,
+          response: this.normalizeResponse(rawResponse),
+        };
+      });
   }
 
   /**
-   * Parse vitals response.
+   * Parse complaints string: "fever, headache" or "none"
    */
-  private parseVitals(dataCollection: any, transcript: any[]): string {
-    if (dataCollection.vitals_checked) {
-      const val = String(dataCollection.vitals_checked).toLowerCase();
-      if (val.includes('yes') || val.includes('haan') || val.includes('ha')) return 'yes';
-      if (val.includes('no') || val.includes('nahi') || val.includes('nhi')) return 'no';
-      return val;
+  private parseComplaintsString(str: string): string[] {
+    if (!str || str === 'none' || str === 'null' || str === 'undefined') {
+      return [];
     }
-    return 'not_asked';
+    return str
+      .split(',')
+      .map((c) => c.trim())
+      .filter((c) => c && c !== 'none');
   }
 
-  /**
-   * Parse mood response.
-   */
-  private parseMood(dataCollection: any, transcript: any[]): string {
-    if (dataCollection.mood) {
-      const val = String(dataCollection.mood).toLowerCase();
-      if (val.includes('good') || val.includes('accha') || val.includes('theek')) return 'good';
-      if (val.includes('okay') || val.includes('thik')) return 'okay';
-      if (val.includes('not') || val.includes('kharab') || val.includes('bura')) return 'not_well';
-      return val;
-    }
-    return 'not_asked';
-  }
-
-  /**
-   * Parse complaints.
-   */
-  private parseComplaints(dataCollection: any, transcript: any[]): string[] {
-    if (dataCollection.complaints) {
-      if (Array.isArray(dataCollection.complaints)) {
-        return dataCollection.complaints.map(String);
-      }
-      const val = String(dataCollection.complaints);
-      if (val && val !== 'none' && val !== 'null') return [val];
-    }
-    return [];
-  }
-
-  /**
-   * Normalize response text to our standard values.
-   */
   private normalizeResponse(response: string): string {
     const lower = response.toLowerCase().trim();
-    if (lower.includes('taken') || lower.includes('yes') || lower.includes('haan') || lower.includes('li hai') || lower.includes('le li')) {
+    if (
+      lower.includes('taken') ||
+      lower === 'yes' ||
+      lower.includes('li hai') ||
+      lower.includes('le li') ||
+      lower.includes('haan')
+    ) {
       return 'taken';
     }
-    if (lower.includes('not_taken') || lower.includes('missed') || lower.includes('no') || lower.includes('nahi') || lower.includes('nhi') || lower.includes('bhool')) {
+    if (
+      lower.includes('not_taken') ||
+      lower.includes('missed') ||
+      lower === 'no' ||
+      lower.includes('nahi') ||
+      lower.includes('bhool')
+    ) {
       return 'missed';
     }
     return 'unclear';
   }
 
-  /**
-   * Build readable transcript text from the structured transcript array.
-   */
   private buildTranscriptText(transcript: any[]): string {
     if (!Array.isArray(transcript)) return '';
-
     return transcript
       .map((entry) => {
         const role = entry.role === 'agent' ? 'Assistant' : 'Patient';
-        return `${role}: ${entry.message || entry.text || ''}`;
+        return `${role}: ${entry.message || ''}`;
       })
       .join('\n');
   }
