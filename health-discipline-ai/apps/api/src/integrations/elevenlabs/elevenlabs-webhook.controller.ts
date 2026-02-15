@@ -11,7 +11,7 @@ import { NotificationsService } from '../../notifications/notifications.service'
  * After each AI voice call completes, ElevenLabs sends a POST webhook with
  * the same structure as GET /convai/conversations/{id}:
  *   - transcript[]
- *   - analysis.data_collection_results (medicine_responses, vitals, mood, complaints)
+ *   - analysis.data_collection_results (medicine_responses, vitals, wellness, complaints)
  *   - metadata (call_duration_secs, termination_reason, etc.)
  *   - conversation_initiation_client_data.dynamic_variables (call_id, patient_name, etc.)
  *
@@ -63,7 +63,7 @@ export class ElevenLabsWebhookController {
       // Each field has { value, rationale, ... } — we read .value
       const medicineResponsesStr = dcResults.medicine_responses?.value || '';
       const vitalsChecked = dcResults.vitals_checked?.value || null;
-      const mood = dcResults.mood?.value || null;
+      const wellness = dcResults.wellness?.value || dcResults.mood?.value || null;
       const complaintsStr = dcResults.complaints?.value || '';
 
       // Parse medicine string: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
@@ -102,7 +102,7 @@ export class ElevenLabsWebhookController {
       await this.callsService.updateCallStatus(callId, 'completed', {
         endedAt: new Date(),
         duration: metadata.call_duration_secs || 0,
-        moodNotes: mood || undefined,
+        moodNotes: wellness || undefined,
         complaints: complaints.length > 0 ? complaints : undefined,
         transcriptUrl: conversationId
           ? `elevenlabs:conversation:${conversationId}`
@@ -134,7 +134,7 @@ export class ElevenLabsWebhookController {
 
       this.logger.log(
         `Post-call processed: call=${callId}, ` +
-          `medicines=${medicineResponses.length}, mood=${mood}, ` +
+          `medicines=${medicineResponses.length}, wellness=${wellness}, ` +
           `vitals=${vitalsChecked}, complaints=${complaints.length}, ` +
           `duration=${metadata.call_duration_secs}s`,
       );

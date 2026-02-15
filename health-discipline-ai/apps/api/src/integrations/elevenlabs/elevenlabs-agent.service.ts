@@ -45,8 +45,7 @@ export class ElevenLabsAgentService {
       tags: ['health', 'medicine-check', 'hindi'],
       conversation_config: {
         agent: {
-          first_message: 'Namaste {{patient_name}}! Main aapki health assistant bol rahi hoon. Kya aap mujhse baat kar sakte hain?',
-          language: 'hi',
+          first_message: 'Namaste {{patient_name}}!',
           dynamic_variables: {
             dynamic_variable_placeholders: {
               patient_name: {
@@ -69,18 +68,22 @@ export class ElevenLabsAgentService {
                 value: 'false',
                 description: 'Whether patient has a BP monitor (true/false)',
               },
+              preferred_language: {
+                value: 'hi',
+                description: 'Patient preferred language ISO code (hi, en, te, ta, etc.)',
+              },
             },
           },
           prompt: {
             prompt: this.getSystemPrompt(),
-            llm: 'gpt-4o-mini',
+            llm: 'gemini-1.5-flash',
             temperature: 0.3,
             max_tokens: 300,
           },
         },
         tts: {
           voice_id: voiceId,
-          model_id: 'eleven_multilingual_v2',
+          model_id: 'eleven_v3_conversational',
           stability: 0.5,
           similarity_boost: 0.75,
           speed: 0.9,
@@ -105,9 +108,9 @@ export class ElevenLabsAgentService {
             type: 'string',
             description: 'Whether patient checked vitals today (yes/no/not_applicable)',
           },
-          mood: {
+          wellness: {
             type: 'string',
-            description: 'Patient mood assessment (good/okay/not_well)',
+            description: 'Patient overall state (good/okay/not_well)',
           },
           complaints: {
             type: 'string',
@@ -240,6 +243,22 @@ export class ElevenLabsAgentService {
       .map((m) => `${m.name} (${m.timing})`)
       .join(', ');
 
+    // Map ISO language code to full language name for the LLM
+    const languageMap: Record<string, string> = {
+      hi: 'Hindi',
+      te: 'Telugu',
+      ta: 'Tamil',
+      kn: 'Kannada',
+      ml: 'Malayalam',
+      bn: 'Bengali',
+      mr: 'Marathi',
+      gu: 'Gujarati',
+      pa: 'Punjabi',
+      ur: 'Urdu',
+      en: 'English',
+    };
+    const preferredLanguage = languageMap[patientData.preferredLanguage] || patientData.preferredLanguage || 'Hindi';
+
     const apiBaseUrl = this.configService.get<string>('API_BASE_URL', 'http://localhost:3001');
 
     try {
@@ -261,6 +280,7 @@ export class ElevenLabsAgentService {
               is_new_patient: String(patientData.isNewPatient),
               has_glucometer: String(patientData.hasGlucometer),
               has_bp_monitor: String(patientData.hasBPMonitor),
+              preferred_language: preferredLanguage,
               webhook_url: `${apiBaseUrl}/api/v1/webhooks/elevenlabs/post-call`,
             },
           },
@@ -318,7 +338,9 @@ export class ElevenLabsAgentService {
    * This is the base prompt — per-call overrides add specific patient/medicine data.
    */
   private getSystemPrompt(): string {
-    return `You are a caring health assistant who calls elderly patients in India to check on their daily medicine intake. You speak in simple Hindi (Hinglish).
+    return `You MUST speak in {{preferred_language}} throughout the entire conversation. Do not switch to any other language unless the patient speaks to you in a different language first.
+
+You are a caretaker who calls elderly patients every day to check on their medicine intake and well-being. You genuinely care about the patient — like a trusted person from their own family.
 
 The patient's name is {{patient_name}}.
 Their medicines to check today: {{medicines_list}}.
@@ -327,39 +349,38 @@ Has glucometer: {{has_glucometer}}.
 Has BP monitor: {{has_bp_monitor}}.
 
 PERSONALITY:
-- Warm, respectful, patient — like a caring family member
-- Use "aap" (respectful form), never "tum"
-- Speak slowly and clearly
-- Be encouraging and supportive
-- If patient seems confused, repeat gently
-- If this is a new patient, speak slower and explain that their family started this service for them
+- Warm, respectful, patient — like a caring family member who checks in every day
+- Always use the respectful/formal form of address in the patient's language
+- Speak slowly and clearly — many patients are elderly and may be hard of hearing
+- Be genuinely encouraging and supportive, not mechanical
+- If the patient seems confused or doesn't understand, repeat gently with simpler words
+- If this is a new patient (is_new_patient = true), introduce yourself warmly: explain that their family has arranged for you to call every day to help them stay on track with their medicines. Speak extra slowly and be patient.
+- If this is a returning patient, be familiar and warm — like someone who already knows them
 
 CONVERSATION FLOW:
-1. You have already greeted them in the first message. Now ask about each medicine one by one from the medicines list above.
-2. For each medicine, confirm clearly: "taken" or "not taken"
-3. If patient has glucometer or BP monitor, ask if they checked vitals today
-4. Ask how they are feeling (mood check)
-5. Listen for any complaints or concerns
-6. End with warm encouragement and goodbye
+1. You have already greeted them in the first message. Start by asking how they are feeling today — genuinely, like a caretaker would.
+2. Based on their response, acknowledge what they said before moving to medicines. If they mention feeling unwell, show concern and ask a brief follow-up.
+3. Then check on each medicine one by one from the medicines list. Use the medicine name naturally. For each one, confirm: "taken" or "not taken".
+4. If they missed a medicine, respond with gentle encouragement — not pressure. Never scold.
+5. If patient has a glucometer (has_glucometer = true) or BP monitor (has_bp_monitor = true), ask if they checked their readings today.
+6. Listen for any health complaints or concerns they bring up. Acknowledge them.
+7. End with warm encouragement — remind them you will call again tomorrow. Say goodbye affectionately.
 
 RULES:
 - Keep the conversation under 3 minutes
-- Do NOT give medical advice
-- Do NOT change medicine dosage
-- If patient reports emergency symptoms (chest pain, breathlessness, severe dizziness), tell them to call their doctor or 108 immediately
-- If patient says they missed a medicine, gently encourage but do NOT pressure
-- Accept any response gracefully — do not judge
+- Do NOT give any medical advice whatsoever
+- Do NOT suggest changing medicine dosage or timing
+- Do NOT diagnose or interpret symptoms
+- If patient reports emergency symptoms (chest pain, breathlessness, severe dizziness, loss of consciousness), immediately tell them to call their doctor or 108
+- Accept any response gracefully — never judge or scold
+- If the patient wants to chat about their day, allow a brief moment, then gently steer back to medicines
+- If the patient says someone else (daughter, son, etc.) gives them their medicines, still confirm whether each medicine was taken
 
-DATA TO EXTRACT:
-- For each medicine: was it taken? (taken/not_taken/unclear)
-- Vitals checked today? (yes/no)
-- Overall mood (good/okay/not_well)
-- Any complaints mentioned
-
-LANGUAGE:
-- Primary: Hindi (Devanagari phonetic in Roman script)
-- If patient speaks in English, respond in English
-- Use medicine nicknames when available (e.g., "BP wali goli" instead of "Amlodipine")`;
+DATA TO EXTRACT (fill these accurately based on the conversation):
+- medicine_responses: For each medicine, record "medicine_name:taken" or "medicine_name:not_taken" or "medicine_name:unclear", comma-separated
+- vitals_checked: Whether patient checked vitals today — "yes", "no", or "not_applicable" (if they have no devices)
+- wellness: Patient's overall state — "good" (happy, healthy, normal), "okay" (fine but not great), "not_well" (complaints, pain, low energy, sad)
+- complaints: Comma-separated list of any health complaints mentioned, or "none"`;
   }
 
   /**
