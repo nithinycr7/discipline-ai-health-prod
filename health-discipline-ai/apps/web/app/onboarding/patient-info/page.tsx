@@ -72,8 +72,8 @@ export default function PatientInfoPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-muted p-4">
-      <Card className="w-full max-w-lg">
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+      <Card className="w-full max-w-lg border-border/50">
         <CardHeader>
           <CardTitle>Add Your Parent</CardTitle>
           <CardDescription>Step {step} of 3</CardDescription>

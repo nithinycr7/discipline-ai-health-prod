@@ -127,8 +127,8 @@ export default function AddMedicinePage() {
   };
 
   return (
-    <div className={isOnboarding ? 'min-h-screen flex items-center justify-center bg-muted p-4' : ''}>
-      <Card className={isOnboarding ? 'w-full max-w-lg' : ''}>
+    <div className={isOnboarding ? 'min-h-screen flex items-center justify-center bg-background p-4' : ''}>
+      <Card className={`border-border/50 ${isOnboarding ? 'w-full max-w-lg' : ''}`}>
         <CardHeader>
           <CardTitle>
             {isOnboarding ? 'Add Medicines' : 'Add Medicine'}

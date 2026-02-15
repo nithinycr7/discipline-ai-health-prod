@@ -9,7 +9,24 @@ async function bootstrap() {
   app.setGlobalPrefix('api/v1');
 
   app.enableCors({
-    origin: process.env.FRONTEND_URL || 'http://localhost:3000',
+    origin: (origin, callback) => {
+      const allowed = [
+        'http://localhost:3000',
+        'https://discipline-ai-health-prod.vercel.app',
+        'https://discipline-ai-health-prod-f7venw1y1-nithinycr7s-projects.vercel.app',
+      ];
+      // Allow requests with no origin (mobile apps, curl, etc.)
+      // Allow any Vercel preview deployment for this project
+      if (
+        !origin ||
+        allowed.includes(origin) ||
+        /^https:\/\/discipline-ai-health-prod.*\.vercel\.app$/.test(origin)
+      ) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    },
     credentials: true,
   });
 

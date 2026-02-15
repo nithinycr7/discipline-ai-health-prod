@@ -34,7 +34,6 @@ export default function DashboardPage() {
       const res = await patientsApi.list(token!);
       const patientList = res.data || res;
 
-      // Load adherence for each patient
       const withAdherence = await Promise.all(
         patientList.map(async (p: any) => {
           try {
@@ -64,13 +63,16 @@ export default function DashboardPage() {
 
   if (patients.length === 0) {
     return (
-      <div className="text-center py-20">
-        <h2 className="text-2xl font-bold mb-2">Welcome! Let's get started</h2>
-        <p className="text-muted-foreground mb-6">
-          Add your parent to start monitoring their medicine adherence.
+      <div className="text-center py-24">
+        <div className="w-16 h-16 rounded-2xl bg-primary/10 flex items-center justify-center mx-auto mb-6">
+          <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="text-primary"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><line x1="19" x2="19" y1="8" y2="14"/><line x1="22" x2="16" y1="11" y2="11"/></svg>
+        </div>
+        <h2 className="text-2xl font-bold mb-2">Welcome! Let&apos;s get started</h2>
+        <p className="text-muted-foreground mb-8 max-w-sm mx-auto">
+          Add your parent to start monitoring their medicine adherence with daily AI calls.
         </p>
         <Link href="/onboarding/patient-info">
-          <Button size="lg">Add Your Parent</Button>
+          <Button size="lg" className="rounded-xl px-8">Add Your Parent</Button>
         </Link>
       </div>
     );
@@ -78,10 +80,15 @@ export default function DashboardPage() {
 
   return (
     <div>
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Today's Overview</h1>
+      <div className="flex items-center justify-between mb-8">
+        <div>
+          <h1 className="text-2xl font-bold tracking-tight">Today&apos;s Overview</h1>
+          <p className="text-muted-foreground text-sm mt-1">
+            {new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}
+          </p>
+        </div>
         <Link href="/onboarding/patient-info">
-          <Button variant="outline" size="sm">Add Another Parent</Button>
+          <Button variant="outline" size="sm" className="rounded-lg">Add Parent</Button>
         </Link>
       </div>
 
@@ -93,8 +100,11 @@ export default function DashboardPage() {
 
           return (
             <Link key={patient._id} href={`/dashboard/patients/${patient._id}`}>
-              <Card className={cn('hover:shadow-md transition-shadow cursor-pointer', getAdherenceBgColor(percentage))}>
-                <CardHeader className="pb-2">
+              <Card className={cn(
+                'hover:shadow-md transition-all cursor-pointer border-border/50 hover:border-border',
+                getAdherenceBgColor(percentage)
+              )}>
+                <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
                     <CardTitle className="text-lg">{patient.preferredName}</CardTitle>
                     {patient.isPaused ? (
@@ -114,19 +124,30 @@ export default function DashboardPage() {
                   <p className="text-sm text-muted-foreground">{patient.fullName}</p>
                 </CardHeader>
                 <CardContent>
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-end justify-between">
                     <div>
-                      <p className="text-3xl font-bold">
+                      <p className="text-3xl font-bold tracking-tight">
                         {total > 0 ? `${taken}/${total}` : '--'}
                       </p>
-                      <p className="text-sm text-muted-foreground">medicines taken</p>
+                      <p className="text-xs text-muted-foreground mt-0.5">medicines taken</p>
                     </div>
-                    <div className="text-right">
-                      <p className="text-2xl font-bold">
-                        {total > 0 ? `${percentage}%` : '--'}
-                      </p>
-                      <p className="text-sm text-muted-foreground">adherence</p>
-                    </div>
+                    {total > 0 && (
+                      <div className="text-right">
+                        <div className="inline-flex items-center gap-1.5">
+                          <div className="w-16 h-2 rounded-full bg-border overflow-hidden">
+                            <div
+                              className={cn(
+                                'h-full rounded-full transition-all',
+                                percentage === 100 ? 'bg-green-500' :
+                                percentage >= 50 ? 'bg-yellow-500' : 'bg-red-500'
+                              )}
+                              style={{ width: `${percentage}%` }}
+                            />
+                          </div>
+                          <span className="text-sm font-semibold">{percentage}%</span>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 </CardContent>
               </Card>
