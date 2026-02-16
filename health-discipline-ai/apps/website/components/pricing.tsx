@@ -54,7 +54,7 @@ export function Pricing() {
               Pricing
             </p>
             <h2 className="mt-4 text-heading sm:text-display-sm text-gray-900">
-              Less than a cup of chai per day
+              Less than a cup of coffee per day
             </h2>
             <p className="mt-4 text-body-lg text-gray-500">
               Start with a free 7-day trial. No credit card required.
@@ -62,7 +62,7 @@ export function Pricing() {
             </p>
 
             {/* Billing toggle */}
-            <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-warm-200 bg-warm-50 p-1.5">
+            <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-warm-200/60 bg-warm-50/70 backdrop-blur-sm p-1.5">
               <button
                 onClick={() => setIsYearly(false)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
@@ -96,8 +96,8 @@ export function Pricing() {
               <div
                 className={`relative overflow-hidden rounded-2xl border p-8 transition-all duration-300 ${
                   plan.popular
-                    ? 'border-brand-500 bg-white shadow-elevated scale-[1.02]'
-                    : 'border-warm-200 bg-white shadow-soft hover:shadow-card'
+                    ? 'border-brand-500/40 bg-white/80 backdrop-blur-md shadow-elevated scale-[1.02]'
+                    : 'border-warm-200/60 bg-white/70 backdrop-blur-sm shadow-soft hover:shadow-card'
                 }`}
               >
                 {plan.popular && (

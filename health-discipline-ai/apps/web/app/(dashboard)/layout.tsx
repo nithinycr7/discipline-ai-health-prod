@@ -35,7 +35,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
 
   return (
     <div className="min-h-screen bg-background">
-      <header className="bg-card border-b border-border/50 sticky top-0 z-50">
+      <header className="bg-white/70 backdrop-blur-xl border-b border-white/30 sticky top-0 z-50 shadow-soft">
         <div className="container mx-auto px-6 flex items-center justify-between h-16">
           <div className="flex items-center gap-8">
             <Link href="/dashboard" className="flex items-center gap-2">

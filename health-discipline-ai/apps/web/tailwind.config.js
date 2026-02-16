@@ -51,6 +51,17 @@ module.exports = {
         lg: 'var(--radius)',
         md: 'calc(var(--radius) - 2px)',
         sm: 'calc(var(--radius) - 4px)',
+        '2xl': '1rem',
+        '3xl': '1.5rem',
+      },
+      boxShadow: {
+        soft: '0 2px 24px -4px rgba(0,0,0,0.06)',
+        card: '0 4px 32px -8px rgba(0,0,0,0.08)',
+        elevated: '0 12px 48px -12px rgba(0,0,0,0.12)',
+      },
+      fontFamily: {
+        sans: ['var(--font-inter)', 'system-ui', 'sans-serif'],
+        serif: ['var(--font-playfair)', 'Georgia', 'serif'],
       },
     },
   },

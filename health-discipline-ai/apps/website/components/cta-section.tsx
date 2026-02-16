@@ -37,26 +37,26 @@ export function CTASection() {
                 </a>
                 <a
                   href="/hospitals"
-                  className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-[0.938rem] font-semibold text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10"
+                  className="inline-flex items-center justify-center gap-2 rounded-xl glass-dark px-8 py-4 text-[0.938rem] font-semibold text-white transition-all duration-300 hover:border-white/30 hover:bg-white/15"
                 >
                   For Hospitals
                 </a>
               </div>
 
-              <div className="mt-8 flex items-center justify-center gap-6 text-sm text-brand-300">
-                <span className="flex items-center gap-1.5">
+              <div className="mt-8 flex items-center justify-center gap-4 sm:gap-6 text-sm text-brand-200">
+                <span className="flex items-center gap-1.5 glass-dark rounded-full px-3 py-1.5">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
                   7-day free trial
                 </span>
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 glass-dark rounded-full px-3 py-1.5">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>
                   Cancel anytime
                 </span>
-                <span className="flex items-center gap-1.5">
+                <span className="flex items-center gap-1.5 glass-dark rounded-full px-3 py-1.5">
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                   </svg>

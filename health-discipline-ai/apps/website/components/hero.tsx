@@ -21,7 +21,7 @@ export function Hero() {
       <div className="section-container">
         <div className="mx-auto max-w-4xl text-center">
           {/* Trust badge */}
-          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-600 animate-fade-in">
+          <div className="mb-8 inline-flex items-center gap-2 rounded-full border border-brand-200/40 bg-brand-50/60 backdrop-blur-sm px-4 py-1.5 text-sm font-medium text-brand-600 animate-fade-in">
             <span className="inline-block h-1.5 w-1.5 rounded-full bg-brand-500 animate-pulse-slow" />
             Trusted by 200+ families across India
           </div>
@@ -67,7 +67,7 @@ export function Hero() {
             </div>
 
             {/* Floating WhatsApp card */}
-            <div className="absolute -bottom-6 -left-4 sm:-left-8 w-64 sm:w-72 rounded-xl border border-warm-200/60 bg-white p-4 shadow-card animate-fade-up animate-delay-400">
+            <div className="absolute -bottom-6 -left-4 sm:-left-8 w-64 sm:w-72 rounded-xl glass shadow-card animate-fade-up animate-delay-400 p-4">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
                   <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">
@@ -86,7 +86,7 @@ export function Hero() {
             </div>
 
             {/* Floating language card */}
-            <div className="absolute -top-4 -right-4 sm:-right-8 rounded-xl border border-warm-200/60 bg-white px-4 py-3 shadow-card animate-fade-up animate-delay-500">
+            <div className="absolute -top-4 -right-4 sm:-right-8 rounded-xl glass shadow-card animate-fade-up animate-delay-500 px-4 py-3">
               <p className="text-xs font-medium text-gray-500 mb-1.5">Speaking in</p>
               <div className="flex items-center gap-1.5">
                 {['हिं', 'తె', 'த', 'ಕ', 'বা'].map((lang, i) => (
