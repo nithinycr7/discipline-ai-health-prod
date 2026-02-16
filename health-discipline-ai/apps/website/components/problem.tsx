@@ -77,8 +77,9 @@ export function Problem() {
         <ScrollReveal delay={300}>
           <div className="mx-auto mt-16 max-w-2xl rounded-2xl border border-brand-200/50 bg-brand-50/50 p-8 text-center">
             <p className="text-body-lg text-brand-600 font-medium leading-relaxed">
-              What if someone called your parents daily in their language, checked
-              each medicine by name, and sent you the truth?
+              What if someone checked on your parents every day in their
+              language, recorded what actually happened, and sent you the truth
+              &mdash; not just reassurance?
             </p>
           </div>
         </ScrollReveal>

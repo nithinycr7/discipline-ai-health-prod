@@ -199,7 +199,59 @@ Open `https://discipline-ai-health-prod.vercel.app` and check:
 
 ---
 
-## 3. Key API Endpoints
+## 3. Website (Landing Page) — Vercel
+
+### Project Info
+
+| Setting         | Value                                     |
+|-----------------|-------------------------------------------|
+| Vercel Project  | `health-discipline-website`               |
+| Vercel Org      | `nithinycr7s-projects`                    |
+| Framework       | Next.js 14 (static export)                |
+| Directory       | `apps/website/`                           |
+| Production URL  | `https://health-discipline-website.vercel.app` |
+| Project ID      | `prj_Lzl8aFVM7PkluBKER7kIMawbveHs`       |
+| Dev Port        | `3001`                                    |
+
+### Deploy
+
+```bash
+# From the website app directory:
+cd apps/website
+
+# Production deploy
+vercel --prod --yes
+
+# Preview deploy (for testing before going live)
+vercel --yes
+```
+
+### Local Development
+
+```bash
+cd apps/website
+npm run dev
+# Opens at http://localhost:3001
+```
+
+### Pages
+
+| Route | Description |
+|-------|-------------|
+| `/` | Homepage — B2C landing page targeting NRI families |
+| `/hospitals` | B2B landing page for hospitals and clinics |
+
+### After Deploy — Verify
+
+Open `https://health-discipline-website.vercel.app` and check:
+- Hero section loads with correct messaging
+- Pricing toggle (Monthly/Yearly) works
+- "For Hospitals" link navigates to `/hospitals`
+- No console errors
+
+---
+
+## 4. Key API Endpoints
 
 | Endpoint | Description |
 |----------|-------------|
@@ -211,7 +263,7 @@ Open `https://discipline-ai-health-prod.vercel.app` and check:
 
 ---
 
-## 4. ElevenLabs Webhook Setup
+## 5. ElevenLabs Webhook Setup
 
 The post-call webhook must be configured in ElevenLabs to send conversation data back to our API.
 
@@ -226,7 +278,7 @@ The post-call webhook must be configured in ElevenLabs to send conversation data
 
 ---
 
-## 5. Local Development
+## 6. Local Development
 
 ```bash
 cd health-discipline-ai
@@ -260,7 +312,7 @@ FRONTEND_URL=http://localhost:3000
 
 ---
 
-## 6. Updating an Existing Deployment
+## 7. Updating an Existing Deployment
 
 ### Backend (Cloud Run)
 ```bash
@@ -274,7 +326,7 @@ gcloud run deploy discipline-ai-api \
 ```
 > Env vars persist across deploys. Only use `--env-vars-file` when you need to change them.
 
-### Frontend (Vercel)
+### Frontend Dashboard (Vercel)
 ```bash
 # If auto-deploy is connected: just push to master
 git push origin master
@@ -283,9 +335,14 @@ git push origin master
 cd health-discipline-ai/apps/web && npx vercel --prod
 ```
 
+### Website Landing Page (Vercel)
+```bash
+cd health-discipline-ai/apps/website && vercel --prod --yes
+```
+
 ---
 
-## 7. Troubleshooting
+## 8. Troubleshooting
 
 | Issue | Fix |
 |-------|-----|

@@ -34,8 +34,9 @@ export function Hero() {
 
           {/* Subheading */}
           <p className="mx-auto mt-6 max-w-2xl text-body-lg text-gray-600 animate-fade-up animate-delay-100">
-            AI calls your parents daily in their language, checks each medicine
-            by name, and sends you a real WhatsApp report.{' '}
+            We call your parents daily in their language, check on their
+            medicines and health routines, and send you a record of what
+            actually happened &mdash; not just reassurance.{' '}
             <span className="font-medium text-gray-800">No app needed.</span>
           </p>
 
@@ -77,7 +78,7 @@ export function Hero() {
                 <div className="min-w-0">
                   <p className="text-xs font-semibold text-gray-900">Daily Report</p>
                   <p className="mt-0.5 text-xs text-gray-500 leading-relaxed">
-                    Amma took all 3 medicines today. BP: 130/82. Feeling good.
+                    Amma took all 3 medicines today. BP: 130/82. Mood: cheerful and talkative.
                   </p>
                   <p className="mt-1 text-[10px] text-gray-400">Just now</p>
                 </div>

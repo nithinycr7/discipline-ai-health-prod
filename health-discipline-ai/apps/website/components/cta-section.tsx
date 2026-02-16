@@ -16,13 +16,14 @@ export function CTASection() {
 
             <div className="relative mx-auto max-w-2xl text-center">
               <h2 className="text-heading sm:text-display-sm text-white">
-                Start caring with data,
+                Stop wondering.
                 <br />
-                not just hope
+                Start knowing.
               </h2>
               <p className="mx-auto mt-5 max-w-lg text-body-lg text-brand-200">
                 7-day free trial. No credit card. No app needed. Your parents
-                just answer the phone.
+                just answer the phone &mdash; you get a daily record of what
+                actually happened.
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <a

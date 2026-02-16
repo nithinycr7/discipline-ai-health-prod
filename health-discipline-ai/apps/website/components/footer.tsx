@@ -16,8 +16,8 @@ export function Footer() {
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-gray-500 leading-relaxed">
-              AI-powered medication adherence monitoring. Your parents&apos;
-              health, one call away.
+              We help families stay on top of daily health routines through
+              simple voice calls.
             </p>
           </div>
 

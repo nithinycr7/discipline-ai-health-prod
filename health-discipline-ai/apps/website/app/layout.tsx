@@ -18,19 +18,21 @@ export const metadata: Metadata = {
   metadataBase: new URL('https://healthdiscipline.ai'),
   title: 'Health Discipline AI — Your Parents\' Health, One Call Away',
   description:
-    'AI calls your parents daily in their language, checks each medicine by name, and sends you a real report. No app needed. 11 Indian languages supported.',
+    'We call your parents daily in their language, check on their health routines, record what actually happened, and send you a clear report. No app needed. 11 Indian languages.',
   keywords: [
-    'medication adherence',
+    'health routine monitoring',
     'elderly care India',
     'NRI parents health',
-    'AI health monitoring',
+    'AI health calls',
     'medicine reminder calls',
     'daily health check',
+    'medication adherence',
+    'sentiment analysis',
   ],
   openGraph: {
     title: 'Health Discipline AI — Your Parents\' Health, One Call Away',
     description:
-      'AI calls your parents daily in their language, checks each medicine by name, and sends you a real report. No app needed.',
+      'We call your parents daily in their language, check on their health routines, and send you a real record of what happened. No app needed.',
     type: 'website',
     locale: 'en_IN',
     siteName: 'Health Discipline AI',
@@ -40,7 +42,7 @@ export const metadata: Metadata = {
     card: 'summary_large_image',
     title: 'Health Discipline AI — Your Parents\' Health, One Call Away',
     description:
-      'AI calls your parents daily in their language, checks each medicine by name, and sends you a real report.',
+      'We call your parents daily in their language, check on their health routines, and send you a real record of what happened.',
   },
 };
 
