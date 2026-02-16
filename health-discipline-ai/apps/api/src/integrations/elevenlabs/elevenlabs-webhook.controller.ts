@@ -4,6 +4,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { CallsService } from '../../calls/calls.service';
 import { PatientsService } from '../../patients/patients.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { ElevenLabsAgentService } from './elevenlabs-agent.service';
 
 /**
  * ElevenLabs Post-Call Webhook Controller
@@ -26,6 +27,7 @@ export class ElevenLabsWebhookController {
     private callsService: CallsService,
     private patientsService: PatientsService,
     private notificationsService: NotificationsService,
+    private elevenLabsAgentService: ElevenLabsAgentService,
   ) {}
 
   @Public()
@@ -78,38 +80,78 @@ export class ElevenLabsWebhookController {
       // Fetch the call record
       const call = await this.callsService.findById(callId);
 
-      // Update each medicine's response on the existing medicinesChecked array
-      // The call record already has medicinesChecked from when the call was created.
-      // Match by name and update the response.
+      // Update each medicine's response on the existing medicinesChecked array.
+      // The AI may transliterate names (e.g. "Hp1" → "Hp ek", "Hp one"),
+      // so we use fuzzy matching: normalize both strings, then check containment.
       if (call.medicinesChecked && call.medicinesChecked.length > 0) {
         for (const existingMed of call.medicinesChecked) {
-          const match = medicineResponses.find(
-            (mr) =>
-              mr.medicineName.toLowerCase() ===
-                (existingMed.nickname || existingMed.medicineName || '')
-                  .toLowerCase() ||
-              mr.medicineName.toLowerCase() ===
-                (existingMed.medicineName || '').toLowerCase(),
+          const match = medicineResponses.find((mr) =>
+            this.fuzzyMedicineMatch(
+              mr.medicineName,
+              existingMed.nickname || existingMed.medicineName || '',
+              existingMed.medicineName || '',
+            ),
           );
           if (match) {
             existingMed.response = match.response;
             existingMed.timestamp = new Date();
           }
         }
+
+        // If only one medicine and one response, force-match regardless of name
+        if (
+          call.medicinesChecked.length === 1 &&
+          medicineResponses.length === 1 &&
+          call.medicinesChecked[0].response === 'pending'
+        ) {
+          call.medicinesChecked[0].response = medicineResponses[0].response;
+          call.medicinesChecked[0].timestamp = new Date();
+        }
       }
+
+      // Calculate costs
+      const durationSecs = metadata.call_duration_secs || 0;
+      const terminationReason = metadata.termination_reason || '';
+
+      // Twilio cost: ~$0.0085/min for India outbound ≈ ₹0.72/min
+      const twilioCharges = Math.round((durationSecs / 60) * 0.72 * 100) / 100;
+
+      // Fetch ElevenLabs cost from conversation API (credits)
+      let elevenlabsCostCredits = 0;
+      let elevenlabsCharges = 0;
+      if (conversationId) {
+        try {
+          const convData = await this.elevenLabsAgentService.getConversation(conversationId);
+          if (convData?.metadata?.cost) {
+            elevenlabsCostCredits = convData.metadata.cost; // ElevenLabs credits
+            // ElevenLabs Creator tier: ~1000 credits ≈ $1 ≈ ₹85
+            elevenlabsCharges = Math.round((elevenlabsCostCredits / 1000) * 85 * 100) / 100;
+          }
+        } catch (costErr: any) {
+          this.logger.warn(`Failed to fetch ElevenLabs cost: ${costErr.message}`);
+        }
+      }
+
+      const totalCharges = Math.round((twilioCharges + elevenlabsCharges) * 100) / 100;
 
       // Update call status to completed with all data
       await this.callsService.updateCallStatus(callId, 'completed', {
         endedAt: new Date(),
-        duration: metadata.call_duration_secs || 0,
+        duration: durationSecs,
         moodNotes: wellness || undefined,
         complaints: complaints.length > 0 ? complaints : undefined,
         transcriptUrl: conversationId
           ? `elevenlabs:conversation:${conversationId}`
           : undefined,
         twilioCallSid: conversationId,
+        elevenlabsConversationId: conversationId,
         medicinesChecked: call.medicinesChecked,
         transcript: transcriptText || undefined,
+        terminationReason: terminationReason || undefined,
+        twilioCharges,
+        elevenlabsCharges,
+        elevenlabsCostCredits,
+        totalCharges,
       } as any);
 
       // Update vitals if patient reported checking them
@@ -136,7 +178,7 @@ export class ElevenLabsWebhookController {
         `Post-call processed: call=${callId}, ` +
           `medicines=${medicineResponses.length}, wellness=${wellness}, ` +
           `vitals=${vitalsChecked}, complaints=${complaints.length}, ` +
-          `duration=${metadata.call_duration_secs}s`,
+          `duration=${durationSecs}s, cost=₹${totalCharges}`,
       );
 
       return {
@@ -216,6 +258,40 @@ export class ElevenLabsWebhookController {
       return 'missed';
     }
     return 'unclear';
+  }
+
+  /**
+   * Fuzzy match an extracted medicine name against stored names.
+   * Handles transliterations like "Hp ek" vs "Hp1", "Hp one" vs "Hp1".
+   */
+  private fuzzyMedicineMatch(
+    extracted: string,
+    nickname: string,
+    brandName: string,
+  ): boolean {
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/\bone\b/g, '1')
+        .replace(/\btwo\b/g, '2')
+        .replace(/\bthree\b/g, '3')
+        .replace(/\bek\b/g, '1')
+        .replace(/\bdo\b/g, '2')
+        .replace(/\bteen\b/g, '3')
+        .replace(/[^a-z0-9]/g, '');
+
+    const ext = norm(extracted);
+    const nick = norm(nickname);
+    const brand = norm(brandName);
+
+    // Exact after normalization
+    if (ext === nick || ext === brand) return true;
+
+    // One contains the other
+    if (ext.includes(nick) || nick.includes(ext)) return true;
+    if (ext.includes(brand) || brand.includes(ext)) return true;
+
+    return false;
   }
 
   private buildTranscriptText(transcript: any[]): string {

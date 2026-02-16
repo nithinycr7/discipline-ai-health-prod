@@ -48,7 +48,22 @@
       "Bash(\"/c/Users/nithi/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\" builds log 37052eb3-e888-48f1-994d-0f0dbe29e433 --project=discipline-ai-health --region=us-central1)",
       "Bash(\"/c/Users/nithi/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud\" builds log 6aea2fc3-d5fa-4f50-a0a9-dab0d3d756e6 --project=discipline-ai-health --region=us-central1)",
       "Bash(node -e:*)",
-      "Bash(npx turbo build:*)"
+      "Bash(npx turbo build:*)",
+      "Bash(cat:*)",
+      "Bash(python3:*)",
+      "Bash(npx --yes sharp-cli:*)",
+      "Bash(npx sharp-cli:*)",
+      "Bash(pip install:*)",
+      "Bash(pip3 install:*)",
+      "Bash(ls:*)",
+      "Bash(npm run dev:*)",
+      "Bash(vercel --version:*)",
+      "Bash(npm run build:*)",
+      "Bash(vercel:*)",
+      "Bash(VERCEL_ORG_ID=team_1ZjyQmfkzjGyostYe6Mw46t9 vercel link:*)",
+      "Bash(printf:*)",
+      "Bash(TOKEN=\"eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJzdWIiOiI2OTkxNjlkNzY0N2ExZTZiOTQ4ZmQxNzciLCJyb2xlIjoicGF5ZXIiLCJpYXQiOjE3NzEyMjQxOTAsImV4cCI6MTc3MTIyNTA5MH0.wK6Ah8Wf9Kd5Blq4qVbADxWCqkfGtwR2L2coxexnAHs\")",
+      "Bash(node:*)"
     ]
   }
 }

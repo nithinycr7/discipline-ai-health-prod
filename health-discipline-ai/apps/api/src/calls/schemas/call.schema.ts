@@ -114,6 +114,12 @@ export class Call {
   @Prop()
   totalCharges?: number;
 
+  @Prop()
+  terminationReason?: string;
+
+  @Prop()
+  elevenlabsCostCredits?: number;
+
   @Prop({ default: false })
   isFirstCall: boolean;
 
