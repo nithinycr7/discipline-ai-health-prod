@@ -1,0 +1,10 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(npx next dev:*)",
+      "WebFetch(domain:cloudchipr.com)",
+      "WebFetch(domain:hamy.xyz)",
+      "WebFetch(domain:www.twilio.com)"
+    ]
+  }
+}

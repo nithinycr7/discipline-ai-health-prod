@@ -1,6 +1,6 @@
 import { SubscriptionStatus } from '../enums';
 
-export type SubscriptionPlan = 'saathi' | 'suraksha' | 'sampurna';
+export type SubscriptionPlan = 'suraksha' | 'sampurna';
 export type PaymentGateway = 'razorpay' | 'stripe';
 export type BillingCycle = 'monthly' | 'annual';
 
@@ -40,5 +40,6 @@ export interface PlanInfo {
   name: string;
   price: number;
   currency: string;
+  popular?: boolean;
   features: string[];
 }

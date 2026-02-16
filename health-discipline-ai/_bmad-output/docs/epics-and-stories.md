@@ -481,13 +481,13 @@
 
 **E6-S1: Plan Selection UI**
 - **As a** payer
-- **I want** to see and select from 3 subscription plans during onboarding
+- **I want** to see and select from 2 subscription plans during onboarding
 - **So that** I can choose the right level of service
 - **Acceptance Criteria:**
-  - [ ] Display 3 plans: Saathi (INR 499), Suraksha (INR 999), Sampurna (INR 1,999)
-  - [ ] "Most Popular" badge on Suraksha
+  - [ ] Display 2 plans: Suraksha (₹1,350/$15), Sampurna (₹1,800/$20)
+  - [ ] "Most Popular" badge on Sampurna
   - [ ] Feature comparison per plan
-  - [ ] Daily cost breakdown shown (INR 33/day for Suraksha)
+  - [ ] Daily cost breakdown shown (₹45/day for Suraksha, ₹60/day for Sampurna)
 - **Story Points:** 3
 
 **E6-S2: Payment Integration (Razorpay + Stripe)**

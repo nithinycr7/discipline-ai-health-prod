@@ -32,7 +32,13 @@ export default function PayerRegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-background p-4">
+    <div className="min-h-screen flex items-center justify-center p-4 relative overflow-hidden">
+      {/* Background gradient */}
+      <div className="pointer-events-none absolute inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-br from-primary/5 via-background to-accent/10" />
+        <div className="absolute right-0 top-0 h-[500px] w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-primary/5 blur-3xl" />
+        <div className="absolute left-0 bottom-0 h-[400px] w-[400px] translate-y-1/4 -translate-x-1/4 rounded-full bg-accent/10 blur-3xl" />
+      </div>
       <div className="w-full max-w-md">
       <div className="text-center mb-8">
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
@@ -41,7 +47,7 @@ export default function PayerRegisterPage() {
         <h1 className="text-2xl font-bold tracking-tight">Set Up Health Monitoring</h1>
         <p className="text-muted-foreground text-sm mt-1">Create your account to start monitoring your parent&apos;s medicines</p>
       </div>
-      <Card className="border-border/50">
+      <Card className="glass shadow-card">
         <form onSubmit={handleSubmit}>
           <CardContent className="space-y-4">
             {error && (

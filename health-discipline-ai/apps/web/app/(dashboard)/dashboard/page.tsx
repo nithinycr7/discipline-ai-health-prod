@@ -101,7 +101,7 @@ export default function DashboardPage() {
           return (
             <Link key={patient._id} href={`/dashboard/patients/${patient._id}`}>
               <Card className={cn(
-                'hover:shadow-md transition-all cursor-pointer border-border/50 hover:border-border',
+                'hover:shadow-card hover:-translate-y-0.5 transition-all duration-300 cursor-pointer border-border/50 hover:border-border',
                 getAdherenceBgColor(percentage)
               )}>
                 <CardHeader className="pb-3">

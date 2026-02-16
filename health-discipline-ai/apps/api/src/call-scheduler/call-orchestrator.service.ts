@@ -1,8 +1,10 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { CallsService } from '../calls/calls.service';
 import { MedicinesService } from '../medicines/medicines.service';
 import { PatientsService } from '../patients/patients.service';
 import { ElevenLabsAgentService } from '../integrations/elevenlabs/elevenlabs-agent.service';
+import { SarvamAgentService } from '../integrations/sarvam/sarvam-agent.service';
 import { NotificationsService } from '../notifications/notifications.service';
 
 interface DueCall {
@@ -15,14 +17,20 @@ interface DueCall {
 export class CallOrchestratorService {
   private readonly logger = new Logger(CallOrchestratorService.name);
   private readonly MAX_CONCURRENT = 50;
+  private readonly voiceStack: string;
 
   constructor(
     private callsService: CallsService,
     private medicinesService: MedicinesService,
     private patientsService: PatientsService,
     private elevenLabsAgentService: ElevenLabsAgentService,
+    private sarvamAgentService: SarvamAgentService,
     private notificationsService: NotificationsService,
-  ) {}
+    private configService: ConfigService,
+  ) {
+    this.voiceStack = this.configService.get<string>('VOICE_STACK', 'elevenlabs');
+    this.logger.log(`Voice stack configured: ${this.voiceStack}`);
+  }
 
   async processBatch(dueCalls: DueCall[]) {
     const batches = [];
@@ -36,14 +44,11 @@ export class CallOrchestratorService {
   }
 
   /**
-   * Initiate an AI voice call to a patient using ElevenLabs Conversational AI.
+   * Initiate an AI voice call to a patient.
    *
-   * Flow:
-   * 1. Get patient's medicines for this timing
-   * 2. Create a call record in DB
-   * 3. Call ElevenLabs outbound call API with patient data as dynamic variables
-   * 4. ElevenLabs agent conducts the conversation autonomously in Hindi
-   * 5. After call ends, ElevenLabs sends post-call webhook → ElevenLabsWebhookController
+   * Routes to the configured voice stack:
+   * - VOICE_STACK=elevenlabs (default): ElevenLabs Conversational AI → post-call webhook
+   * - VOICE_STACK=sarvam: LiveKit + Sarvam STT/TTS + Gemini → post-call webhook
    */
   async initiateCall(dueCall: DueCall) {
     const { patient, timing } = dueCall;
@@ -68,6 +73,7 @@ export class CallOrchestratorService {
         status: 'scheduled',
         isFirstCall: patient.callsCompletedCount === 0,
         usedNewPatientProtocol: patient.isNewPatient,
+        voiceStack: this.voiceStack,
         medicinesChecked: medicines.map((med: any) => ({
           medicineId: med._id,
           medicineName: med.brandName,
@@ -77,33 +83,45 @@ export class CallOrchestratorService {
         })),
       });
 
-      // Make outbound call via ElevenLabs Conversational AI Agent
-      // The agent handles the entire conversation autonomously
-      const result = await this.elevenLabsAgentService.makeOutboundCall(
-        patient.phone,
-        call._id.toString(),
-        {
-          patientName: patient.preferredName,
-          medicines: medicines.map((med: any) => ({
-            name: med.nicknames?.[0] || med.brandName,
-            timing: med.timing,
-            medicineId: med._id.toString(),
-          })),
-          isNewPatient: patient.isNewPatient,
-          hasGlucometer: patient.hasGlucometer,
-          hasBPMonitor: patient.hasBPMonitor,
-          preferredLanguage: patient.preferredLanguage || 'hi',
-        },
-      );
+      const patientData = {
+        patientName: patient.preferredName,
+        medicines: medicines.map((med: any) => ({
+          name: med.nicknames?.[0] || med.brandName,
+          timing: med.timing,
+          medicineId: med._id.toString(),
+        })),
+        isNewPatient: patient.isNewPatient,
+        hasGlucometer: patient.hasGlucometer,
+        hasBPMonitor: patient.hasBPMonitor,
+        preferredLanguage: patient.preferredLanguage || 'hi',
+      };
 
-      // Update call with ElevenLabs conversation ID
+      let result: { conversationId: string; callSid: string };
+
+      if (this.voiceStack === 'sarvam') {
+        // Sarvam stack: LiveKit room + SIP call → Python agent worker
+        result = await this.sarvamAgentService.makeOutboundCall(
+          patient.phone,
+          call._id.toString(),
+          patientData,
+        );
+      } else {
+        // Default: ElevenLabs Conversational AI Agent
+        result = await this.elevenLabsAgentService.makeOutboundCall(
+          patient.phone,
+          call._id.toString(),
+          patientData,
+        );
+      }
+
+      // Update call with conversation/room ID
       await this.callsService.updateCallStatus(call._id.toString(), 'in_progress', {
         twilioCallSid: result.conversationId,
         initiatedAt: new Date(),
       });
 
       this.logger.log(
-        `AI call initiated for ${patient.preferredName} (${patient._id}), ` +
+        `AI call initiated [${this.voiceStack}] for ${patient.preferredName} (${patient._id}), ` +
         `conversationId: ${result.conversationId}`,
       );
     } catch (error: any) {

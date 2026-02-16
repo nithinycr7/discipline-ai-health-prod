@@ -90,6 +90,12 @@ export class Call {
   @Prop()
   elevenlabsConversationId?: string;
 
+  @Prop({ enum: ['elevenlabs', 'sarvam'], default: 'elevenlabs' })
+  voiceStack?: string;
+
+  @Prop()
+  livekitRoomName?: string;
+
   @Prop()
   recordingUrl?: string;
 
@@ -107,6 +113,12 @@ export class Call {
 
   @Prop()
   totalCharges?: number;
+
+  @Prop()
+  terminationReason?: string;
+
+  @Prop()
+  elevenlabsCostCredits?: number;
 
   @Prop({ default: false })
   isFirstCall: boolean;
