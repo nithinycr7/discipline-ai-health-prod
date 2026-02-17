@@ -125,6 +125,25 @@ export class Call {
 
   @Prop({ default: false })
   usedNewPatientProtocol: boolean;
+
+  // Dynamic prompt tracking
+  @Prop({
+    enum: ['standard', 'wellness_first', 'quick_check', 'celebration', 'gentle_reengagement'],
+  })
+  conversationVariant?: string;
+
+  @Prop({
+    enum: ['warm_cheerful', 'gentle_concerned', 'celebratory_proud', 'light_breezy', 'reassuring_patient', 'festive_joyful'],
+  })
+  toneUsed?: string;
+
+  @Prop({
+    enum: ['stranger', 'acquaintance', 'familiar', 'trusted', 'family'],
+  })
+  relationshipStage?: string;
+
+  @Prop({ type: [String], default: [] })
+  screeningQuestionsAsked: string[];
 }
 
 export const CallSchema = SchemaFactory.createForClass(Call);

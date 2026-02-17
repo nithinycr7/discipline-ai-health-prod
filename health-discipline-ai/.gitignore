@@ -1,3 +1,6 @@
+# Cloud Run env (secrets)
+cloud-run-env.yaml
+
 # Dependencies
 node_modules/
 .pnp

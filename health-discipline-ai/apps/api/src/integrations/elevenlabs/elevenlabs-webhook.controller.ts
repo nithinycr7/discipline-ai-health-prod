@@ -177,8 +177,8 @@ export class ElevenLabsWebhookController {
           const convData = await this.elevenLabsAgentService.getConversation(conversationId);
           if (convData?.metadata?.cost) {
             elevenlabsCostCredits = convData.metadata.cost; // ElevenLabs credits
-            // ElevenLabs Creator tier: ~1000 credits ≈ $1 ≈ ₹85
-            elevenlabsCharges = Math.round((elevenlabsCostCredits / 1000) * 85 * 100) / 100;
+            // ElevenLabs Pro plan: ₹8,712/month for 500,000 credits = ₹17.42 per 1000 credits
+            elevenlabsCharges = Math.round((elevenlabsCostCredits / 1000) * 17.42 * 100) / 100;
           }
         } catch (costErr: any) {
           this.logger.warn(`Failed to fetch ElevenLabs cost: ${costErr.message}`);
@@ -196,7 +196,6 @@ export class ElevenLabsWebhookController {
         transcriptUrl: conversationId
           ? `elevenlabs:conversation:${conversationId}`
           : undefined,
-        twilioCallSid: conversationId,
         elevenlabsConversationId: conversationId,
         medicinesChecked: call.medicinesChecked,
         transcript: transcriptText || undefined,
@@ -218,6 +217,12 @@ export class ElevenLabsWebhookController {
       );
       await this.patientsService.setFirstCallAt(patient._id.toString());
       await this.patientsService.incrementCallCount(patient._id.toString());
+
+      // Update adherence streak
+      const takenCount = call.medicinesChecked?.filter((m) => m.response === 'taken').length || 0;
+      const totalCount = call.medicinesChecked?.length || 1;
+      const adherencePercent = Math.round((takenCount / totalCount) * 100);
+      await this.patientsService.updateStreak(patient._id.toString(), adherencePercent);
 
       // Send post-call report to payer
       try {
@@ -337,12 +342,15 @@ export class ElevenLabsWebhookController {
     const nick = norm(nickname);
     const brand = norm(brandName);
 
-    // Exact after normalization
-    if (ext === nick || ext === brand) return true;
+    if (!ext) return false;
 
-    // One contains the other
-    if (ext.includes(nick) || nick.includes(ext)) return true;
-    if (ext.includes(brand) || brand.includes(ext)) return true;
+    // Exact after normalization
+    if (nick && ext === nick) return true;
+    if (brand && ext === brand) return true;
+
+    // One contains the other (only when both sides are non-empty)
+    if (nick && (ext.includes(nick) || nick.includes(ext))) return true;
+    if (brand && (ext.includes(brand) || brand.includes(ext))) return true;
 
     return false;
   }

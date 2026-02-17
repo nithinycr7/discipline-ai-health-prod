@@ -35,13 +35,23 @@ export interface Call {
   moodNotes?: string;
   complaints?: string[];
   twilioCallSid?: string;
+  elevenlabsConversationId?: string;
+  voiceStack?: 'elevenlabs' | 'sarvam';
+  livekitRoomName?: string;
   recordingUrl?: string;
   transcriptUrl?: string;
+  transcript?: Array<{ role: string; message: string; timestamp?: Date }>;
   twilioCharges?: number;
   elevenlabsCharges?: number;
+  elevenlabsCostCredits?: number;
   totalCharges?: number;
+  terminationReason?: string;
   isFirstCall: boolean;
   usedNewPatientProtocol: boolean;
+  conversationVariant?: string;
+  toneUsed?: string;
+  relationshipStage?: string;
+  screeningQuestionsAsked?: string[];
   createdAt: Date;
   updatedAt: Date;
 }

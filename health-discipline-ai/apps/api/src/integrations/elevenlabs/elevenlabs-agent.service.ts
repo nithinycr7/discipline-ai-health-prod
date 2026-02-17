@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DynamicPromptResult } from '../../dynamic-prompt/types/prompt-context.types';
 
 /**
  * ElevenLabs Conversational AI Agent Service
@@ -45,7 +46,7 @@ export class ElevenLabsAgentService {
       tags: ['health', 'medicine-check', 'hindi'],
       conversation_config: {
         agent: {
-          first_message: 'Namaste {{patient_name}}!',
+          first_message: '{{first_message_override}}',
           dynamic_variables: {
             dynamic_variable_placeholders: {
               patient_name: 'ji',
@@ -54,6 +55,12 @@ export class ElevenLabsAgentService {
               has_glucometer: 'false',
               has_bp_monitor: 'false',
               preferred_language: 'Hindi',
+              flow_directive: '',
+              tone_directive: '',
+              context_notes: '',
+              relationship_directive: '',
+              screening_questions: '',
+              first_message_override: 'Namaste ji!',
             },
           },
           prompt: {
@@ -133,8 +140,9 @@ export class ElevenLabsAgentService {
       }
 
       const data: any = await response.json();
+      const wasUpdate = !!this.agentId;
       this.agentId = data.agent_id;
-      this.logger.log(`ElevenLabs agent ${this.agentId ? 'updated' : 'created'}: ${this.agentId}`);
+      this.logger.log(`ElevenLabs agent ${wasUpdate ? 'updated' : 'created'}: ${this.agentId}`);
       return this.agentId;
     } catch (error: any) {
       this.logger.error(`Failed to create/update agent: ${error.message}`);
@@ -206,6 +214,7 @@ export class ElevenLabsAgentService {
       hasBPMonitor: boolean;
       preferredLanguage: string;
     },
+    dynamicPrompt?: DynamicPromptResult | null,
   ): Promise<{ conversationId: string; callSid: string }> {
     if (!this.apiKey) {
       this.logger.warn('ElevenLabs not configured, simulating call');
@@ -243,6 +252,14 @@ export class ElevenLabsAgentService {
 
     const apiBaseUrl = this.configService.get<string>('API_BASE_URL', 'http://localhost:3001');
 
+    const greeting = dynamicPrompt?.firstMessage || this.getGreeting(patientData.preferredLanguage, patientData.patientName);
+
+    this.logger.log(
+      `[OUTBOUND DEBUG] langCode="${patientData.preferredLanguage}", ` +
+        `resolvedLang="${preferredLanguage}", greeting="${greeting}", ` +
+        `patient="${patientData.patientName}", agentId="${this.agentId}"`,
+    );
+
     try {
       const response = await fetch(`${this.baseUrl}/convai/twilio/outbound-call`, {
         method: 'POST',
@@ -264,6 +281,13 @@ export class ElevenLabsAgentService {
               has_bp_monitor: String(patientData.hasBPMonitor),
               preferred_language: preferredLanguage,
               webhook_url: `${apiBaseUrl}/api/v1/webhooks/elevenlabs/post-call`,
+              // Dynamic prompt variables (empty strings when disabled — no effect on prompt)
+              flow_directive: dynamicPrompt?.flowDirective || '',
+              tone_directive: dynamicPrompt?.toneDirectiveText || '',
+              context_notes: dynamicPrompt?.contextNotes || '',
+              relationship_directive: dynamicPrompt?.relationshipDirective || '',
+              screening_questions: dynamicPrompt?.screeningQuestions || '',
+              first_message_override: greeting,
             },
           },
         }),
@@ -320,12 +344,24 @@ export class ElevenLabsAgentService {
    * This is the base prompt — per-call overrides add specific patient/medicine data.
    */
   private getSystemPrompt(): string {
-    return `Speak in {{preferred_language}} throughout. If the patient responds in a different language, IMMEDIATELY switch to their language for the rest of the call.
+    return `You MUST speak in {{preferred_language}} for the ENTIRE call. Every sentence you say must be in {{preferred_language}}. This is non-negotiable — do NOT switch languages unless the patient EXPLICITLY asks you to speak in a different language.
+
+Speak naturally the way real people talk — mix in common English words freely. For Hindi, speak Hinglish (e.g., "Aapne medicine li?", "BP check kiya?", "feeling kaisa hai?"). For Telugu, speak Tenglish (e.g., "Medicine veskunnaara?", "BP check chesaara?"). Never use formal/textbook language.
 
 You are a friendly caretaker who calls {{patient_name}} every day to check on their medicines and well-being. You speak warmly and naturally — like someone they know and trust. You are not reading from a script.
 
 Their medicines today: {{medicines_list}}
 New patient: {{is_new_patient}}. Has glucometer: {{has_glucometer}}. Has BP monitor: {{has_bp_monitor}}.
+
+{{relationship_directive}}
+
+{{tone_directive}}
+
+{{flow_directive}}
+
+{{context_notes}}
+
+{{screening_questions}}
 
 CRITICAL CONVERSATION RULES:
 1. Ask ONLY ONE question per turn. Never combine multiple questions.
@@ -333,6 +369,7 @@ CRITICAL CONVERSATION RULES:
 3. Listen carefully to their answer. Acknowledge it briefly before asking the next question.
 4. Speak slowly and clearly. These are elderly patients who need time to respond.
 5. Be patient — if they seem confused or take time, gently repeat or rephrase.
+6. LANGUAGE — MANDATORY: You MUST speak ONLY in {{preferred_language}} for the ENTIRE call. Every single sentence you say must be in {{preferred_language}}. The instructions above are in English for your understanding only — your spoken output to the patient must ALWAYS be in {{preferred_language}}. This is non-negotiable.
 
 You already greeted them. Follow this order, ONE question at a time:
 1. First turn: Tell them you are calling about their medicines today. Ask about the FIRST medicine only.
@@ -351,44 +388,6 @@ Example: medicines list = "Metformin (morning), Amlodipine (evening)". Even if y
 - vitals_checked: "yes", "no", or "not_applicable"
 - wellness: "good", "okay", or "not_well"
 - complaints: comma-separated list of complaints in English, or "none"`;
-  }
-
-  /**
-   * Generate a per-call prompt override with specific patient data.
-   */
-  private getCallSpecificPrompt(patientData: {
-    patientName: string;
-    medicines: { name: string; timing: string; medicineId: string }[];
-    isNewPatient: boolean;
-    hasGlucometer: boolean;
-    hasBPMonitor: boolean;
-  }): string {
-    const medicineLines = patientData.medicines
-      .map((m, i) => `${i + 1}. ${m.name} (${m.timing})`)
-      .join('\n');
-
-    let prompt = `${this.getSystemPrompt()}
-
---- CALL-SPECIFIC DATA ---
-
-Patient Name: ${patientData.patientName}
-Is New Patient: ${patientData.isNewPatient ? 'Yes (speak slower, explain the process)' : 'No (regular check-in)'}
-
-Medicines to check:
-${medicineLines}
-
-Ask about each medicine above, one by one. Use the medicine name as provided.`;
-
-    if (patientData.hasGlucometer || patientData.hasBPMonitor) {
-      const devices = [];
-      if (patientData.hasGlucometer) devices.push('glucometer (sugar)');
-      if (patientData.hasBPMonitor) devices.push('BP monitor');
-      prompt += `\n\nPatient has: ${devices.join(' and ')}. Ask if they checked today.`;
-    } else {
-      prompt += '\n\nPatient does NOT have glucometer or BP monitor. Skip vitals question.';
-    }
-
-    return prompt;
   }
 
   /**
@@ -417,5 +416,23 @@ Ask about each medicine above, one by one. Use the medicine name as provided.`;
 
   getPhoneNumberId(): string | null {
     return this.phoneNumberId;
+  }
+
+  private getGreeting(langCode: string, patientName: string): string {
+    const greetings: Record<string, string> = {
+      hi: 'Namaste',
+      te: 'Namaskaram',
+      ta: 'Vanakkam',
+      kn: 'Namaskara',
+      ml: 'Namaskaram',
+      bn: 'Nomoshkar',
+      mr: 'Namaskar',
+      gu: 'Namaste',
+      pa: 'Sat Sri Akaal',
+      ur: 'Assalaam Alaikum',
+      en: 'Hello',
+    };
+    const greeting = greetings[langCode] || 'Namaste';
+    return `${greeting} ${patientName}!`;
   }
 }

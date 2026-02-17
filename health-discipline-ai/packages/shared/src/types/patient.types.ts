@@ -23,6 +23,10 @@ export interface Patient {
   isNewPatient: boolean;
   firstCallAt?: Date;
   lastCallAt?: Date;
+  currentStreak: number;
+  longestStreak: number;
+  fatigueScore: number;
+  lastStreakMilestone: number;
   phoneStatus?: 'valid' | 'invalid';
   createdAt: Date;
   updatedAt: Date;

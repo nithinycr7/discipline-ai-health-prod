@@ -8,6 +8,7 @@ import { PatientsModule } from '../patients/patients.module';
 import { MedicinesModule } from '../medicines/medicines.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
 import { NotificationsModule } from '../notifications/notifications.module';
+import { DynamicPromptModule } from '../dynamic-prompt/dynamic-prompt.module';
 
 @Module({
   imports: [
@@ -17,6 +18,7 @@ import { NotificationsModule } from '../notifications/notifications.module';
     MedicinesModule,
     IntegrationsModule,
     NotificationsModule,
+    DynamicPromptModule,
   ],
   providers: [CallSchedulerService, CallOrchestratorService, RetryHandlerService],
   exports: [CallSchedulerService, CallOrchestratorService],

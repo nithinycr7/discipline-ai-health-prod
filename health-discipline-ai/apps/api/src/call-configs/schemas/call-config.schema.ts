@@ -43,6 +43,9 @@ export class CallConfig {
 
   @Prop({ default: true })
   isActive: boolean;
+
+  @Prop({ default: false })
+  dynamicPromptEnabled: boolean;
 }
 
 export const CallConfigSchema = SchemaFactory.createForClass(CallConfig);

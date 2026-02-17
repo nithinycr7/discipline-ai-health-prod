@@ -224,3 +224,129 @@ curl https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/calls/<CA
 | Fuzzy match fails for "Hp one" | `norm()` stripped spaces before word-boundary replacements | Reordered: number words replaced BEFORE stripping non-alphanumeric |
 | No cost data stored | Webhook didn't fetch ElevenLabs conversation API | Added `getConversation()` call in webhook to fetch credits + calculate charges |
 | Prompt changes not reflected in prod | Cloud Run still had old code | Created `scripts/update-agent-prompt.js` to PATCH ElevenLabs API directly |
+
+---
+
+## Sarvam + LiveKit Voice Stack
+
+### Architecture
+```
+NestJS API (Cloud Run)
+  │  Creates LiveKit room + SIP participant
+  ▼
+LiveKit Cloud (wss://discipline-ai-health-ar6qouku.livekit.cloud)
+  │  Routes SIP call via Twilio trunk
+  ▼
+Twilio SIP ──► Patient's Phone
+  ▲
+Python Agent Worker (Cloud Run: sarvam-agent-worker)
+  │  Connects to LiveKit via WebSocket, picks up rooms
+  │  Sarvam STT (saaras:v3) + Gemini 1.5 Flash + Sarvam TTS (bulbul:v3)
+  │  POSTs results to /webhooks/sarvam/post-call
+```
+
+### Services
+| Service | URL | Type |
+|---------|-----|------|
+| NestJS API | `https://discipline-ai-api-337728476024.us-central1.run.app` | Cloud Run (request-based) |
+| Sarvam Agent Worker | `https://sarvam-agent-worker-337728476024.us-central1.run.app` | Cloud Run (always-on, min-instances=1) |
+
+### Environment Variables
+
+**NestJS API** (discipline-ai-api):
+| Variable | Description |
+|----------|-------------|
+| `VOICE_STACK` | `sarvam` or `elevenlabs` (default) |
+| `LIVEKIT_URL` | `wss://discipline-ai-health-ar6qouku.livekit.cloud` |
+| `LIVEKIT_API_KEY` | LiveKit API key |
+| `LIVEKIT_API_SECRET` | LiveKit API secret |
+| `LIVEKIT_SIP_TRUNK_ID` | `ST_Twm6jTkqopYJ` (Twilio outbound trunk) |
+| `SARVAM_API_KEY` | Sarvam AI API key |
+
+**Python Agent Worker** (sarvam-agent-worker):
+| Variable | Description |
+|----------|-------------|
+| `LIVEKIT_URL` | Same as above |
+| `LIVEKIT_API_KEY` | Same as above |
+| `LIVEKIT_API_SECRET` | Same as above |
+| `SARVAM_API_KEY` | Sarvam AI API key |
+| `GOOGLE_API_KEY` | Google AI key for Gemini LLM + data extraction |
+| `API_BASE_URL` | `https://discipline-ai-api-337728476024.us-central1.run.app` |
+
+### Deploying the Python Agent Worker
+
+The worker lives in `services/sarvam-agent/`. It's a long-running WebSocket client that connects to LiveKit and waits for room dispatch events.
+
+**Source directory:** `services/sarvam-agent/`
+**Key files:**
+- `agent.py` — Main entrypoint (LiveKit agent + Cloud Run health server)
+- `prompt.py` — System prompt and first message builder
+- `data_extractor.py` — Post-call Gemini-based data extraction
+- `requirements.txt` — Python dependencies
+- `Dockerfile` — Container definition
+- `Procfile` — For Cloud Run buildpack deploys (no Docker)
+
+**Deploy command (from monorepo root):**
+```bash
+gcloud run deploy sarvam-agent-worker \
+  --source services/sarvam-agent \
+  --region us-central1 \
+  --min-instances 1 \
+  --no-cpu-throttling \
+  --no-allow-unauthenticated \
+  --project discipline-ai-health \
+  --set-env-vars "LIVEKIT_URL=wss://discipline-ai-health-ar6qouku.livekit.cloud,LIVEKIT_API_KEY=<key>,LIVEKIT_API_SECRET=<secret>,SARVAM_API_KEY=<key>,GOOGLE_API_KEY=<key>,API_BASE_URL=https://discipline-ai-api-337728476024.us-central1.run.app"
+```
+
+**Important flags:**
+- `--min-instances 1` — Keeps the worker alive (persistent WebSocket connection)
+- `--no-cpu-throttling` — Prevents CPU throttle when idle (needed for WebSocket keepalive)
+- `--no-allow-unauthenticated` — Worker doesn't serve public traffic
+
+**How it works:**
+1. On startup, a background thread runs an HTTP health server on `$PORT` (Cloud Run requirement)
+2. The main thread runs `livekit-agents` CLI which connects to LiveKit via WebSocket
+3. When the NestJS API creates a LiveKit room (via `SarvamAgentService.makeOutboundCall()`), the worker picks it up
+4. The worker reads patient metadata from the room, conducts the conversation, then POSTs results to `/api/v1/webhooks/sarvam/post-call`
+
+**Viewing logs:**
+```bash
+gcloud run services logs read sarvam-agent-worker --region us-central1 --limit 50
+```
+
+### Trigger a Test Call (Sarvam Stack)
+
+Requires `VOICE_STACK=sarvam` on the API service.
+
+```bash
+# 1. Login
+TOKEN=$(curl -s -X POST https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/auth/login \
+  -H "Content-Type: application/json" \
+  -d '{"identifier": "9902352425"}' | node -e "let d='';process.stdin.on('data',c=>d+=c);process.stdin.on('end',()=>process.stdout.write(JSON.parse(d).token))")
+
+# 2. Trigger call to Gopi
+curl -X POST https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/admin/elevenlabs/test-call \
+  -H "Content-Type: application/json" \
+  -H "Authorization: Bearer $TOKEN" \
+  -d '{"patientId": "699169ff647a1e6b948fd181"}'
+```
+
+### SIP Trunk Configuration
+
+| Field | Value |
+|-------|-------|
+| Provider | Twilio |
+| Trunk ID | `ST_Twm6jTkqopYJ` |
+| Address | `AC6a526e43d7941fc36fcad60369722fab.pstn.twilio.com` |
+| Outbound Number | `+17655227476` |
+| Created | 2026-02-17 |
+
+### Cost Comparison (per call)
+
+| Component | ElevenLabs Stack | Sarvam Stack |
+|-----------|-----------------|--------------|
+| STT | Included in ElevenLabs | Sarvam saaras:v3 |
+| LLM | Gemini (via ElevenLabs) | Gemini 1.5 Flash (direct) |
+| TTS | ElevenLabs eleven_v3 | Sarvam bulbul:v3 |
+| Telephony | Twilio (via ElevenLabs SIP) | Twilio (via LiveKit SIP) |
+| Estimated cost | ~₹40/call (60s) | ~₹15-17/call (60s) |

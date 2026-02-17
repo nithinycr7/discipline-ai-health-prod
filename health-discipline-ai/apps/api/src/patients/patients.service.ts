@@ -109,7 +109,8 @@ export class PatientsService {
   }
 
   async incrementCallCount(id: string): Promise<PatientDocument> {
-    const patient = await this.patientModel.findByIdAndUpdate(
+    // Atomic increment
+    let patient = await this.patientModel.findByIdAndUpdate(
       id,
       {
         $inc: { callsCompletedCount: 1 },
@@ -118,13 +119,47 @@ export class PatientsService {
       { new: true },
     );
 
-    // Exit new patient mode after 3 calls
+    // Exit new patient mode after 3 calls (atomic to avoid race conditions)
     if (patient && patient.callsCompletedCount >= 3 && patient.isNewPatient) {
-      patient.isNewPatient = false;
-      await patient.save();
+      patient = await this.patientModel.findByIdAndUpdate(
+        id,
+        { $set: { isNewPatient: false } },
+        { new: true },
+      );
     }
 
     return patient;
+  }
+
+  async updateStreak(id: string, adherencePercent: number): Promise<void> {
+    const patient = await this.findById(id);
+    const milestones = [7, 14, 21, 30, 60, 100];
+
+    if (adherencePercent >= 80) {
+      const newStreak = (patient.currentStreak || 0) + 1;
+      const newLongest = Math.max(newStreak, patient.longestStreak || 0);
+
+      // Find highest milestone reached that hasn't been celebrated yet
+      let newMilestone = patient.lastStreakMilestone || 0;
+      for (const m of milestones) {
+        if (newStreak >= m && (patient.lastStreakMilestone || 0) < m) {
+          newMilestone = m;
+        }
+      }
+
+      await this.patientModel.findByIdAndUpdate(id, {
+        $set: {
+          currentStreak: newStreak,
+          longestStreak: newLongest,
+          lastStreakMilestone: newMilestone,
+        },
+      });
+    } else {
+      // Streak broken
+      await this.patientModel.findByIdAndUpdate(id, {
+        $set: { currentStreak: 0 },
+      });
+    }
   }
 
   async setFirstCallAt(id: string): Promise<void> {

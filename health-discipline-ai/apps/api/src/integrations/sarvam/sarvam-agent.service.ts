@@ -1,5 +1,6 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DynamicPromptResult } from '../../dynamic-prompt/types/prompt-context.types';
 
 /**
  * Sarvam AI Agent Service
@@ -44,6 +45,7 @@ export class SarvamAgentService {
       hasBPMonitor: boolean;
       preferredLanguage: string;
     },
+    dynamicPrompt?: DynamicPromptResult | null,
   ): Promise<{ conversationId: string; callSid: string }> {
     if (!this.livekitUrl || !this.livekitApiKey || !this.livekitApiSecret) {
       this.logger.warn('LiveKit not configured, simulating call');
@@ -66,6 +68,17 @@ export class SarvamAgentService {
       hasBPMonitor: patientData.hasBPMonitor,
       preferredLanguage: patientData.preferredLanguage,
       webhookUrl: `${apiBaseUrl}/api/v1/webhooks/sarvam/post-call`,
+      // Dynamic prompt context (null when disabled — Python agent falls back to static prompt)
+      dynamicPrompt: dynamicPrompt
+        ? {
+            flowDirective: dynamicPrompt.flowDirective,
+            toneDirective: dynamicPrompt.toneDirectiveText,
+            contextNotes: dynamicPrompt.contextNotes,
+            relationshipDirective: dynamicPrompt.relationshipDirective,
+            screeningQuestions: dynamicPrompt.screeningQuestions,
+            firstMessage: dynamicPrompt.firstMessage,
+          }
+        : null,
     });
 
     try {
@@ -146,13 +159,14 @@ export class SarvamAgentService {
       // Use livekit-server-sdk
       const { AccessToken } = await import('livekit-server-sdk');
       const token = new AccessToken(this.livekitApiKey, this.livekitApiSecret, {
-        ttl: 60, // 1 minute validity
+        ttl: 300, // 5 minutes validity for sequential API calls
       });
       token.addGrant({
         roomCreate: true,
         roomAdmin: true,
         roomList: true,
       });
+      token.addSIPGrant({ admin: true, call: true });
       return await token.toJwt();
     } catch {
       throw new Error(

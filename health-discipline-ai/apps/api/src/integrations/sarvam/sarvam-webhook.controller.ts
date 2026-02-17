@@ -71,20 +71,30 @@ export class SarvamWebhookController {
       const call = await this.callsService.findById(callId);
 
       // Update each medicine's response on the existing medicinesChecked array
+      // Uses fuzzy matching to handle transliterations (e.g., "Hp ek" vs "Hp1")
       if (call.medicinesChecked && call.medicinesChecked.length > 0) {
         for (const existingMed of call.medicinesChecked) {
-          const match = medicineResponses.find(
-            (mr) =>
-              mr.medicineName.toLowerCase() ===
-                (existingMed.nickname || existingMed.medicineName || '')
-                  .toLowerCase() ||
-              mr.medicineName.toLowerCase() ===
-                (existingMed.medicineName || '').toLowerCase(),
+          const match = medicineResponses.find((mr) =>
+            this.fuzzyMedicineMatch(
+              mr.medicineName,
+              existingMed.nickname || existingMed.medicineName || '',
+              existingMed.medicineName || '',
+            ),
           );
           if (match) {
             existingMed.response = match.response;
             existingMed.timestamp = new Date();
           }
+        }
+
+        // If only one medicine and one response, force-match regardless of name
+        if (
+          call.medicinesChecked.length === 1 &&
+          medicineResponses.length === 1 &&
+          call.medicinesChecked[0].response === 'pending'
+        ) {
+          call.medicinesChecked[0].response = medicineResponses[0].response;
+          call.medicinesChecked[0].timestamp = new Date();
         }
       }
 
@@ -95,7 +105,7 @@ export class SarvamWebhookController {
         moodNotes: wellness || undefined,
         complaints: complaints.length > 0 ? complaints : undefined,
         transcriptUrl: roomName ? `sarvam:livekit:${roomName}` : undefined,
-        twilioCallSid: roomName,
+        livekitRoomName: roomName,
         medicinesChecked: call.medicinesChecked,
         transcript: transcriptText || undefined,
       } as any);
@@ -111,6 +121,12 @@ export class SarvamWebhookController {
       );
       await this.patientsService.setFirstCallAt(patient._id.toString());
       await this.patientsService.incrementCallCount(patient._id.toString());
+
+      // Update adherence streak
+      const takenCount = call.medicinesChecked?.filter((m) => m.response === 'taken').length || 0;
+      const totalCount = call.medicinesChecked?.length || 1;
+      const adherencePercent = Math.round((takenCount / totalCount) * 100);
+      await this.patientsService.updateStreak(patient._id.toString(), adherencePercent);
 
       // Send post-call report to payer
       try {
@@ -197,6 +213,43 @@ export class SarvamWebhookController {
       return 'missed';
     }
     return 'unclear';
+  }
+
+  /**
+   * Fuzzy match an extracted medicine name against stored names.
+   * Handles transliterations like "Hp ek" vs "Hp1", "Hp one" vs "Hp1".
+   */
+  private fuzzyMedicineMatch(
+    extracted: string,
+    nickname: string,
+    brandName: string,
+  ): boolean {
+    const norm = (s: string) =>
+      s
+        .toLowerCase()
+        .replace(/\bone\b/g, '1')
+        .replace(/\btwo\b/g, '2')
+        .replace(/\bthree\b/g, '3')
+        .replace(/\bek\b/g, '1')
+        .replace(/\bdo\b/g, '2')
+        .replace(/\bteen\b/g, '3')
+        .replace(/[^a-z0-9]/g, '');
+
+    const ext = norm(extracted);
+    const nick = norm(nickname);
+    const brand = norm(brandName);
+
+    if (!ext) return false;
+
+    // Exact after normalization
+    if (nick && ext === nick) return true;
+    if (brand && ext === brand) return true;
+
+    // One contains the other (only when both sides are non-empty)
+    if (nick && (ext.includes(nick) || nick.includes(ext))) return true;
+    if (brand && (ext.includes(brand) || brand.includes(ext))) return true;
+
+    return false;
   }
 
   private buildTranscriptText(transcript: any[]): string {

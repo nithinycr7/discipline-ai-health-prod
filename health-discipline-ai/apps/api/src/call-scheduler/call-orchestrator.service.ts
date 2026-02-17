@@ -6,6 +6,9 @@ import { PatientsService } from '../patients/patients.service';
 import { ElevenLabsAgentService } from '../integrations/elevenlabs/elevenlabs-agent.service';
 import { SarvamAgentService } from '../integrations/sarvam/sarvam-agent.service';
 import { NotificationsService } from '../notifications/notifications.service';
+import { CallConfigsService } from '../call-configs/call-configs.service';
+import { PromptAssemblerService } from '../dynamic-prompt/prompt-assembler.service';
+import { DynamicPromptResult } from '../dynamic-prompt/types/prompt-context.types';
 
 interface DueCall {
   config: any;
@@ -18,6 +21,7 @@ export class CallOrchestratorService {
   private readonly logger = new Logger(CallOrchestratorService.name);
   private readonly MAX_CONCURRENT = 50;
   private readonly voiceStack: string;
+  private readonly dynamicPromptGlobalEnabled: boolean;
 
   constructor(
     private callsService: CallsService,
@@ -27,9 +31,14 @@ export class CallOrchestratorService {
     private sarvamAgentService: SarvamAgentService,
     private notificationsService: NotificationsService,
     private configService: ConfigService,
+    private callConfigsService: CallConfigsService,
+    private promptAssembler: PromptAssemblerService,
   ) {
     this.voiceStack = this.configService.get<string>('VOICE_STACK', 'elevenlabs');
+    this.dynamicPromptGlobalEnabled =
+      this.configService.get<string>('DYNAMIC_PROMPT_ENABLED', 'false') === 'true';
     this.logger.log(`Voice stack configured: ${this.voiceStack}`);
+    this.logger.log(`Dynamic prompt globally enabled: ${this.dynamicPromptGlobalEnabled}`);
   }
 
   async processBatch(dueCalls: DueCall[]) {
@@ -96,6 +105,39 @@ export class CallOrchestratorService {
         preferredLanguage: patient.preferredLanguage || 'hi',
       };
 
+      // Dynamic prompt assembly (if enabled)
+      let dynamicPrompt: DynamicPromptResult | null = null;
+
+      if (this.dynamicPromptGlobalEnabled) {
+        const config = dueCall.config;
+        // Per-patient opt-out: skip if explicitly set to false
+        if (config?.dynamicPromptEnabled !== false) {
+          try {
+            dynamicPrompt = await this.promptAssembler.assembleDynamicPrompt(
+              patient._id.toString(),
+            );
+            this.logger.log(
+              `Dynamic prompt: variant=${dynamicPrompt.variant}, ` +
+                `tone=${dynamicPrompt.tone}, stage=${dynamicPrompt.relationshipStage}`,
+            );
+          } catch (err: any) {
+            this.logger.warn(
+              `Dynamic prompt assembly failed, falling back to static: ${err.message}`,
+            );
+          }
+        }
+      }
+
+      // Store dynamic prompt metadata on the call record
+      if (dynamicPrompt) {
+        await this.callsService.updateCallStatus(call._id.toString(), 'scheduled', {
+          conversationVariant: dynamicPrompt.variant,
+          toneUsed: dynamicPrompt.tone,
+          relationshipStage: dynamicPrompt.relationshipStage,
+          screeningQuestionsAsked: dynamicPrompt.screeningQuestionIds,
+        } as any);
+      }
+
       let result: { conversationId: string; callSid: string };
 
       if (this.voiceStack === 'sarvam') {
@@ -104,6 +146,7 @@ export class CallOrchestratorService {
           patient.phone,
           call._id.toString(),
           patientData,
+          dynamicPrompt,
         );
       } else {
         // Default: ElevenLabs Conversational AI Agent
@@ -111,14 +154,22 @@ export class CallOrchestratorService {
           patient.phone,
           call._id.toString(),
           patientData,
+          dynamicPrompt,
         );
       }
 
       // Update call with conversation/room ID
-      await this.callsService.updateCallStatus(call._id.toString(), 'in_progress', {
-        twilioCallSid: result.conversationId,
-        initiatedAt: new Date(),
-      });
+      const callTrackingFields: any = { initiatedAt: new Date() };
+      if (this.voiceStack === 'sarvam') {
+        callTrackingFields.livekitRoomName = result.conversationId;
+      } else {
+        callTrackingFields.elevenlabsConversationId = result.conversationId;
+      }
+      await this.callsService.updateCallStatus(
+        call._id.toString(),
+        'in_progress',
+        callTrackingFields,
+      );
 
       this.logger.log(
         `AI call initiated [${this.voiceStack}] for ${patient.preferredName} (${patient._id}), ` +

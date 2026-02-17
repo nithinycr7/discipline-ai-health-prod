@@ -7,6 +7,7 @@ import { PatientsModule } from '../patients/patients.module';
 import { MedicinesModule } from '../medicines/medicines.module';
 import { NotificationsModule } from '../notifications/notifications.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { DynamicPromptModule } from '../dynamic-prompt/dynamic-prompt.module';
 
 /**
  * Webhooks Module
@@ -22,6 +23,7 @@ import { IntegrationsModule } from '../integrations/integrations.module';
     MedicinesModule,
     NotificationsModule,
     IntegrationsModule,
+    DynamicPromptModule,
   ],
   controllers: [ElevenLabsWebhookController, ElevenLabsSetupController, SarvamWebhookController],
 })

@@ -206,6 +206,8 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 | **Multi-family** | Adding siblings/family members increases stickiness | Onboarding |
 | **Streak tracking** | "Bauji has a 14-day streak!" — gamification for the payer | Weekly |
 | **Personalization** | Medicine nicknames, preferred name, voice gender — feels personal | Ongoing |
+| **Dynamic prompts** | Every call adapts tone, flow, and questions to patient's recent behavior — prevents call fatigue | Every call |
+| **Relationship progression** | AI grows from stranger to family member over 60+ calls — deepens engagement | Ongoing |
 
 ### Churn Risk Signals
 
@@ -224,6 +226,7 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 
 - Web dashboard (registration, patient management, call history, reports, settings)
 - AI voice calls via ElevenLabs + Twilio
+- Sarvam AI voice stack (alternative to ElevenLabs, LiveKit-based)
 - 8 Indian languages supported
 - WhatsApp post-call reports
 - Medicine management with nicknames and food preferences
@@ -232,6 +235,59 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 - Auto-created call schedules when medicines are added
 - Monthly adherence calendar
 - Session expiry handling and auth guards
+- **Dynamic Prompt Assembly** — personalized, adaptive call experiences (see below)
+
+### Dynamic Prompt Assembly (Anti-Fatigue System)
+
+Every call is no longer the same script. The system dynamically assembles a personalized prompt based on the patient's recent behavior, relationship history, and health conditions. This prevents "call fatigue" — the #1 risk to long-term patient engagement.
+
+**How It Works:**
+1. Before each call, the system aggregates the patient's last 14 days of call data (mood, complaints, adherence, missed calls)
+2. A deterministic rule engine selects the best **conversation variant** and **tone** for today's call
+3. Condition-specific **screening questions** are scheduled across the week (max 2 per call)
+4. The **relationship stage** evolves as the patient completes more calls (stranger → family)
+5. A personalized **first message** is generated based on variant and patient name
+6. All of this is injected as dynamic variables into the AI agent prompt at call time
+
+**Conversation Variants (5 types):**
+
+| Variant | When | Approach |
+|---------|------|----------|
+| **Standard** | Default | Normal medicine check + wellness |
+| **Wellness First** | Yesterday mood was not_well or recent complaints | Lead with health concern, then medicines |
+| **Quick Check** | High adherence (>90%) + 30+ completed calls | Shorter, lighter conversation |
+| **Celebration** | Streak milestone (7, 14, 21, 30, 60, 100 days) | Celebrate achievement, positive reinforcement |
+| **Gentle Reengagement** | 2+ missed calls in 7 days or high fatigue score | Low-pressure, reassuring tone |
+
+**Tone Adaptation (6 tones):**
+
+| Tone | Paired With |
+|------|-------------|
+| Warm & Cheerful | Standard calls |
+| Gentle & Concerned | Wellness-first calls (patient feeling unwell) |
+| Celebratory & Proud | Streak milestones |
+| Light & Breezy | Quick check (high-adherence patients) |
+| Reassuring & Patient | Reengagement (patient drifting away) |
+| Festive & Joyful | Reserved for festival days (future) |
+
+**Relationship Progression:**
+
+| Stage | Call Count | AI Behavior |
+|-------|:---------:|-------------|
+| Stranger | 1-3 | Formal, introduce yourself, speak slowly |
+| Acquaintance | 4-14 | Warm but polite, building trust |
+| Familiar | 15-30 | Friendly, use casual language, reference past conversations |
+| Trusted | 31-60 | Like a close family friend, gentle humor |
+| Family | 60+ | Like a family member, deep familiarity |
+
+**Condition-Specific Screening (13 questions across 10 conditions):**
+- Questions are scheduled on specific days of the week to avoid overload
+- Max 2 screening questions per call
+- Covers: diabetes, hypertension, heart disease, heart failure, thyroid, cholesterol, arthritis, COPD/asthma, kidney disease, depression
+- Skipped during celebration and reengagement variants
+
+**Tracking & Analytics:**
+Every call records the variant, tone, relationship stage, and screening questions asked — enabling future analysis of which approaches drive the best adherence outcomes.
 
 ### Phase 2 — Enhancement (Next)
 
@@ -239,9 +295,11 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 |---------|---------------|:--------:|
 | WhatsApp conversational onboarding | Reduces setup friction from 10 min to 5 min | P0 |
 | Adherence trends/charts | Visual proof of value for retention | P0 |
+| Dynamic prompt analytics dashboard | Visualize which variants/tones drive best adherence | P1 |
 | Push notifications | Faster alert delivery for payers | P1 |
 | B2B bulk patient upload (CSV) | Enables hospital partnerships at scale | P1 |
 | Doctor dashboard | Co-branded reports for referring doctors | P1 |
+| Fatigue score auto-calculation | Automatically adjust call approach when engagement drops | P1 |
 | Call recording playback | Payers can listen to actual calls | P2 |
 | Family member management | Add/remove siblings with notification preferences | P2 |
 

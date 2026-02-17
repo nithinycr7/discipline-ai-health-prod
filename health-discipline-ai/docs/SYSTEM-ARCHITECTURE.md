@@ -9,14 +9,15 @@
 5. [Authentication & Authorization](#authentication--authorization)
 6. [AI Voice Call Flow (End-to-End)](#ai-voice-call-flow-end-to-end)
 7. [AI Agent & Prompt Control](#ai-agent--prompt-control)
-8. [Call Scheduler & Retry Logic](#call-scheduler--retry-logic)
-9. [WhatsApp Onboarding Flow](#whatsapp-onboarding-flow)
-10. [Notifications System](#notifications-system)
-11. [Weekly Reports](#weekly-reports)
-12. [Subscription & Billing](#subscription--billing)
-13. [API Reference](#api-reference)
-14. [Environment Configuration](#environment-configuration)
-15. [Deployment & Scaling](#deployment--scaling)
+8. [Dynamic Prompt Assembly](#dynamic-prompt-assembly)
+9. [Call Scheduler & Retry Logic](#call-scheduler--retry-logic)
+10. [WhatsApp Onboarding Flow](#whatsapp-onboarding-flow)
+11. [Notifications System](#notifications-system)
+12. [Weekly Reports](#weekly-reports)
+13. [Subscription & Billing](#subscription--billing)
+14. [API Reference](#api-reference)
+15. [Environment Configuration](#environment-configuration)
+16. [Deployment & Scaling](#deployment--scaling)
 
 ---
 
@@ -99,12 +100,22 @@ health-discipline-ai/
 │   │   │   │
 │   │   │   ├── call-configs/          # Per-patient call schedules
 │   │   │   │   ├── call-configs.service.ts    # Call config CRUD
-│   │   │   │   └── schemas/call-config.schema.ts # Morning/evening time, timezone, retry settings
+│   │   │   │   └── schemas/call-config.schema.ts # Morning/evening time, timezone, retry settings, dynamicPromptEnabled
 │   │   │   │
 │   │   │   ├── call-scheduler/        # Automated call scheduling
 │   │   │   │   ├── call-scheduler.service.ts    # Cron (every minute) - finds due calls
-│   │   │   │   ├── call-orchestrator.service.ts # Initiates calls via ElevenLabs (50 concurrent max)
+│   │   │   │   ├── call-orchestrator.service.ts # Initiates calls via ElevenLabs/Sarvam + dynamic prompt assembly
 │   │   │   │   └── retry-handler.service.ts     # Retry logic (2 retries, 30 min intervals)
+│   │   │   │
+│   │   │   ├── dynamic-prompt/        # Dynamic prompt assembly (anti-fatigue)
+│   │   │   │   ├── prompt-assembler.service.ts       # ** CORE ** Orchestrates context + variant + tone + screening
+│   │   │   │   ├── context-builder.service.ts        # Aggregates 14-day call data from MongoDB
+│   │   │   │   ├── flow-variant-selector.service.ts  # Deterministic variant + tone selection
+│   │   │   │   ├── screening-question-selector.service.ts  # Condition-specific health questions
+│   │   │   │   ├── dynamic-prompt.module.ts           # NestJS module
+│   │   │   │   ├── index.ts                           # Barrel exports
+│   │   │   │   └── types/
+│   │   │   │       └── prompt-context.types.ts        # Enums, interfaces, screening schedule constants
 │   │   │   │
 │   │   │   ├── integrations/          # External service integrations
 │   │   │   │   ├── elevenlabs/
@@ -121,6 +132,11 @@ health-discipline-ai/
 │   │   │   │   │   ├── whatsapp.service.ts            # WhatsApp message sending via Twilio
 │   │   │   │   │   ├── onboarding-flow.service.ts     # 14-phase onboarding state machine
 │   │   │   │   │   └── whatsapp-webhook.controller.ts # Incoming WhatsApp messages
+│   │   │   │   │
+│   │   │   │   ├── sarvam/                             # Sarvam AI voice stack (LiveKit-based)
+│   │   │   │   │   ├── sarvam-agent.service.ts          # Sarvam outbound call initiation
+│   │   │   │   │   ├── sarvam-webhook.controller.ts     # Post-call webhook (data + streak update)
+│   │   │   │   │   └── sarvam.module.ts
 │   │   │   │   │
 │   │   │   │   └── exotel/                            # Backup telephony (India)
 │   │   │   │       ├── exotel.service.ts
@@ -192,6 +208,14 @@ health-discipline-ai/
 │   │
 │   ├── tsconfig/                     # Shared TypeScript configs
 │   └── eslint-config/                # Shared ESLint configs (Next.js + NestJS)
+│
+├── services/
+│   └── sarvam-agent/                 # Python-based Sarvam AI agent
+│       ├── agent.py                     # LiveKit agent with Sarvam TTS/STT
+│       ├── prompt.py                    # System prompt builder (supports dynamic prompt injection)
+│       ├── data_extractor.py            # Post-call data extraction
+│       ├── Dockerfile                   # Container for Cloud Run deployment
+│       └── requirements.txt
 │
 ├── turbo.json                        # Turborepo task pipeline
 ├── package.json                      # Workspace root
@@ -279,6 +303,10 @@ health-discipline-ai/
 | callsCompletedCount | Number | Total calls answered |
 | isNewPatient | Boolean | Triggers slower intro protocol |
 | firstCallAt | Date | When first call was answered |
+| **currentStreak** | **Number** | **Consecutive days with ≥80% adherence** |
+| **longestStreak** | **Number** | **All-time longest streak** |
+| **fatigueScore** | **Number** | **Engagement fatigue indicator (0-100)** |
+| **lastStreakMilestone** | **Number** | **Last celebrated milestone (7, 14, 21, 30, 60, 100)** |
 | phoneStatus | Enum: valid, invalid | Auto-set by Twilio errors |
 
 #### `medicines`
@@ -316,6 +344,10 @@ health-discipline-ai/
 | twilioCallSid | String | ElevenLabs conversation ID |
 | transcript | Array | [{ role: agent/user, message, timestamp }] |
 | isFirstCall | Boolean | First call ever for this patient |
+| **conversationVariant** | **Enum** | **standard, wellness_first, quick_check, celebration, gentle_reengagement** |
+| **toneUsed** | **Enum** | **warm_cheerful, gentle_concerned, celebratory_proud, light_breezy, reassuring_patient, festive_joyful** |
+| **relationshipStage** | **Enum** | **stranger, acquaintance, familiar, trusted, family** |
+| **screeningQuestionsAsked** | **String[]** | **IDs of screening questions asked (e.g. ['diabetes_glucose', 'hypertension_bp'])** |
 
 #### `call_configs`
 | Field | Type | Description |
@@ -332,6 +364,7 @@ health-discipline-ai/
 | useSlowerSpeechRate | Boolean (default: false) | Slower TTS for elderly patients |
 | callDurationTarget | Number (default: 180) | Target call duration in seconds |
 | isActive | Boolean (default: true) | Whether calls are active |
+| **dynamicPromptEnabled** | **Boolean (default: false)** | **Enable dynamic prompt assembly for this patient** |
 
 **Auto-creation:** When a medicine is added via `MedicinesService.create()`, a CallConfig is automatically created or updated for the medicine's timing slot. Sampurna plan gets default times; other plans get `'pending'` (user must configure).
 
@@ -586,7 +619,7 @@ The webhook controller normalizes Hindi/English responses:
 
 **This is the most critical section** — it controls what the AI says on every call.
 
-### Architecture: 4 Layers of Control
+### Architecture: 5 Layers of Control
 
 ```
 ┌─────────────────────────────────────────────────────────┐
@@ -594,9 +627,10 @@ The webhook controller normalizes Hindi/English responses:
 │  ──────────────────────────────────────────             │
 │  The "brain" of the agent. Defines personality,         │
 │  conversation flow, rules, and language behavior.       │
+│  Includes {{placeholders}} for dynamic prompt sections. │
 │  Changed via: Edit code → POST /setup-agent             │
 │                                                         │
-│  File: elevenlabs-agent.service.ts:296-339              │
+│  File: elevenlabs-agent.service.ts                      │
 ├─────────────────────────────────────────────────────────┤
 │  Layer 2: Dynamic Variables (Per-Call Data)              │
 │  ──────────────────────────────────────────             │
@@ -604,22 +638,38 @@ The webhook controller normalizes Hindi/English responses:
 │  {{patient_name}}, {{medicines_list}}, etc.             │
 │  Changed via: Patient/medicine data in MongoDB          │
 │                                                         │
-│  File: elevenlabs-agent.service.ts:233-241              │
+│  File: elevenlabs-agent.service.ts                      │
 ├─────────────────────────────────────────────────────────┤
-│  Layer 3: Data Collection Schema                        │
+│  Layer 3: Dynamic Prompt Assembly (NEW)                 │
+│  ──────────────────────────────────────────             │
+│  Per-call adaptive prompt sections injected via         │
+│  dynamic variables. Assembled by PromptAssemblerService │
+│  from patient's recent call history.                    │
+│                                                         │
+│  Variables: {{flow_directive}}, {{tone_directive}},      │
+│  {{context_notes}}, {{relationship_directive}},          │
+│  {{screening_questions}}, {{first_message_override}}     │
+│                                                         │
+│  Feature-flagged: DYNAMIC_PROMPT_ENABLED env var        │
+│  + per-patient dynamicPromptEnabled on call_configs     │
+│                                                         │
+│  File: dynamic-prompt/prompt-assembler.service.ts       │
+│  See: "Dynamic Prompt Assembly" section below           │
+├─────────────────────────────────────────────────────────┤
+│  Layer 4: Data Collection Schema                        │
 │  ──────────────────────────────────────────             │
 │  Defines what structured data to extract from           │
 │  the conversation after it ends.                        │
 │  Changed via: Edit code → POST /setup-agent             │
 │                                                         │
-│  File: elevenlabs-agent.service.ts:76-92                │
+│  File: elevenlabs-agent.service.ts                      │
 ├─────────────────────────────────────────────────────────┤
-│  Layer 4: LLM & Voice Settings                          │
+│  Layer 5: LLM & Voice Settings                          │
 │  ──────────────────────────────────────────             │
 │  Which AI model, temperature, voice, speed.             │
 │  Changed via: Edit code → POST /setup-agent             │
 │                                                         │
-│  File: elevenlabs-agent.service.ts:52-63                │
+│  File: elevenlabs-agent.service.ts                      │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -641,6 +691,16 @@ Their medicines to check today: {{medicines_list}}.
 Is new patient: {{is_new_patient}}.
 Has glucometer: {{has_glucometer}}.
 Has BP monitor: {{has_bp_monitor}}.
+
+{{relationship_directive}}
+
+{{tone_directive}}
+
+{{flow_directive}}
+
+{{context_notes}}
+
+{{screening_questions}}
 
 PERSONALITY:
 - Warm, respectful, patient — like a caring family member who checks in every day
@@ -705,6 +765,12 @@ These variables are substituted into the prompt at call time:
 | `{{preferred_language}}` | "te" (Telugu) | `patient.preferredLanguage` (ISO code: hi, en, te, ta, mr, bn, kn, gu) |
 | `{{call_id}}` | "6990a183..." | `call._id` (for webhook correlation) |
 | `{{webhook_url}}` | "https://..." | Post-call webhook endpoint |
+| `{{flow_directive}}` | "Lead with wellness concerns before medicines..." | `DynamicPromptResult.flowDirective` (empty when disabled) |
+| `{{tone_directive}}` | "Use a warm, gentle tone with concern..." | `DynamicPromptResult.toneDirectiveText` (empty when disabled) |
+| `{{context_notes}}` | "Yesterday they felt unwell and complained of knee pain..." | `DynamicPromptResult.contextNotes` (empty when disabled) |
+| `{{relationship_directive}}` | "You are now familiar with this patient (15+ calls)..." | `DynamicPromptResult.relationshipDirective` (empty when disabled) |
+| `{{screening_questions}}` | "Ask: What was your fasting sugar reading today?" | `DynamicPromptResult.screeningQuestions` (empty when disabled) |
+| `{{first_message_override}}` | "Namaste Bauji! Waah, 14 din ka streak!" | `DynamicPromptResult.firstMessage` (falls back to default greeting) |
 
 ### Layer 3: Data Collection Schema
 
@@ -755,12 +821,20 @@ asr_quality: 'high',        // Best speech recognition quality
 
 ### First Message (Greeting)
 
-```
-Namaste {{patient_name}}! Main aapki health assistant bol rahi hoon.
-Kya aap mujhse baat kar sakte hain?
-```
+The first message is now dynamically generated via `{{first_message_override}}`. When dynamic prompts are enabled, the greeting adapts to the conversation variant:
 
-This is the very first thing the AI says when the patient picks up. It uses the patient's preferred name.
+| Variant | Example First Message |
+|---------|----------------------|
+| Standard | "Namaste Bauji! Kaise hain aap aaj?" |
+| Wellness First | "Namaste Bauji! Kal aapne bataya tha ki tabiyat theek nahi thi — aaj kaisa lag raha hai?" |
+| Quick Check | "Namaste Bauji! Sab theek? Aaj jaldi check karte hain!" |
+| Celebration | "Namaste Bauji! Waah, 14 din ka streak! Bahut accha chal raha hai!" |
+| Gentle Reengagement | "Namaste Bauji! Kuch din se baat nahi hui — aaj bas sunna tha ki aap theek hain." |
+
+When dynamic prompts are disabled, the default greeting is used:
+```
+Namaste {{patient_name}}!
+```
 
 ### How to Modify the AI's Behavior
 
@@ -821,6 +895,184 @@ This is the very first thing the AI says when the patient picks up. It uses the 
 
 ---
 
+## Dynamic Prompt Assembly
+
+**This is the anti-fatigue engine** — it ensures no two calls feel the same, adapting tone, flow, and content based on the patient's recent behavior and relationship history.
+
+### Architecture
+
+```
+┌─────────────────────────────────────────────────────────────────────┐
+│                    CallOrchestratorService                           │
+│                                                                     │
+│  Before each call:                                                  │
+│  1. Check DYNAMIC_PROMPT_ENABLED (global env) + callConfig flag    │
+│  2. If enabled → call PromptAssemblerService                       │
+│  3. Pass DynamicPromptResult to voice agent as dynamic variables   │
+│  4. Store variant/tone/stage/questions on the Call record           │
+└────────┬────────────────────────────────────────────────────────────┘
+         │
+         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                    PromptAssemblerService                            │
+│                    (Orchestrator)                                    │
+│                                                                     │
+│  Coordinates 3 sub-services and assembles final DynamicPromptResult│
+│                                                                     │
+│  1. ContextBuilder → PatientCallContext (aggregated data)          │
+│  2. FlowVariantSelector → variant + tone + relationship stage     │
+│  3. ScreeningQuestionSelector → condition-specific questions       │
+│  4. Generate: flowDirective, toneDirectiveText, contextNotes,      │
+│     relationshipDirective, firstMessage, screeningQuestions         │
+└────────┬──────────────────┬───────────────────┬────────────────────┘
+         │                  │                   │
+         ▼                  ▼                   ▼
+┌─────────────────┐ ┌──────────────────┐ ┌───────────────────────┐
+│ ContextBuilder  │ │ FlowVariant      │ │ ScreeningQuestion     │
+│                 │ │ Selector         │ │ Selector              │
+│ MongoDB $facet  │ │                  │ │                       │
+│ query: 14 days  │ │ Priority-based   │ │ Condition + day-of-   │
+│ of call data    │ │ variant rules    │ │ week schedule          │
+│                 │ │ + tone mapping   │ │ Max 2 questions/call  │
+│ Returns:        │ │ + relationship   │ │                       │
+│ - yesterday     │ │   stage calc     │ │ 13 questions across   │
+│   mood/meds     │ │                  │ │ 10 conditions          │
+│ - 14d adherence │ │ 5 variants       │ │                       │
+│ - streak data   │ │ 6 tones          │ │ Skipped on:           │
+│ - missed calls  │ │ 5 stages         │ │ CELEBRATION,          │
+│ - mood trends   │ │                  │ │ GENTLE_REENGAGEMENT   │
+└─────────────────┘ └──────────────────┘ └───────────────────────┘
+```
+
+### Feature Flags (2 levels)
+
+| Level | Flag | Default | Description |
+|-------|------|:-------:|-------------|
+| **Global** | `DYNAMIC_PROMPT_ENABLED` env var | `false` | Master switch — disables for all patients |
+| **Per-patient** | `callConfig.dynamicPromptEnabled` | `false` | Per-patient opt-in — only checked when global is enabled |
+
+When disabled, all dynamic prompt variables resolve to empty strings — the base prompt works identically to the static version.
+
+### ContextBuilderService
+
+Aggregates the patient's recent call data using a single MongoDB `$facet` query:
+
+| Data Point | Window | Usage |
+|------------|:------:|-------|
+| Yesterday's mood | 1 day | Wellness-first variant trigger |
+| Yesterday's complaints | 1 day | Wellness-first variant trigger |
+| Yesterday's medicine adherence | 1 day | Streak calculation |
+| 14-day adherence % | 14 days | Quick-check variant trigger |
+| Current streak | Patient field | Celebration variant trigger |
+| Streak milestone reached | Patient field | Celebration variant trigger |
+| Recent missed calls | 7 days | Reengagement variant trigger |
+| Recent mood trends | Last 5 calls | Context notes |
+| Recent complaints | Last 5 calls | Context notes |
+| Fatigue score | Patient field | Reengagement variant trigger |
+
+### FlowVariantSelectorService
+
+Deterministic priority-based selection:
+
+```
+Priority 1: CELEBRATION        ← streak milestone reached (7, 14, 21, 30, 60, 100 days)
+Priority 2: GENTLE_REENGAGEMENT ← ≥2 missed calls in 7 days OR fatigueScore > 60
+Priority 3: WELLNESS_FIRST     ← yesterday mood = not_well OR recent complaints exist
+Priority 4: QUICK_CHECK        ← adherence14Day > 90% AND callsCompleted > 30
+Priority 5: STANDARD           ← default fallback
+```
+
+**Tone mapping** (each variant maps to exactly one tone):
+
+| Variant | Tone |
+|---------|------|
+| CELEBRATION | CELEBRATORY_PROUD |
+| GENTLE_REENGAGEMENT | REASSURING_PATIENT |
+| WELLNESS_FIRST | GENTLE_CONCERNED |
+| QUICK_CHECK | LIGHT_BREEZY |
+| STANDARD | WARM_CHEERFUL |
+
+**Relationship stage** (based on total completed calls):
+
+| Calls Completed | Stage |
+|:---------------:|-------|
+| 1-3 | STRANGER |
+| 4-14 | ACQUAINTANCE |
+| 15-30 | FAMILIAR |
+| 31-60 | TRUSTED |
+| 60+ | FAMILY |
+
+### ScreeningQuestionSelectorService
+
+Selects condition-specific health screening questions based on the patient's conditions and the current day of week:
+
+| Condition | Questions | Scheduled Days |
+|-----------|:---------:|----------------|
+| Diabetes | Fasting sugar reading, Hypo symptoms | Mon+Thu, Fri |
+| Hypertension | BP reading, Dizziness check | Tue+Sat, Wed |
+| Heart Disease | Chest pain, Breathlessness | Mon, Thu |
+| Heart Failure | Edema check | Mon+Fri |
+| Thyroid | Empty stomach timing | Tue |
+| Cholesterol | Muscle pain | Wed |
+| Arthritis | Joint status | Mon |
+| COPD/Asthma | Breathing trouble | Thu |
+| Kidney Disease | Swelling check | Fri |
+| Depression | Mood + social activity | Sun |
+
+**Rules:**
+- Maximum 2 screening questions per call
+- Skipped entirely during CELEBRATION and GENTLE_REENGAGEMENT variants
+- Question IDs are stored on the Call record for tracking
+
+### Adherence Streak System
+
+After each completed call, the webhook controller updates the patient's streak:
+
+```
+Post-call webhook (ElevenLabs or Sarvam)
+  ↓
+Calculate adherencePercent = (medicinesTaken / medicinesTotal) × 100
+  ↓
+PatientsService.updateStreak(patientId, adherencePercent)
+  ↓
+If adherencePercent ≥ 80%:
+  currentStreak += 1
+  longestStreak = max(currentStreak, longestStreak)
+  Check milestone: if streak reaches 7/14/21/30/60/100 → update lastStreakMilestone
+Else:
+  currentStreak = 0 (streak broken)
+```
+
+Streak milestones: `[7, 14, 21, 30, 60, 100]`
+
+### DynamicPromptResult (Output)
+
+The final assembled result passed to the voice agent:
+
+| Field | Type | Example |
+|-------|------|---------|
+| `variant` | ConversationVariant | `wellness_first` |
+| `tone` | ToneDirective | `gentle_concerned` |
+| `relationshipStage` | RelationshipStage | `familiar` |
+| `flowDirective` | string | "Lead with health concerns. Ask about yesterday's complaint before checking medicines..." |
+| `toneDirectiveText` | string | "Use a gentle, concerned tone. Show that you noticed they weren't feeling well..." |
+| `contextNotes` | string | "Yesterday they reported not feeling well and complained of knee pain..." |
+| `relationshipDirective` | string | "You have been calling this patient for 3 weeks now. Be warm and familiar..." |
+| `firstMessage` | string | "Namaste Bauji! Kal aapne bataya tha ki tabiyat theek nahi thi..." |
+| `screeningQuestions` | string | "SCREENING QUESTIONS (ask these naturally): 1. What was your fasting sugar reading today?" |
+| `screeningQuestionIds` | string[] | `['diabetes_glucose']` |
+
+### Dual Voice Stack Support
+
+Dynamic prompts work identically across both voice stacks:
+
+| Stack | How Dynamic Prompt Is Injected |
+|-------|-------------------------------|
+| **ElevenLabs** | Passed as `dynamic_variables` in the outbound call API. The system prompt contains `{{placeholders}}` that ElevenLabs substitutes. Empty strings = no effect on prompt. |
+| **Sarvam** | Passed as `dynamicPrompt` JSON in the LiveKit room metadata. The Python agent's `prompt.py` builds dynamic sections into the system prompt string. `None` = falls back to static prompt. |
+
+---
+
 ## Call Scheduler & Retry Logic
 
 ### Scheduler (Cron-based)
@@ -857,6 +1109,7 @@ File: call-orchestrator.service.ts
 │  processBatch(dueCalls[])                                │
 │                                                         │
 │  MAX_CONCURRENT = 50 calls at a time                    │
+│  VOICE_STACK = 'elevenlabs' | 'sarvam' (env config)    │
 │                                                         │
 │  for each batch of 50:                                  │
 │    Promise.allSettled(batch.map(initiateCall))           │
@@ -864,8 +1117,11 @@ File: call-orchestrator.service.ts
 │  initiateCall(dueCall):                                 │
 │    1. Get medicines for this timing (morning/evening)   │
 │    2. Create Call record (status: 'scheduled')          │
-│    3. Call ElevenLabs outbound API with dynamic vars    │
-│    4. Update Call record (status: 'in_progress')        │
+│    3. If dynamic prompt enabled:                        │
+│       → PromptAssembler.assembleDynamicPrompt(patientId)│
+│       → Store variant/tone/stage on Call record         │
+│    4. Call ElevenLabs or Sarvam with dynamic vars       │
+│    5. Update Call record (status: 'in_progress')        │
 └─────────────────────────────────────────────────────────┘
 ```
 
@@ -1167,6 +1423,15 @@ RAZORPAY_KEY_ID=
 RAZORPAY_KEY_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
+
+# Dynamic Prompt Assembly
+DYNAMIC_PROMPT_ENABLED=false   # Set to 'true' to enable dynamic prompt assembly globally
+VOICE_STACK=elevenlabs         # 'elevenlabs' or 'sarvam'
+
+# Sarvam AI (Alternative Voice Stack)
+LIVEKIT_URL=
+LIVEKIT_API_KEY=
+LIVEKIT_API_SECRET=
 
 # URLs
 API_BASE_URL=http://localhost:3001
@@ -1523,9 +1788,16 @@ This is what ElevenLabs uses for the post-call webhook. Without a public URL, ca
 | Purpose | File Path |
 |---------|-----------|
 | **AI Agent brain (prompts)** | `apps/api/src/integrations/elevenlabs/elevenlabs-agent.service.ts` |
+| **Dynamic prompt assembler** | `apps/api/src/dynamic-prompt/prompt-assembler.service.ts` |
+| **Patient context builder** | `apps/api/src/dynamic-prompt/context-builder.service.ts` |
+| **Flow variant selector** | `apps/api/src/dynamic-prompt/flow-variant-selector.service.ts` |
+| **Screening question selector** | `apps/api/src/dynamic-prompt/screening-question-selector.service.ts` |
+| **Dynamic prompt types & constants** | `apps/api/src/dynamic-prompt/types/prompt-context.types.ts` |
 | **Call scheduler** | `apps/api/src/call-scheduler/call-scheduler.service.ts` |
 | **Call orchestrator** | `apps/api/src/call-scheduler/call-orchestrator.service.ts` |
-| **Post-call webhook** | `apps/api/src/integrations/elevenlabs/elevenlabs-webhook.controller.ts` |
+| **Post-call webhook (ElevenLabs)** | `apps/api/src/integrations/elevenlabs/elevenlabs-webhook.controller.ts` |
+| **Post-call webhook (Sarvam)** | `apps/api/src/integrations/sarvam/sarvam-webhook.controller.ts` |
+| **Sarvam Python agent + prompt** | `services/sarvam-agent/agent.py`, `services/sarvam-agent/prompt.py` |
 | **Patient schema** | `apps/api/src/patients/schemas/patient.schema.ts` |
 | **Call schema** | `apps/api/src/calls/schemas/call.schema.ts` |
 | **Medicine schema** | `apps/api/src/medicines/schemas/medicine.schema.ts` |

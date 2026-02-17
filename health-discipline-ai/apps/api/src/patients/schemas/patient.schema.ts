@@ -41,6 +41,15 @@ export class Patient {
   @Prop({ enum: ['male', 'female'], default: 'female' })
   preferredVoiceGender: string;
 
+  @Prop({
+    enum: ['trial', 'active', 'past_due', 'cancelled', 'expired'],
+    default: 'trial',
+  })
+  subscriptionStatus: string;
+
+  @Prop()
+  trialEndsAt?: Date;
+
   @Prop({ default: false })
   isPaused: boolean;
 
@@ -61,6 +70,19 @@ export class Patient {
 
   @Prop()
   lastCallAt?: Date;
+
+  // Dynamic prompt / anti-fatigue tracking
+  @Prop({ default: 0 })
+  currentStreak: number;
+
+  @Prop({ default: 0 })
+  longestStreak: number;
+
+  @Prop({ default: 0 })
+  fatigueScore: number;
+
+  @Prop({ default: 0 })
+  lastStreakMilestone: number;
 
   @Prop({ enum: ['valid', 'invalid'], default: 'valid' })
   phoneStatus: string;
