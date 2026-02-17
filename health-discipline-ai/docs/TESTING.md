@@ -337,7 +337,7 @@ curl -X POST https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/a
 |-------|-------|
 | Provider | Twilio |
 | Trunk ID | `ST_Twm6jTkqopYJ` |
-| Address | `AC6a526e43d7941fc36fcad60369722fab.pstn.twilio.com` |
+| Address | `<TWILIO_ACCOUNT_SID>.pstn.twilio.com` |
 | Outbound Number | `+17655227476` |
 | Created | 2026-02-17 |
 
