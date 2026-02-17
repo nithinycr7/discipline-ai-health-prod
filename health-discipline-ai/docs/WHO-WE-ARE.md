@@ -28,6 +28,7 @@ We record facts, not opinions:
 - Which medicines were taken / missed
 - Whether BP / sugar was measured
 - The numbers shared by the patient
+- Condition-specific screening — once or twice a week, we ask the right question for their condition (fasting sugar for diabetes, BP reading for hypertension, swelling for heart failure, muscle pain for statin users, and more). Not daily, not generic — just enough to catch problems early without tiring them out.
 - Mood and sentiment — tone of voice, energy level, how they're really feeling
 - Any simple notes in the patient's words
 
@@ -89,7 +90,7 @@ We fix consistency and visibility.
 Because we're a data layer, we can later add:
 - Pregnancy routines
 - Vaccination schedules
-- Chronic disease tracking
+- Deeper chronic disease tracking — condition-specific protocols for diabetes, hypertension, heart disease, COPD, kidney disease, thyroid, and more, each with clinically appropriate screening frequency
 - Post-discharge follow-ups
 
 Same product. Same promise. New routines.

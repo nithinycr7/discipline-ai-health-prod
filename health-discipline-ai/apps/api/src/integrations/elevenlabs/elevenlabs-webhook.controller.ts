@@ -3,8 +3,10 @@ import { ApiTags, ApiExcludeEndpoint } from '@nestjs/swagger';
 import { Public } from '../../common/decorators/public.decorator';
 import { CallsService } from '../../calls/calls.service';
 import { PatientsService } from '../../patients/patients.service';
+import { MedicinesService } from '../../medicines/medicines.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { ElevenLabsAgentService } from './elevenlabs-agent.service';
+import { TranscriptParserService } from './transcript-parser.service';
 
 /**
  * ElevenLabs Post-Call Webhook Controller
@@ -26,8 +28,10 @@ export class ElevenLabsWebhookController {
   constructor(
     private callsService: CallsService,
     private patientsService: PatientsService,
+    private medicinesService: MedicinesService,
     private notificationsService: NotificationsService,
     private elevenLabsAgentService: ElevenLabsAgentService,
+    private transcriptParser: TranscriptParserService,
   ) {}
 
   @Public()
@@ -64,15 +68,15 @@ export class ElevenLabsWebhookController {
       // Parse extracted data from analysis.data_collection_results
       // Each field has { value, rationale, ... } — we read .value
       const medicineResponsesStr = dcResults.medicine_responses?.value || '';
-      const vitalsChecked = dcResults.vitals_checked?.value || null;
-      const wellness = dcResults.wellness?.value || dcResults.mood?.value || null;
+      let vitalsChecked = dcResults.vitals_checked?.value || null;
+      let wellness = dcResults.wellness?.value || dcResults.mood?.value || null;
       const complaintsStr = dcResults.complaints?.value || '';
 
       // Parse medicine string: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
       const medicineResponses = this.parseMedicineString(medicineResponsesStr);
 
       // Parse complaints string: "fever, headache" or "none"
-      const complaints = this.parseComplaintsString(complaintsStr);
+      let complaints = this.parseComplaintsString(complaintsStr);
 
       // Build transcript text
       const transcriptText = this.buildTranscriptText(transcript);
@@ -106,6 +110,55 @@ export class ElevenLabsWebhookController {
         ) {
           call.medicinesChecked[0].response = medicineResponses[0].response;
           call.medicinesChecked[0].timestamp = new Date();
+        }
+      }
+
+      // LLM transcript parser: if any medicines still pending, use Gemini to re-extract
+      const hasPending = call.medicinesChecked?.some((m) => m.response === 'pending');
+      if (hasPending && transcriptText) {
+        try {
+          const medicines = await this.medicinesService.findByPatient(
+            call.patientId.toString(),
+          );
+          const llmResult = await this.transcriptParser.parseTranscript(
+            transcriptText,
+            medicines.map((m: any) => ({
+              brandName: m.brandName,
+              nickname: m.nicknames?.[0] || undefined,
+              timing: m.timing,
+            })),
+          );
+
+          if (llmResult) {
+            // Update pending medicines with LLM results
+            for (const existingMed of call.medicinesChecked || []) {
+              if (existingMed.response !== 'pending') continue;
+              const llmMatch = llmResult.medicineResponses.find(
+                (lr) =>
+                  lr.medicineName.toLowerCase() ===
+                  existingMed.medicineName.toLowerCase(),
+              );
+              if (llmMatch) {
+                existingMed.response = llmMatch.response;
+                existingMed.timestamp = new Date();
+              }
+            }
+
+            // Also use LLM wellness/complaints if ElevenLabs didn't extract them
+            if (!wellness && llmResult.wellness) {
+              wellness = llmResult.wellness;
+            }
+            if (complaints.length === 0 && llmResult.complaints.length > 0) {
+              complaints = llmResult.complaints;
+            }
+            if (!vitalsChecked && llmResult.vitalsChecked) {
+              vitalsChecked = llmResult.vitalsChecked;
+            }
+
+            this.logger.log(`LLM parser resolved pending medicines`);
+          }
+        } catch (llmErr: any) {
+          this.logger.warn(`LLM transcript parse failed: ${llmErr.message}`);
         }
       }
 

@@ -395,6 +395,103 @@ Not forced, not preachy. Like a family member casually mentioning something they
 
 ---
 
+## Condition-Specific Screening Questions (Weekly Rotation)
+
+### Why Not Daily?
+
+Asking the same health screening questions every single day creates the exact fatigue we're fighting. Clinically, 1-2 readings per week is sufficient for stable chronic patients. The daily call stays focused on **medicines + "how are you feeling?"** — condition-specific screening rotates through the week.
+
+### Daily (Every Call, Always)
+- Medicine check (taken / missed per medicine)
+- "How are you feeling today?" (good / okay / not well)
+
+### Weekly Screening Schedule
+
+| # | Condition | Question | Frequency | Days | Data Type | Why This Frequency |
+|---|-----------|----------|-----------|------|-----------|-------------------|
+| 1 | **Diabetes** | "What was your fasting sugar reading?" | 2×/week | Mon, Thu | Number (mg/dL) | 2-3 readings/week is standard for stable patients. Enough to catch trends. |
+| 2 | **Diabetes** | "Did you feel shaky, sweaty, or dizzy this week?" (hypo screen) | 1×/week | Fri | Yes/No | Weekly hypo screening catches episodes without daily nagging. |
+| 3 | **Hypertension** | "What was your BP this morning?" | 2×/week | Tue, Sat | Systolic/Diastolic | BP varies daily — 2 readings/week gives a usable trend line. |
+| 4 | **Hypertension** | "Any headache or dizziness when standing up?" | 1×/week | Wed | Yes/No | Postural hypotension check — common med side effect in elderly. |
+| 5 | **Heart Disease (CAD/Post-stent)** | "Any chest pain or heaviness this week?" | 1×/week | Mon | Yes/No → **escalation trigger if yes** | Start of week catches weekend events. Yes = immediate family alert. |
+| 6 | **Heart Disease** | "Can you walk around without getting breathless?" | 1×/week | Thu | Better/Same/Worse | Functional capacity — decline = worsening heart function. |
+| 7 | **Heart Failure (CHF)** | "Are your feet or ankles swollen?" | 2×/week | Mon, Fri | Yes/No | Edema builds fast — twice is the minimum to catch fluid overload. |
+| 8 | **Thyroid** | "Did you take thyroid medicine 30 min before food, empty stomach?" | 1×/week | Tue | Yes/No | Timing matters more than any other medicine. Gentle reminder, not a nag. |
+| 9 | **Cholesterol** | "Any muscle pain or body aches?" | 1×/week | Wed | Yes/No | Statin-induced myopathy — #1 reason elderly silently stop statins. |
+| 10 | **Arthritis** | "How are your joints — better, same, or worse?" | 1×/week | Mon | Better/Same/Worse | Weekly trend tracking — decline triggers review. |
+| 11 | **COPD / Asthma** | "Any wheezing or breathing trouble this week?" | 1×/week | Thu | Yes/No | Catches exacerbations early before they become emergencies. |
+| 12 | **Kidney Disease (CKD)** | "Any swelling on your face or feet?" | 1×/week | Fri | Yes/No | Facial edema = fluid overload = worsening kidney function. |
+| 13 | **Depression / Anxiety** | "How has your mood been? Did you go outside or talk to someone?" | 1×/week | Sun | Good/Okay/Low | Sunday is when loneliness peaks. This one question opens conversations they won't initiate. |
+
+### How It Works in a Call
+
+**Monday call for a diabetic + hypertension patient:**
+> "Good morning Amma! How are you feeling today?"
+> "Did you take your Metformin and Amlodipine?"
+> "What was your fasting sugar reading today?" ← (Mon = glucose day)
+> "Take care, drink water!"
+
+**Tuesday call for the same patient:**
+> "Good morning Amma! How are you today?"
+> "Did you take your medicines?"
+> "What was your BP this morning?" ← (Tue = BP day)
+> "Very good, take care!"
+
+**Wednesday call:**
+> Just medicines + "how are you feeling" — **no extra question**. Light day.
+
+### Selection Logic
+
+```
+day_of_week = today
+patient_conditions = patient.healthConditions  // e.g., ["diabetes", "hypertension"]
+
+screening_schedule = {
+  "diabetes_glucose":     { question: "fasting sugar reading?", days: ["mon", "thu"] },
+  "diabetes_hypo":        { question: "shaky or dizzy?",       days: ["fri"] },
+  "hypertension_bp":      { question: "BP reading?",           days: ["tue", "sat"] },
+  "hypertension_dizzy":   { question: "headache/dizziness?",   days: ["wed"] },
+  "heart_disease_chest":  { question: "chest pain?",           days: ["mon"] },
+  "heart_disease_breath": { question: "breathlessness?",       days: ["thu"] },
+  "heart_failure_edema":  { question: "ankle swelling?",       days: ["mon", "fri"] },
+  "thyroid_timing":       { question: "empty stomach?",        days: ["tue"] },
+  "cholesterol_muscle":   { question: "muscle pain?",          days: ["wed"] },
+  "arthritis_joints":     { question: "joint status?",         days: ["mon"] },
+  "copd_breathing":       { question: "wheezing?",             days: ["thu"] },
+  "kidney_swelling":      { question: "face/feet swelling?",   days: ["fri"] },
+  "depression_mood":      { question: "mood + social?",        days: ["sun"] },
+}
+
+questions_for_today = match(patient_conditions, day_of_week, screening_schedule)
+
+// HARD CAP: max 2 screening questions per call, even with 4+ conditions
+questions_for_today = questions_for_today.slice(0, 2)
+```
+
+### Escalation Triggers (Immediate, Not Weekly Report)
+
+These responses from screening questions trigger **instant family alerts**, not just logging:
+
+| Response | Action |
+|----------|--------|
+| Glucose < 70 mg/dL | Voice: "Eat something sweet now." WhatsApp alert to family within 1 minute. |
+| Glucose > 400 mg/dL | Alert family + suggest doctor/ER visit. |
+| BP > 180/120 | Voice: "Sit down, stay calm." Alert family immediately. |
+| Chest pain = Yes | End call: "Call 108 (ambulance)." Alert all family members. |
+| Breathlessness worsening | Flag for family — possible decompensation. |
+| Ankle swelling = Yes (CHF patient) | Alert family — possible fluid overload. |
+| Depression mood = "Low" for 2+ consecutive weeks | Alert family with suggestion to visit or call more. |
+
+### Integration with Existing Anti-Fatigue Flows
+
+- Screening questions **count as conversation variety** — they make calls feel different day-to-day without adding fatigue
+- On **celebration days** (streak milestones), skip screening — keep the call short and positive
+- On **re-engagement calls** (fatigue score > 60), skip screening — only critical medicines
+- Screening questions are delivered in the **same emotional tone** as the rest of the call (festive on festivals, gentle after complaints, etc.)
+- Questions are asked in the patient's **preferred language** — localized, not translated
+
+---
+
 ## First Impression Variation
 
 The moment the patient picks up the phone determines the tone of the entire call. Today, it's always "Namaste {{patient_name}}!" — this must vary.

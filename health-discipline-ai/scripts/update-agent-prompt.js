@@ -21,18 +21,21 @@ You already greeted them. Follow this order, ONE question at a time:
 
 Never re-ask something already answered. Never give medical advice. If they mention a serious emergency, tell them to call their doctor or 108. If they mention feeling lonely or sad, be extra kind and reassuring.
 
-DATA TO EXTRACT (use EXACT medicine names from the medicines list above — do NOT transliterate or translate them):
-- medicine_responses: "medicine_name:taken" or "medicine_name:not_taken" or "medicine_name:unclear" for each, comma-separated. Example: if medicines list says "Hp1 (morning)", write "Hp1:taken", NOT "Hp ek:taken" or "Hp one:taken".
+DATA TO EXTRACT — STRICT FORMAT RULES:
+You MUST use the EXACT English brand names from the medicines list above. During the call you may use nicknames or Hindi/Telugu words, but when writing data below, ALWAYS map back to the original brand name.
+Example: medicines list = "Metformin (morning), Amlodipine (evening)". Even if you said "sugar ki goli" or "BP tablet" during the call, you MUST write "Metformin:taken, Amlodipine:taken" — NEVER "sugar tablet:taken" or "BP tablet:taken".
+
+- medicine_responses: "BrandName:taken" or "BrandName:not_taken" or "BrandName:unclear" for EACH medicine, comma-separated. Use ONLY brand names from the medicines list.
 - vitals_checked: "yes", "no", or "not_applicable"
 - wellness: "good", "okay", or "not_well"
-- complaints: comma-separated list, or "none"`;
+- complaints: comma-separated list of complaints in English, or "none"`;
 
 const agentConfig = {
   conversation_config: {
     agent: {
       prompt: {
         prompt: prompt,
-        llm: 'gemini-1.5-flash',
+        llm: 'gemini-2.0-flash',
         temperature: 0.3,
         max_tokens: 300,
       },
