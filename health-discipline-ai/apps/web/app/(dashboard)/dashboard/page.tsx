@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
-import { Card, CardHeader, CardTitle, CardContent } from '@/components/ui/card';
+import { Card, CardHeader, CardTitle, CardContent, CardDescription } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/lib/hooks/use-auth';
@@ -15,8 +15,12 @@ interface PatientSummary {
   preferredName: string;
   isPaused: boolean;
   isNewPatient: boolean;
-  adherence?: { adherencePercentage: number; taken: number; totalMedicines: number };
-  lastCallAt?: string;
+  currentStreak?: number;
+  longestStreak?: number;
+  subscriptionStatus?: string;
+  trialEndsAt?: string;
+  healthConditions?: string[];
+  adherence?: { adherencePercentage: number; taken: number; totalMedicines: number; moodNotes?: string };
 }
 
 export default function DashboardPage() {
@@ -78,6 +82,33 @@ export default function DashboardPage() {
     );
   }
 
+  // Compute aggregate stats
+  const activePatients = patients.filter((p) => !p.isPaused);
+  const totalAdherenceToday = activePatients.length > 0
+    ? Math.round(activePatients.reduce((sum, p) => sum + (p.adherence?.adherencePercentage ?? 0), 0) / activePatients.length)
+    : 0;
+  const streakPatients = patients.filter((p) => (p.currentStreak || 0) >= 7).length;
+
+  // Needs attention: missed critical meds, no-answer patterns, trial expiring
+  const needsAttention: { patient: PatientSummary; reason: string; severity: 'high' | 'medium' | 'low' }[] = [];
+  for (const p of patients) {
+    if (p.isPaused) continue;
+    const pct = p.adherence?.adherencePercentage;
+    const total = p.adherence?.totalMedicines ?? 0;
+    if (pct !== undefined && pct < 50 && total > 0) {
+      needsAttention.push({ patient: p, reason: `Only ${pct}% adherence today (${p.adherence!.taken}/${total} meds)`, severity: 'high' });
+    }
+    if (p.subscriptionStatus === 'trial' && p.trialEndsAt) {
+      const daysLeft = Math.ceil((new Date(p.trialEndsAt).getTime() - Date.now()) / (1000 * 60 * 60 * 24));
+      if (daysLeft >= 0 && daysLeft <= 3) {
+        needsAttention.push({ patient: p, reason: `Trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, severity: 'medium' });
+      }
+    }
+    if (total === 0 && !p.isNewPatient) {
+      needsAttention.push({ patient: p, reason: 'No call data today', severity: 'low' });
+    }
+  }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-8">
@@ -92,6 +123,79 @@ export default function DashboardPage() {
         </Link>
       </div>
 
+      {/* Aggregate Stats */}
+      <div className="grid gap-4 grid-cols-2 lg:grid-cols-4 mb-8">
+        <Card className="border-border/50">
+          <CardContent className="pt-5 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Patients</p>
+            <p className="text-3xl font-bold mt-1">{patients.length}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">{activePatients.length} active &middot; {patients.length - activePatients.length} paused</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50">
+          <CardContent className="pt-5 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Avg Adherence</p>
+            <p className={cn('text-3xl font-bold mt-1', totalAdherenceToday >= 80 ? 'text-green-600' : totalAdherenceToday >= 50 ? 'text-yellow-600' : 'text-red-600')}>
+              {activePatients.some(p => p.adherence?.totalMedicines) ? `${totalAdherenceToday}%` : '--'}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">across all patients today</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50">
+          <CardContent className="pt-5 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">On Streaks</p>
+            <p className="text-3xl font-bold text-orange-600 mt-1">{streakPatients}</p>
+            <p className="text-xs text-muted-foreground mt-0.5">patients with 7+ day streaks</p>
+          </CardContent>
+        </Card>
+        <Card className="border-border/50">
+          <CardContent className="pt-5 pb-4">
+            <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Alerts</p>
+            <p className={cn('text-3xl font-bold mt-1', needsAttention.length > 0 ? 'text-red-600' : 'text-green-600')}>
+              {needsAttention.length}
+            </p>
+            <p className="text-xs text-muted-foreground mt-0.5">
+              {needsAttention.length > 0 ? 'need your attention' : 'all looking good'}
+            </p>
+          </CardContent>
+        </Card>
+      </div>
+
+      {/* Needs Attention */}
+      {needsAttention.length > 0 && (
+        <Card className="border-red-200 bg-red-50/30 mb-8">
+          <CardHeader className="pb-2">
+            <CardTitle className="text-base flex items-center gap-2">
+              <svg className="w-4 h-4 text-red-500" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="12" cy="12" r="10"/><line x1="12" x2="12" y1="8" y2="12"/><line x1="12" x2="12.01" y1="16" y2="16"/></svg>
+              Needs Attention
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="space-y-2">
+              {needsAttention.map((item, i) => (
+                <Link key={i} href={`/dashboard/patients/${item.patient._id}`}>
+                  <div className="flex items-center justify-between p-3 rounded-xl bg-white/80 hover:bg-white transition-colors cursor-pointer">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-lg bg-primary/10 flex items-center justify-center">
+                        <span className="text-sm font-bold text-primary">{item.patient.preferredName.charAt(0)}</span>
+                      </div>
+                      <div>
+                        <p className="text-sm font-medium">{item.patient.preferredName}</p>
+                        <p className="text-xs text-muted-foreground">{item.reason}</p>
+                      </div>
+                    </div>
+                    <Badge variant={item.severity === 'high' ? 'destructive' : item.severity === 'medium' ? 'warning' : 'secondary'}>
+                      {item.severity}
+                    </Badge>
+                  </div>
+                </Link>
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Patient Cards */}
       <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
         {patients.map((patient) => {
           const percentage = patient.adherence?.adherencePercentage ?? 0;
@@ -106,7 +210,15 @@ export default function DashboardPage() {
               )}>
                 <CardHeader className="pb-3">
                   <div className="flex items-center justify-between">
-                    <CardTitle className="text-lg">{patient.preferredName}</CardTitle>
+                    <div className="flex items-center gap-2">
+                      <CardTitle className="text-lg">{patient.preferredName}</CardTitle>
+                      {(patient.currentStreak || 0) > 0 && (
+                        <span className="inline-flex items-center gap-0.5 px-1.5 py-0.5 rounded-full bg-orange-100 text-orange-700 text-[10px] font-bold">
+                          <svg className="w-2.5 h-2.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 23a7.5 7.5 0 0 1-5.138-12.963C8.204 8.774 11.5 6.5 11 1.5c6 4 9 8 3 14 1 0 2.5 0 5-2.47.27.68.5 1.43.5 2.22A7.5 7.5 0 0 1 12 23z"/></svg>
+                          {patient.currentStreak}
+                        </span>
+                      )}
+                    </div>
                     {patient.isPaused ? (
                       <Badge variant="secondary">Paused</Badge>
                     ) : patient.isNewPatient ? (
@@ -131,8 +243,8 @@ export default function DashboardPage() {
                       </p>
                       <p className="text-xs text-muted-foreground mt-0.5">medicines taken</p>
                     </div>
-                    {total > 0 && (
-                      <div className="text-right">
+                    <div className="text-right">
+                      {total > 0 && (
                         <div className="inline-flex items-center gap-1.5">
                           <div className="w-16 h-2 rounded-full bg-border overflow-hidden">
                             <div
@@ -146,8 +258,11 @@ export default function DashboardPage() {
                           </div>
                           <span className="text-sm font-semibold">{percentage}%</span>
                         </div>
-                      </div>
-                    )}
+                      )}
+                      {patient.adherence?.moodNotes && (
+                        <p className="text-xs text-muted-foreground mt-1 capitalize">{patient.adherence.moodNotes}</p>
+                      )}
+                    </div>
                   </div>
                 </CardContent>
               </Card>

@@ -41,6 +41,13 @@ export function useAuth() {
     return response.user;
   }, []);
 
+  const refreshUser = useCallback(async () => {
+    const savedToken = token || localStorage.getItem('token');
+    if (!savedToken) return;
+    const res = await authApi.me(savedToken);
+    setUser(res);
+  }, [token]);
+
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     localStorage.removeItem('refreshToken');
@@ -49,5 +56,5 @@ export function useAuth() {
     window.location.href = '/login';
   }, []);
 
-  return { user, token, loading, login, logout };
+  return { user, token, loading, login, logout, refreshUser };
 }

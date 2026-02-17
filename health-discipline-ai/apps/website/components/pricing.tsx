@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import { ScrollReveal } from './ui/scroll-reveal';
+import { APP_URL } from '@/lib/constants';
 
 const plans = [
   {
@@ -170,7 +171,7 @@ export function Pricing() {
                 </ul>
 
                 <a
-                  href="#"
+                  href={`${APP_URL}/register/payer`}
                   className={`mt-8 block w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 ${
                     plan.popular
                       ? 'bg-brand-600 text-white shadow-soft hover:bg-brand-500 hover:shadow-card hover:-translate-y-0.5'

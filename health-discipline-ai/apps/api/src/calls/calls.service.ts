@@ -60,7 +60,7 @@ export class CallsService {
 
     const allMedicines: any[] = [];
     for (const call of calls) {
-      for (const med of call.medicinesChecked) {
+      for (const med of call.medicinesChecked || []) {
         allMedicines.push(med);
       }
     }
@@ -112,7 +112,7 @@ export class CallsService {
         dayMap.set(dateKey, { taken: 0, total: 0 });
       }
       const day = dayMap.get(dateKey)!;
-      for (const med of call.medicinesChecked) {
+      for (const med of call.medicinesChecked || []) {
         day.total++;
         if (med.response === 'taken') day.taken++;
       }
@@ -205,6 +205,112 @@ export class CallsService {
       patientId: new Types.ObjectId(patientId),
       scheduledAt: { $lte: cutoff },
     });
+  }
+
+  async getPatientStats(patientId: string, days: number = 30) {
+    const endDate = new Date();
+    endDate.setHours(23, 59, 59, 999);
+    const startDate = new Date();
+    startDate.setDate(startDate.getDate() - days);
+    startDate.setHours(0, 0, 0, 0);
+
+    const calls = await this.callModel.find({
+      patientId: new Types.ObjectId(patientId),
+      scheduledAt: { $gte: startDate, $lte: endDate },
+    }).sort({ scheduledAt: 1 });
+
+    // --- Adherence trend (daily) ---
+    const trendMap = new Map<string, { taken: number; total: number }>();
+    for (const call of calls) {
+      if (call.status !== 'completed') continue;
+      const dateKey = call.scheduledAt.toISOString().split('T')[0];
+      if (!trendMap.has(dateKey)) trendMap.set(dateKey, { taken: 0, total: 0 });
+      const day = trendMap.get(dateKey)!;
+      for (const med of call.medicinesChecked || []) {
+        day.total++;
+        if (med.response === 'taken') day.taken++;
+      }
+    }
+
+    const adherenceTrend: { date: string; percentage: number; taken: number; total: number }[] = [];
+    for (let d = 0; d < days; d++) {
+      const date = new Date(startDate);
+      date.setDate(date.getDate() + d);
+      const dateStr = date.toISOString().split('T')[0];
+      const dayData = trendMap.get(dateStr);
+      adherenceTrend.push({
+        date: dateStr,
+        taken: dayData?.taken || 0,
+        total: dayData?.total || 0,
+        percentage: dayData && dayData.total > 0
+          ? Math.round((dayData.taken / dayData.total) * 100) : -1,
+      });
+    }
+
+    // --- Vitals history ---
+    const glucoseHistory: { date: string; value: number }[] = [];
+    const bpHistory: { date: string; systolic: number; diastolic: number }[] = [];
+    for (const call of calls) {
+      if (call.status !== 'completed' || !call.vitals) continue;
+      const dateStr = call.scheduledAt.toISOString().split('T')[0];
+      if (call.vitals.glucose) {
+        glucoseHistory.push({ date: dateStr, value: call.vitals.glucose });
+      }
+      if (call.vitals.bloodPressure?.systolic) {
+        bpHistory.push({
+          date: dateStr,
+          systolic: call.vitals.bloodPressure.systolic,
+          diastolic: call.vitals.bloodPressure.diastolic,
+        });
+      }
+    }
+
+    // --- Mood history ---
+    const moodHistory: { date: string; mood: string; complaints: string[] }[] = [];
+    for (const call of calls) {
+      if (call.status !== 'completed') continue;
+      if (call.moodNotes || (call.complaints && call.complaints.length > 0)) {
+        moodHistory.push({
+          date: call.scheduledAt.toISOString().split('T')[0],
+          mood: call.moodNotes || '',
+          complaints: call.complaints || [],
+        });
+      }
+    }
+
+    // --- Per-medicine adherence ---
+    const medMap = new Map<string, { name: string; taken: number; total: number }>();
+    for (const call of calls) {
+      if (call.status !== 'completed') continue;
+      for (const med of call.medicinesChecked || []) {
+        const key = med.medicineId?.toString() || med.medicineName;
+        if (!medMap.has(key)) medMap.set(key, { name: med.medicineName, taken: 0, total: 0 });
+        const m = medMap.get(key)!;
+        m.total++;
+        if (med.response === 'taken') m.taken++;
+      }
+    }
+    const perMedicineAdherence = Array.from(medMap.entries()).map(([id, data]) => ({
+      medicineId: id,
+      name: data.name,
+      taken: data.taken,
+      total: data.total,
+      percentage: data.total > 0 ? Math.round((data.taken / data.total) * 100) : 0,
+    }));
+
+    // --- Call stats ---
+    const completed = calls.filter((c) => c.status === 'completed').length;
+    const noAnswer = calls.filter((c) => c.status === 'no_answer').length;
+    const failed = calls.filter((c) => c.status === 'failed').length;
+
+    return {
+      adherenceTrend,
+      vitalsHistory: { glucose: glucoseHistory, bloodPressure: bpHistory },
+      moodHistory,
+      perMedicineAdherence,
+      callStats: { total: calls.length, completed, noAnswer, failed },
+      period: { startDate: startDate.toISOString().split('T')[0], endDate: endDate.toISOString().split('T')[0], days },
+    };
   }
 
   async getDailyCostAggregation(date: Date) {

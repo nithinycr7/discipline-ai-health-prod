@@ -1,6 +1,7 @@
 'use client';
 
 import { useState, useEffect } from 'react';
+import { APP_URL } from '@/lib/constants';
 
 const navLinks = [
   { label: 'How It Works', href: '#how-it-works' },
@@ -57,12 +58,12 @@ export function Navbar() {
         {/* Desktop CTA */}
         <div className="hidden items-center gap-3 lg:flex">
           <a
-            href="#"
+            href={`${APP_URL}/login`}
             className="text-sm font-medium text-gray-600 transition-colors hover:text-brand-600"
           >
             Sign In
           </a>
-          <a href="#pricing" className="btn-primary !py-2.5 !px-5 !text-sm">
+          <a href={`${APP_URL}/register/payer`} className="btn-primary !py-2.5 !px-5 !text-sm">
             Start Free Trial
           </a>
         </div>
@@ -104,12 +105,12 @@ export function Navbar() {
           ))}
           <div className="mt-3 flex flex-col gap-2 pt-3 border-t border-warm-100">
             <a
-              href="#"
+              href={`${APP_URL}/login`}
               className="block rounded-lg px-3 py-2.5 text-sm font-medium text-gray-600"
             >
               Sign In
             </a>
-            <a href="#pricing" className="btn-primary !text-sm mx-3">
+            <a href={`${APP_URL}/register/payer`} className="btn-primary !text-sm mx-3">
               Start Free Trial
             </a>
           </div>

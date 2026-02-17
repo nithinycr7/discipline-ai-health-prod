@@ -1,6 +1,7 @@
 'use client';
 
 import Image from 'next/image';
+import { APP_URL } from '@/lib/constants';
 
 const stats = [
   { value: '200+', label: 'Families trust us' },
@@ -42,7 +43,7 @@ export function Hero() {
 
           {/* CTAs */}
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center animate-fade-up animate-delay-200">
-            <a href="#pricing" className="btn-primary">
+            <a href={`${APP_URL}/register/payer`} className="btn-primary">
               Start 7-Day Free Trial
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />

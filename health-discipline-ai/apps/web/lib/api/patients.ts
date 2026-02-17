@@ -10,4 +10,5 @@ export const patientsApi = {
   getAdherenceToday: (id: string, token: string) => api.get<any>(`/patients/${id}/adherence/today`, { token }),
   getAdherenceCalendar: (id: string, month: string, token: string) => api.get<any>(`/patients/${id}/adherence/calendar?month=${month}`, { token }),
   testCall: (id: string, token: string) => api.post<any>(`/patients/${id}/test-call`, null, { token }),
+  getStats: (id: string, days: number, token: string) => api.get<any>(`/patients/${id}/stats?days=${days}`, { token }),
 };

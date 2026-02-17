@@ -3,6 +3,7 @@
 import { Navbar } from '@/components/navbar';
 import { Footer } from '@/components/footer';
 import { ScrollReveal } from '@/components/ui/scroll-reveal';
+import { APP_URL } from '@/lib/constants';
 
 const stats = [
   { value: '50%', label: 'of discharged patients miss medicines in the first week' },
@@ -141,7 +142,7 @@ export default function HospitalsPage() {
               </p>
 
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <a href="#" className="btn-primary">
+                <a href={`${APP_URL}/register/hospital`} className="btn-primary">
                   Request a Pilot
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
@@ -362,7 +363,7 @@ export default function HospitalsPage() {
                     </ul>
 
                     <a
-                      href="#"
+                      href={tier.price === 'Custom' ? `mailto:hello@healthdiscipline.ai` : `${APP_URL}/register/hospital`}
                       className={`mt-8 block w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 ${
                         tier.popular
                           ? 'bg-brand-600 text-white hover:bg-brand-500 hover:-translate-y-0.5'
@@ -397,13 +398,13 @@ export default function HospitalsPage() {
                   </p>
                   <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                     <a
-                      href="#"
+                      href={`${APP_URL}/register/hospital`}
                       className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-[0.938rem] font-semibold text-brand-600 shadow-soft transition-all duration-300 hover:bg-brand-50 hover:-translate-y-0.5"
                     >
                       Request a Pilot
                     </a>
                     <a
-                      href="#"
+                      href="mailto:hello@healthdiscipline.ai"
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-[0.938rem] font-semibold text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10"
                     >
                       Schedule a Demo

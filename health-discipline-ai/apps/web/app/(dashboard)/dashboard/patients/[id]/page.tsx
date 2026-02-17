@@ -11,6 +11,9 @@ import { patientsApi } from '@/lib/api/patients';
 import { medicinesApi } from '@/lib/api/medicines';
 import { callsApi } from '@/lib/api/calls';
 import { cn } from '@/lib/utils';
+import { AdherenceTrendChart } from '@/components/charts/adherence-trend-chart';
+import { GlucoseChart, BloodPressureChart } from '@/components/charts/vitals-chart';
+import { MedicineAdherenceChart } from '@/components/charts/medicine-adherence-chart';
 
 export default function PatientDetailPage() {
   const { id } = useParams();
@@ -18,14 +21,16 @@ export default function PatientDetailPage() {
   const [patient, setPatient] = useState<any>(null);
   const [medicines, setMedicines] = useState<any[]>([]);
   const [adherence, setAdherence] = useState<any>(null);
+  const [stats, setStats] = useState<any>(null);
   const [calls, setCalls] = useState<any[]>([]);
   const [callsTotal, setCallsTotal] = useState(0);
   const [callsPage, setCallsPage] = useState(1);
   const [callsLoading, setCallsLoading] = useState(false);
-  const CALLS_PER_PAGE = 3;
+  const CALLS_PER_PAGE = 5;
   const [calendar, setCalendar] = useState<any>(null);
   const [loading, setLoading] = useState(true);
-  const [activeTab, setActiveTab] = useState<'today' | 'calendar' | 'calls' | 'medicines'>('today');
+  const [activeTab, setActiveTab] = useState<'overview' | 'today' | 'calendar' | 'calls' | 'medicines'>('overview');
+  const [statsDays, setStatsDays] = useState(30);
   const [previewLoading, setPreviewLoading] = useState(false);
   const [audioUrl, setAudioUrl] = useState<string | null>(null);
 
@@ -34,14 +39,20 @@ export default function PatientDetailPage() {
     loadData();
   }, [token, id]);
 
+  useEffect(() => {
+    if (!token || !id) return;
+    patientsApi.getStats(id as string, statsDays, token!).then((res) => setStats(res.data || res)).catch(() => {});
+  }, [token, id, statsDays]);
+
   const loadData = async () => {
     try {
-      const [patientRes, medsRes, adherenceRes, callsRes, calendarRes] = await Promise.all([
+      const [patientRes, medsRes, adherenceRes, callsRes, calendarRes, statsRes] = await Promise.all([
         patientsApi.get(id as string, token!),
         medicinesApi.list(id as string, token!),
         patientsApi.getAdherenceToday(id as string, token!).catch(() => null),
         callsApi.list(id as string, `page=1&limit=${CALLS_PER_PAGE}`, token!).catch(() => ({ data: { calls: [], total: 0 } })),
         patientsApi.getAdherenceCalendar(id as string, new Date().toISOString().slice(0, 7), token!).catch(() => null),
+        patientsApi.getStats(id as string, statsDays, token!).catch(() => null),
       ]);
 
       setPatient(patientRes.data || patientRes);
@@ -52,6 +63,7 @@ export default function PatientDetailPage() {
       setCallsTotal(callsData?.total || 0);
       setCallsPage(1);
       setCalendar(calendarRes?.data || calendarRes);
+      setStats(statsRes?.data || statsRes);
     } catch (err) {
       console.error('Failed to load patient data', err);
     } finally {
@@ -102,9 +114,10 @@ export default function PatientDetailPage() {
   }
 
   const tabs = [
-    { key: 'today', label: "Today's Status" },
+    { key: 'overview', label: 'Overview' },
+    { key: 'today', label: 'Today' },
     { key: 'calendar', label: 'Calendar' },
-    { key: 'calls', label: 'Call History' },
+    { key: 'calls', label: 'Calls' },
     { key: 'medicines', label: 'Medicines' },
   ] as const;
 
@@ -119,9 +132,22 @@ export default function PatientDetailPage() {
             </span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold tracking-tight">{patient.preferredName}</h1>
+            <div className="flex items-center gap-2.5">
+              <h1 className="text-2xl font-bold tracking-tight">{patient.preferredName}</h1>
+              {patient.currentStreak > 0 && (
+                <span className="inline-flex items-center gap-1 px-2.5 py-1 rounded-full bg-orange-100 text-orange-700 text-xs font-bold">
+                  <svg className="w-3.5 h-3.5" viewBox="0 0 24 24" fill="currentColor"><path d="M12 23a7.5 7.5 0 0 1-5.138-12.963C8.204 8.774 11.5 6.5 11 1.5c6 4 9 8 3 14 1 0 2.5 0 5-2.47.27.68.5 1.43.5 2.22A7.5 7.5 0 0 1 12 23z"/></svg>
+                  {patient.currentStreak}
+                </span>
+              )}
+              {patient.isPaused && <Badge variant="warning">Paused</Badge>}
+              {patient.subscriptionStatus === 'trial' && <Badge variant="secondary">Trial</Badge>}
+            </div>
             <p className="text-muted-foreground text-sm">
               {patient.fullName} &middot; Age {patient.age} &middot; {patient.preferredLanguage?.toUpperCase()}
+              {patient.healthConditions?.length > 0 && (
+                <> &middot; {patient.healthConditions.join(', ')}</>
+              )}
             </p>
           </div>
         </div>
@@ -152,7 +178,6 @@ export default function PatientDetailPage() {
                 audio.play();
               } catch (err) {
                 console.error('Preview failed:', err);
-                alert('Failed to generate call preview. Make sure ElevenLabs is configured.');
               } finally {
                 setPreviewLoading(false);
               }
@@ -169,12 +194,12 @@ export default function PatientDetailPage() {
       </div>
 
       {/* Tabs */}
-      <div className="flex gap-1 mb-8 bg-secondary/50 p-1 rounded-xl w-fit">
+      <div className="flex gap-1 mb-8 bg-secondary/50 p-1 rounded-xl w-fit overflow-x-auto">
         {tabs.map((tab) => (
           <button
             key={tab.key}
             className={cn(
-              'px-4 py-2 text-sm font-medium rounded-lg transition-all',
+              'px-4 py-2 text-sm font-medium rounded-lg transition-all whitespace-nowrap',
               activeTab === tab.key
                 ? 'bg-card text-foreground shadow-sm'
                 : 'text-muted-foreground hover:text-foreground'
@@ -186,7 +211,173 @@ export default function PatientDetailPage() {
         ))}
       </div>
 
-      {/* Today Tab */}
+      {/* ===== OVERVIEW TAB ===== */}
+      {activeTab === 'overview' && (
+        <div className="space-y-6">
+          {/* Stats Row */}
+          <div className="grid gap-4 grid-cols-2 lg:grid-cols-4">
+            <Card className="border-border/50">
+              <CardContent className="pt-5 pb-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Today</p>
+                <p className={cn('text-3xl font-bold mt-1', adherence ? (adherence.adherencePercentage >= 100 ? 'text-green-600' : adherence.adherencePercentage > 0 ? 'text-yellow-600' : 'text-muted-foreground') : 'text-muted-foreground')}>
+                  {adherence ? `${adherence.adherencePercentage}%` : '--'}
+                </p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {adherence ? `${adherence.taken}/${adherence.totalMedicines} meds` : 'No call yet'}
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/50">
+              <CardContent className="pt-5 pb-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Streak</p>
+                <div className="flex items-baseline gap-2 mt-1">
+                  <p className="text-3xl font-bold text-orange-600">{patient.currentStreak || 0}</p>
+                  <p className="text-sm text-muted-foreground">days</p>
+                </div>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  Best: {patient.longestStreak || 0} days
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/50">
+              <CardContent className="pt-5 pb-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Calls</p>
+                <p className="text-3xl font-bold mt-1">{stats?.callStats?.completed || 0}</p>
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  {stats?.callStats?.noAnswer || 0} missed &middot; {stats?.callStats?.total || 0} total
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card className="border-border/50">
+              <CardContent className="pt-5 pb-4">
+                <p className="text-xs font-medium text-muted-foreground uppercase tracking-wide">Mood</p>
+                <p className="text-lg font-semibold mt-1 capitalize truncate">
+                  {adherence?.moodNotes || stats?.moodHistory?.[stats.moodHistory.length - 1]?.mood || '--'}
+                </p>
+                {stats?.moodHistory?.length > 0 && stats.moodHistory[stats.moodHistory.length - 1]?.complaints?.length > 0 && (
+                  <p className="text-xs text-destructive mt-0.5 truncate">
+                    {stats.moodHistory[stats.moodHistory.length - 1].complaints.join(', ')}
+                  </p>
+                )}
+              </CardContent>
+            </Card>
+          </div>
+
+          {/* Period selector */}
+          <div className="flex gap-1 bg-secondary/50 p-1 rounded-lg w-fit">
+            {[7, 14, 30].map((d) => (
+              <button
+                key={d}
+                className={cn(
+                  'px-3 py-1.5 text-xs font-medium rounded-md transition-all',
+                  statsDays === d ? 'bg-card text-foreground shadow-sm' : 'text-muted-foreground hover:text-foreground'
+                )}
+                onClick={() => setStatsDays(d)}
+              >
+                {d}D
+              </button>
+            ))}
+          </div>
+
+          {/* Adherence Trend */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Adherence Trend</CardTitle>
+              <CardDescription>Daily medicine compliance over {statsDays} days</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {stats?.adherenceTrend ? (
+                <AdherenceTrendChart data={stats.adherenceTrend} />
+              ) : (
+                <div className="h-[200px] flex items-center justify-center text-sm text-muted-foreground">Loading...</div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Vitals Charts */}
+          {(patient.hasGlucometer || patient.hasBPMonitor) && (
+            <div className="grid gap-6 md:grid-cols-2">
+              {patient.hasGlucometer && (
+                <Card className="border-border/50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Glucose</CardTitle>
+                    <CardDescription>Fasting blood sugar (mg/dL) &middot; green = normal range</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <GlucoseChart data={stats?.vitalsHistory?.glucose || []} />
+                  </CardContent>
+                </Card>
+              )}
+              {patient.hasBPMonitor && (
+                <Card className="border-border/50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-base">Blood Pressure</CardTitle>
+                    <CardDescription>Systolic (red) & diastolic (blue) mmHg</CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <BloodPressureChart data={stats?.vitalsHistory?.bloodPressure || []} />
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+
+          {/* Per-Medicine Adherence */}
+          <Card className="border-border/50">
+            <CardHeader className="pb-2">
+              <CardTitle className="text-base">Per-Medicine Adherence</CardTitle>
+              <CardDescription>Compliance rate for each medicine ({statsDays} days)</CardDescription>
+            </CardHeader>
+            <CardContent>
+              <MedicineAdherenceChart data={stats?.perMedicineAdherence || []} />
+            </CardContent>
+          </Card>
+
+          {/* Mood Timeline */}
+          {stats?.moodHistory?.length > 0 && (
+            <Card className="border-border/50">
+              <CardHeader className="pb-2">
+                <CardTitle className="text-base">Mood & Wellness</CardTitle>
+                <CardDescription>Recent mood reports from daily calls</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-2.5">
+                  {stats.moodHistory.slice(-10).reverse().map((entry: any, i: number) => (
+                    <div key={i} className="flex items-start gap-3 p-3 rounded-xl bg-secondary/50">
+                      <div className="shrink-0 mt-0.5">
+                        <span className={cn(
+                          'inline-block w-2.5 h-2.5 rounded-full',
+                          entry.mood?.match(/cheerful|happy|good/i) ? 'bg-green-500' :
+                          entry.mood?.match(/tired|okay|fine/i) ? 'bg-yellow-500' :
+                          entry.mood?.match(/sad|low|pain/i) ? 'bg-red-500' : 'bg-gray-400'
+                        )} />
+                      </div>
+                      <div className="min-w-0">
+                        <p className="text-sm font-medium capitalize">{entry.mood || 'No mood noted'}</p>
+                        {entry.complaints?.length > 0 && (
+                          <div className="flex flex-wrap gap-1 mt-1">
+                            {entry.complaints.map((c: string, j: number) => (
+                              <Badge key={j} variant="outline" className="text-xs">{c}</Badge>
+                            ))}
+                          </div>
+                        )}
+                        <p className="text-xs text-muted-foreground mt-1">
+                          {new Date(entry.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}
+                        </p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardContent>
+            </Card>
+          )}
+        </div>
+      )}
+
+      {/* ===== TODAY TAB ===== */}
       {activeTab === 'today' && adherence && (
         <div className="space-y-4">
           <div className="grid gap-4 md:grid-cols-3">
@@ -233,12 +424,7 @@ export default function PatientDetailPage() {
                         <p className="text-sm text-muted-foreground">&ldquo;{med.nickname}&rdquo;</p>
                       )}
                     </div>
-                    <Badge
-                      variant={
-                        med.status === 'taken' ? 'success' :
-                        med.status === 'missed' ? 'destructive' : 'secondary'
-                      }
-                    >
+                    <Badge variant={med.status === 'taken' ? 'success' : med.status === 'missed' ? 'destructive' : 'secondary'}>
                       {med.status}
                     </Badge>
                   </div>
@@ -253,12 +439,10 @@ export default function PatientDetailPage() {
       )}
 
       {activeTab === 'today' && !adherence && (
-        <div className="text-center py-16 text-muted-foreground">
-          No adherence data available for today.
-        </div>
+        <div className="text-center py-16 text-muted-foreground">No adherence data available for today.</div>
       )}
 
-      {/* Calendar Tab */}
+      {/* ===== CALENDAR TAB ===== */}
       {activeTab === 'calendar' && calendar && (
         <Card className="border-border/50">
           <CardHeader>
@@ -268,15 +452,12 @@ export default function PatientDetailPage() {
           <CardContent>
             <div className="grid grid-cols-7 gap-1.5">
               {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">
-                  {day}
-                </div>
+                <div key={day} className="text-center text-xs font-medium text-muted-foreground p-2">{day}</div>
               ))}
               {calendar.days?.map((day: any) => {
                 const date = new Date(day.date);
                 const dayOfWeek = date.getDay();
                 const isFirst = date.getDate() === 1;
-
                 return (
                   <div
                     key={day.date}
@@ -303,15 +484,13 @@ export default function PatientDetailPage() {
         <div className="text-center py-16 text-muted-foreground">No calendar data available.</div>
       )}
 
-      {/* Calls Tab */}
+      {/* ===== CALLS TAB ===== */}
       {activeTab === 'calls' && (
         <Card className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between">
             <div>
               <CardTitle className="text-lg">Call History</CardTitle>
-              {callsTotal > 0 && (
-                <CardDescription>{callsTotal} total call{callsTotal !== 1 ? 's' : ''}</CardDescription>
-              )}
+              {callsTotal > 0 && <CardDescription>{callsTotal} total call{callsTotal !== 1 ? 's' : ''}</CardDescription>}
             </div>
           </CardHeader>
           <CardContent>
@@ -334,51 +513,24 @@ export default function PatientDetailPage() {
                           {call.medicinesChecked?.length > 0 && (
                             <> &middot; {call.medicinesChecked.filter((m: any) => m.response === 'taken').length}/{call.medicinesChecked.length} taken</>
                           )}
+                          {call.moodNotes && <> &middot; Mood: {call.moodNotes}</>}
                         </p>
                       </div>
-                      <Badge
-                        variant={
-                          call.status === 'completed' ? 'success' :
-                          call.status === 'no_answer' ? 'warning' :
-                          call.status === 'failed' ? 'destructive' : 'secondary'
-                        }
-                      >
+                      <Badge variant={call.status === 'completed' ? 'success' : call.status === 'no_answer' ? 'warning' : call.status === 'failed' ? 'destructive' : 'secondary'}>
                         {call.status?.replace('_', ' ')}
                       </Badge>
                     </div>
                   ))}
-                  {calls.length === 0 && (
-                    <p className="text-muted-foreground text-center py-6">No calls yet</p>
-                  )}
+                  {calls.length === 0 && <p className="text-muted-foreground text-center py-6">No calls yet</p>}
                 </>
               )}
             </div>
-
-            {/* Pagination */}
             {totalCallPages > 1 && (
               <div className="flex items-center justify-between mt-4 pt-4 border-t border-border/50">
-                <p className="text-sm text-muted-foreground">
-                  Page {callsPage} of {totalCallPages}
-                </p>
+                <p className="text-sm text-muted-foreground">Page {callsPage} of {totalCallPages}</p>
                 <div className="flex gap-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-lg"
-                    disabled={callsPage <= 1 || callsLoading}
-                    onClick={() => loadCallsPage(callsPage - 1)}
-                  >
-                    Previous
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="rounded-lg"
-                    disabled={callsPage >= totalCallPages || callsLoading}
-                    onClick={() => loadCallsPage(callsPage + 1)}
-                  >
-                    Next
-                  </Button>
+                  <Button variant="outline" size="sm" className="rounded-lg" disabled={callsPage <= 1 || callsLoading} onClick={() => loadCallsPage(callsPage - 1)}>Previous</Button>
+                  <Button variant="outline" size="sm" className="rounded-lg" disabled={callsPage >= totalCallPages || callsLoading} onClick={() => loadCallsPage(callsPage + 1)}>Next</Button>
                 </div>
               </div>
             )}
@@ -386,7 +538,7 @@ export default function PatientDetailPage() {
         </Card>
       )}
 
-      {/* Medicines Tab */}
+      {/* ===== MEDICINES TAB ===== */}
       {activeTab === 'medicines' && (
         <Card className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between">
@@ -404,15 +556,11 @@ export default function PatientDetailPage() {
                 <div key={med._id} className="flex items-center justify-between p-3.5 rounded-xl bg-secondary/50">
                   <div>
                     <p className="font-medium">{med.brandName}</p>
-                    {med.genericName && (
-                      <p className="text-sm text-muted-foreground">{med.genericName}</p>
-                    )}
+                    {med.genericName && <p className="text-sm text-muted-foreground">{med.genericName}</p>}
                     <div className="flex gap-1.5 mt-1.5">
                       <Badge variant="outline" className="text-xs">{med.timing}</Badge>
                       <Badge variant="outline" className="text-xs">{med.foodPreference} food</Badge>
-                      {med.nicknames?.length > 0 && (
-                        <Badge variant="secondary" className="text-xs">&ldquo;{med.nicknames[0]}&rdquo;</Badge>
-                      )}
+                      {med.nicknames?.length > 0 && <Badge variant="secondary" className="text-xs">&ldquo;{med.nicknames[0]}&rdquo;</Badge>}
                     </div>
                   </div>
                   <div className="flex gap-1.5">
@@ -421,9 +569,7 @@ export default function PatientDetailPage() {
                   </div>
                 </div>
               ))}
-              {medicines.length === 0 && (
-                <p className="text-muted-foreground text-center py-6">No medicines added yet</p>
-              )}
+              {medicines.length === 0 && <p className="text-muted-foreground text-center py-6">No medicines added yet</p>}
             </div>
           </CardContent>
         </Card>

@@ -57,9 +57,26 @@ export class CallsController {
     return this.callsService.getAdherenceCalendar(patientId, year, mon);
   }
 
+  @Get('patients/:patientId/stats')
+  @ApiOperation({ summary: 'Get aggregated stats for patient dashboard charts' })
+  async getPatientStats(
+    @Param('patientId') patientId: string,
+    @CurrentUser('userId') userId: string,
+    @Query('days') days?: string,
+  ) {
+    await this.patientsService.findByIdForUser(patientId, userId);
+    const parsedDays = days ? parseInt(days, 10) : 30;
+    return this.callsService.getPatientStats(patientId, parsedDays || 30);
+  }
+
   @Get('calls/:callId')
   @ApiOperation({ summary: 'Get a single call detail' })
-  async getCall(@Param('callId') callId: string) {
-    return this.callsService.findById(callId);
+  async getCall(
+    @Param('callId') callId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    const call = await this.callsService.findById(callId);
+    await this.patientsService.findByIdForUser(call.patientId.toString(), userId);
+    return call;
   }
 }

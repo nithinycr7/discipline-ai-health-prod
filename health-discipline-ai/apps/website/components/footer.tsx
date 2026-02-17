@@ -1,3 +1,5 @@
+import { APP_URL } from '@/lib/constants';
+
 export function Footer() {
   return (
     <footer className="border-t border-warm-200/60 bg-warm-50">
@@ -31,6 +33,7 @@ export function Footer() {
                 { label: 'Pricing', href: '#pricing' },
                 { label: 'For Hospitals', href: '/hospitals' },
                 { label: 'FAQ', href: '#faq' },
+                { label: 'Sign In', href: `${APP_URL}/login` },
               ].map((link) => (
                 <li key={link.label}>
                   <a

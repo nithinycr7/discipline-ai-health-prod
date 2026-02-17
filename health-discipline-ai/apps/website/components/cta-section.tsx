@@ -1,6 +1,7 @@
 'use client';
 
 import { ScrollReveal } from './ui/scroll-reveal';
+import { APP_URL } from '@/lib/constants';
 
 export function CTASection() {
   return (
@@ -27,7 +28,7 @@ export function CTASection() {
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <a
-                  href="#"
+                  href={`${APP_URL}/register/payer`}
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-[0.938rem] font-semibold text-brand-600 shadow-soft transition-all duration-300 hover:bg-brand-50 hover:shadow-card hover:-translate-y-0.5"
                 >
                   Start Free Trial
