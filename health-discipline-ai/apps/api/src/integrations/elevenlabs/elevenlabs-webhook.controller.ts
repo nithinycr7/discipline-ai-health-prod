@@ -166,8 +166,8 @@ export class ElevenLabsWebhookController {
       const durationSecs = metadata.call_duration_secs || 0;
       const terminationReason = metadata.termination_reason || '';
 
-      // Twilio cost: ~$0.0085/min for India outbound ≈ ₹0.72/min
-      const twilioCharges = Math.round((durationSecs / 60) * 0.72 * 100) / 100;
+      // Twilio cost: $0.0405/min for US→India mobile outbound ≈ ₹3.56/min (at ₹88/$)
+      const twilioCharges = Math.round((durationSecs / 60) * 3.56 * 100) / 100;
 
       // Fetch ElevenLabs cost from conversation API (credits)
       let elevenlabsCostCredits = 0;
