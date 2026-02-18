@@ -21,6 +21,6 @@ import { DynamicPromptModule } from '../dynamic-prompt/dynamic-prompt.module';
     DynamicPromptModule,
   ],
   providers: [CallSchedulerService, CallOrchestratorService, RetryHandlerService],
-  exports: [CallSchedulerService, CallOrchestratorService],
+  exports: [CallSchedulerService, CallOrchestratorService, RetryHandlerService],
 })
 export class CallSchedulerModule {}

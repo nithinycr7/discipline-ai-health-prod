@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { FirebaseAdminModule } from './firebase/firebase-admin.module';
 
 @Module({
   imports: [
@@ -30,6 +31,7 @@ import { WebhooksModule } from './webhooks/webhooks.module';
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
+    FirebaseAdminModule,
     AuthModule,
     UsersModule,
     PatientsModule,

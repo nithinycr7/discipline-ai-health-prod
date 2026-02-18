@@ -1,6 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CallConfigsService } from '../call-configs/call-configs.service';
+import { CallsService } from '../calls/calls.service';
 import { PatientsService } from '../patients/patients.service';
 import { CallOrchestratorService } from './call-orchestrator.service';
 import { RetryHandlerService } from './retry-handler.service';
@@ -12,6 +13,7 @@ export class CallSchedulerService {
 
   constructor(
     private callConfigsService: CallConfigsService,
+    private callsService: CallsService,
     private patientsService: PatientsService,
     private callOrchestratorService: CallOrchestratorService,
     private retryHandlerService: RetryHandlerService,
@@ -46,6 +48,13 @@ export class CallSchedulerService {
 
               if (patient.isPaused) continue;
               if (patient.phoneStatus === 'invalid') continue;
+
+              // Dedup: skip if a call already exists for this patient today
+              const alreadyCalled = await this.callsService.hasCallToday(
+                patient._id.toString(),
+                config.timezone,
+              );
+              if (alreadyCalled) continue;
 
               dueCalls.push({
                 config,

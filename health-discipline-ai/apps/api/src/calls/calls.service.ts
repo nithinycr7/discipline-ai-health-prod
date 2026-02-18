@@ -2,6 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Call, CallDocument } from './schemas/call.schema';
+import { DateTime } from 'luxon';
 
 @Injectable()
 export class CallsService {
@@ -9,6 +10,24 @@ export class CallsService {
 
   async create(data: Partial<Call>): Promise<CallDocument> {
     return this.callModel.create(data);
+  }
+
+  /**
+   * Check if a non-retry call already exists for this patient today
+   * (in the patient's timezone). Prevents duplicate scheduling.
+   */
+  async hasCallToday(patientId: string, timezone: string): Promise<boolean> {
+    const now = DateTime.now().setZone(timezone || 'Asia/Kolkata');
+    const startOfDay = now.startOf('day').toJSDate();
+    const endOfDay = now.endOf('day').toJSDate();
+
+    const count = await this.callModel.countDocuments({
+      patientId: new Types.ObjectId(patientId),
+      scheduledAt: { $gte: startOfDay, $lte: endOfDay },
+      isRetry: { $ne: true },
+    });
+
+    return count > 0;
   }
 
   async findById(id: string): Promise<CallDocument> {

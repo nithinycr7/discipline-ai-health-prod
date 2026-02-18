@@ -4,6 +4,7 @@ import { AuthService } from './auth.service';
 import { RegisterPayerDto } from './dto/register-payer.dto';
 import { RegisterHospitalDto } from './dto/register-hospital.dto';
 import { LoginDto } from './dto/login.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -34,6 +35,14 @@ export class AuthController {
   @ApiOperation({ summary: 'Login with phone or email' })
   async login(@Body() dto: LoginDto) {
     return this.authService.login(dto);
+  }
+
+  @Public()
+  @Post('verify-otp')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Verify Firebase Phone OTP and login/register payer' })
+  async verifyOtp(@Body() dto: VerifyOtpDto) {
+    return this.authService.verifyFirebaseOtp(dto);
   }
 
   @Public()

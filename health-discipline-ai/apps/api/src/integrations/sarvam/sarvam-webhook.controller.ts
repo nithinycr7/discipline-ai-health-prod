@@ -4,6 +4,7 @@ import { Public } from '../../common/decorators/public.decorator';
 import { CallsService } from '../../calls/calls.service';
 import { PatientsService } from '../../patients/patients.service';
 import { NotificationsService } from '../../notifications/notifications.service';
+import { RetryHandlerService } from '../../call-scheduler/retry-handler.service';
 
 /**
  * Sarvam AI Post-Call Webhook Controller
@@ -33,6 +34,7 @@ export class SarvamWebhookController {
     private callsService: CallsService,
     private patientsService: PatientsService,
     private notificationsService: NotificationsService,
+    private retryHandler: RetryHandlerService,
   ) {}
 
   @Public()
@@ -51,7 +53,9 @@ export class SarvamWebhookController {
         wellness = null,
         complaints: complaintsStr = '',
         duration = 0,
+        re_scheduled: reScheduledStr = 'false',
       } = body;
+      const reScheduled = reScheduledStr === 'true' || reScheduledStr === true;
 
       if (!callId) {
         this.logger.warn('Post-call webhook missing callId');
@@ -108,6 +112,7 @@ export class SarvamWebhookController {
         livekitRoomName: roomName,
         medicinesChecked: call.medicinesChecked,
         transcript: transcriptText || undefined,
+        reScheduled,
       } as any);
 
       // Update vitals if patient reported checking them
@@ -136,11 +141,21 @@ export class SarvamWebhookController {
         this.logger.warn(`Post-call notification failed: ${notifErr.message}`);
       }
 
+      // Schedule retry if patient asked to be called later
+      if (reScheduled) {
+        try {
+          await this.retryHandler.handleReScheduled(callId);
+          this.logger.log(`Retry scheduled for reScheduled call ${callId}`);
+        } catch (retryErr: any) {
+          this.logger.warn(`Retry scheduling failed: ${retryErr.message}`);
+        }
+      }
+
       this.logger.log(
         `Sarvam post-call processed: call=${callId}, ` +
           `medicines=${medicineResponses.length}, wellness=${wellness}, ` +
           `vitals=${vitalsChecked}, complaints=${complaints.length}, ` +
-          `duration=${duration}s`,
+          `duration=${duration}s, reScheduled=${reScheduled}`,
       );
 
       return {
@@ -194,15 +209,7 @@ export class SarvamWebhookController {
 
   private normalizeResponse(response: string): string {
     const lower = response.toLowerCase().trim();
-    if (
-      lower.includes('taken') ||
-      lower === 'yes' ||
-      lower.includes('li hai') ||
-      lower.includes('le li') ||
-      lower.includes('haan')
-    ) {
-      return 'taken';
-    }
+    // Check not_taken BEFORE taken — "not_taken" contains "taken"
     if (
       lower.includes('not_taken') ||
       lower.includes('missed') ||
@@ -211,6 +218,15 @@ export class SarvamWebhookController {
       lower.includes('bhool')
     ) {
       return 'missed';
+    }
+    if (
+      lower.includes('taken') ||
+      lower === 'yes' ||
+      lower.includes('li hai') ||
+      lower.includes('le li') ||
+      lower.includes('haan')
+    ) {
+      return 'taken';
     }
     return 'unclear';
   }

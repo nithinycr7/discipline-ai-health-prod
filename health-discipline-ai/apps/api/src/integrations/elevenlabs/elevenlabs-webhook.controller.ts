@@ -7,6 +7,7 @@ import { MedicinesService } from '../../medicines/medicines.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { ElevenLabsAgentService } from './elevenlabs-agent.service';
 import { TranscriptParserService } from './transcript-parser.service';
+import { RetryHandlerService } from '../../call-scheduler/retry-handler.service';
 
 /**
  * ElevenLabs Post-Call Webhook Controller
@@ -32,6 +33,7 @@ export class ElevenLabsWebhookController {
     private notificationsService: NotificationsService,
     private elevenLabsAgentService: ElevenLabsAgentService,
     private transcriptParser: TranscriptParserService,
+    private retryHandler: RetryHandlerService,
   ) {}
 
   @Public()
@@ -71,6 +73,7 @@ export class ElevenLabsWebhookController {
       let vitalsChecked = dcResults.vitals_checked?.value || null;
       let wellness = dcResults.wellness?.value || dcResults.mood?.value || null;
       const complaintsStr = dcResults.complaints?.value || '';
+      const reScheduled = dcResults.re_scheduled?.value === 'true';
 
       // Parse medicine string: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
       const medicineResponses = this.parseMedicineString(medicineResponsesStr);
@@ -154,7 +157,6 @@ export class ElevenLabsWebhookController {
             if (!vitalsChecked && llmResult.vitalsChecked) {
               vitalsChecked = llmResult.vitalsChecked;
             }
-
             this.logger.log(`LLM parser resolved pending medicines`);
           }
         } catch (llmErr: any) {
@@ -204,6 +206,7 @@ export class ElevenLabsWebhookController {
         elevenlabsCharges,
         elevenlabsCostCredits,
         totalCharges,
+        reScheduled,
       } as any);
 
       // Update vitals if patient reported checking them
@@ -232,11 +235,21 @@ export class ElevenLabsWebhookController {
         this.logger.warn(`Post-call notification failed: ${notifErr.message}`);
       }
 
+      // Schedule retry if patient asked to be called later
+      if (reScheduled) {
+        try {
+          await this.retryHandler.handleReScheduled(callId);
+          this.logger.log(`Retry scheduled for reScheduled call ${callId}`);
+        } catch (retryErr: any) {
+          this.logger.warn(`Retry scheduling failed: ${retryErr.message}`);
+        }
+      }
+
       this.logger.log(
         `Post-call processed: call=${callId}, ` +
           `medicines=${medicineResponses.length}, wellness=${wellness}, ` +
           `vitals=${vitalsChecked}, complaints=${complaints.length}, ` +
-          `duration=${durationSecs}s, cost=₹${totalCharges}`,
+          `duration=${durationSecs}s, cost=₹${totalCharges}, reScheduled=${reScheduled}`,
       );
 
       return {
@@ -297,15 +310,7 @@ export class ElevenLabsWebhookController {
 
   private normalizeResponse(response: string): string {
     const lower = response.toLowerCase().trim();
-    if (
-      lower.includes('taken') ||
-      lower === 'yes' ||
-      lower.includes('li hai') ||
-      lower.includes('le li') ||
-      lower.includes('haan')
-    ) {
-      return 'taken';
-    }
+    // Check not_taken BEFORE taken — "not_taken" contains "taken"
     if (
       lower.includes('not_taken') ||
       lower.includes('missed') ||
@@ -314,6 +319,15 @@ export class ElevenLabsWebhookController {
       lower.includes('bhool')
     ) {
       return 'missed';
+    }
+    if (
+      lower.includes('taken') ||
+      lower === 'yes' ||
+      lower.includes('li hai') ||
+      lower.includes('le li') ||
+      lower.includes('haan')
+    ) {
+      return 'taken';
     }
     return 'unclear';
   }

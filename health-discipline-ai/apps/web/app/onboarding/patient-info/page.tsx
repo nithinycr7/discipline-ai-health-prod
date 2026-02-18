@@ -7,6 +7,7 @@ import { Input } from '@/components/ui/input';
 import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { patientsApi } from '@/lib/api/patients';
+import { PhoneInput } from '@/components/ui/phone-input';
 
 const LANGUAGES = [
   { code: 'hi', name: 'Hindi' },
@@ -34,7 +35,7 @@ export default function PatientInfoPage() {
     fullName: '',
     preferredName: '',
     age: '',
-    phone: '',
+    phone: '+91',
     preferredLanguage: 'hi',
     digitalTier: 2,
     healthConditions: [] as string[],
@@ -114,24 +115,22 @@ export default function PatientInfoPage() {
                   Our AI will use this name in every call
                 </p>
               </div>
-              <div className="grid grid-cols-2 gap-4">
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Age</label>
-                  <Input
-                    type="number"
-                    placeholder="72"
-                    value={form.age}
-                    onChange={(e) => setForm({ ...form, age: e.target.value })}
-                  />
-                </div>
-                <div className="space-y-2">
-                  <label className="text-sm font-medium">Phone Number</label>
-                  <Input
-                    placeholder="+91 98765 43210"
-                    value={form.phone}
-                    onChange={(e) => setForm({ ...form, phone: e.target.value })}
-                  />
-                </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Age</label>
+                <Input
+                  type="number"
+                  placeholder="72"
+                  value={form.age}
+                  onChange={(e) => setForm({ ...form, age: e.target.value })}
+                  className="w-32"
+                />
+              </div>
+              <div className="space-y-2">
+                <label className="text-sm font-medium">Phone Number</label>
+                <PhoneInput
+                  value={form.phone}
+                  onChange={(phone) => setForm({ ...form, phone })}
+                />
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Preferred Language</label>

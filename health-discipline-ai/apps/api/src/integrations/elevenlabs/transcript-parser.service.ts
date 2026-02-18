@@ -6,6 +6,7 @@ interface ParsedCallData {
   vitalsChecked: string | null;
   wellness: string | null;
   complaints: string[];
+  reScheduled: boolean;
 }
 
 /**
@@ -19,7 +20,7 @@ interface ParsedCallData {
 export class TranscriptParserService {
   private readonly logger = new Logger(TranscriptParserService.name);
   private readonly apiKey: string;
-  private readonly model = 'gemini-2.0-flash';
+  private readonly model = 'gemini-2.5-flash';
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GOOGLE_AI_API_KEY', '');
@@ -58,12 +59,21 @@ Extract the following as JSON. Use ONLY the brand names from the medicines list 
   ],
   "vitals_checked": "yes" | "no" | "not_applicable",
   "wellness": "good" | "okay" | "not_well",
-  "complaints": ["complaint1 in English"] or []
+  "complaints": ["complaint1 in English"] or [],
+  "re_scheduled": true | false
 }
 
 Rules:
-- If patient said they took a medicine (li, le li, haan, yes, kha li), mark "taken"
-- If patient said they didn't (nahi, no, bhool gaya, missed), mark "not_taken"
+- TAKEN: patient confirmed taking it
+  Hindi: haan, le liya, kha liya, li hai, le li, kha li | Telugu: veskunna, teeskunna, thinna | Tamil: eduthuten, saapten | Kannada: thogondidini | Bengali: kheye niyechi | Marathi: ghetla, khalla | English: yes, taken
+- TAKEN ALL: patient said they took ALL medicines → mark EVERY medicine as "taken"
+  Hindi: sab le liya, saari le li, sab kha li | Telugu: anni veskunna, anni teeskunna | Tamil: ellam eduthuten, ellam saapten | Kannada: ella thogondidini | Bengali: sob kheye niyechi | Marathi: sagla ghetla | English: took all, all taken
+- NOT TAKEN: patient said no or missed
+  Hindi: nahi, nahi liya, bhool gaya, nahi khayi | Telugu: ledhu, veskoledhu, marchipoya | Tamil: illa, edukala, marandhuten | Kannada: illa, thogondilla | Bengali: na, khaini, bhule gechi | Marathi: nahi, ghetla nahi | English: no, missed, forgot
+- NOT TIME YET → mark "not_taken" (they haven't taken it)
+  Hindi: abhi time nahi hua, abhi raat nahi hui, baad mein lungi | Telugu: inka time kaale, tarvata vestanu | Tamil: innum time aagala, appuram edupeen | English: not time yet, will take later
+- re_scheduled: true if patient asked to call back later or said they are busy
+  Hindi: baad mein call karo, abhi busy hoon | Telugu: tarvata call cheyandi, ippudu busy | Tamil: appuram call pannunga, ippodhu busy | English: call me later, I am busy
 - If unclear or not discussed, mark "unclear"
 - Map nicknames to brand names: "BP tablet"/"BP ki goli" = Amlodipine, "sugar tablet"/"sugar ki goli" = Metformin, etc.
 - vitals_checked: "not_applicable" if patient has no glucometer/BP monitor
@@ -113,6 +123,7 @@ Rules:
         complaints: Array.isArray(parsed.complaints)
           ? parsed.complaints.filter((c: string) => c && c !== 'none')
           : [],
+        reScheduled: parsed.re_scheduled === true || parsed.re_scheduled === 'true',
       };
     } catch (error: any) {
       this.logger.error(`Transcript parse error: ${error.message}`);

@@ -82,7 +82,7 @@ class MedicineCheckAgent(Agent):
                 model="saarika:v2.5",
             ),
             llm=google.LLM(
-                model="gemini-2.0-flash",
+                model="gemini-2.5-flash",
                 temperature=0.3,
             ),
             tts=sarvam.TTS(
@@ -226,6 +226,7 @@ async def entrypoint(ctx: JobContext):
                         "vitalsChecked": extracted.get("vitals_checked", ""),
                         "wellness": extracted.get("wellness", ""),
                         "complaints": extracted.get("complaints", "none"),
+                        "re_scheduled": extracted.get("re_scheduled", "false"),
                         "duration": call_duration,
                         "terminationReason": "call_ended",
                     },

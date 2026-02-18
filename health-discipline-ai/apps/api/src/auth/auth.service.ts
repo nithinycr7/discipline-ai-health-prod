@@ -1,5 +1,6 @@
 import {
   Injectable,
+  Inject,
   UnauthorizedException,
   ConflictException,
   BadRequestException,
@@ -7,10 +8,13 @@ import {
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
 import * as bcrypt from 'bcrypt';
+import * as admin from 'firebase-admin';
 import { UsersService } from '../users/users.service';
 import { RegisterPayerDto } from './dto/register-payer.dto';
 import { RegisterHospitalDto } from './dto/register-hospital.dto';
 import { LoginDto } from './dto/login.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { FIREBASE_ADMIN } from '../firebase/firebase-admin.module';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +22,7 @@ export class AuthService {
     private usersService: UsersService,
     private jwtService: JwtService,
     private configService: ConfigService,
+    @Inject(FIREBASE_ADMIN) private firebaseApp: admin.app.App,
   ) {}
 
   async registerPayer(dto: RegisterPayerDto) {
@@ -92,6 +97,61 @@ export class AuthService {
 
     const tokens = await this.generateTokens(user);
     return { user: this.sanitizeUser(user), ...tokens };
+  }
+
+  async verifyFirebaseOtp(dto: VerifyOtpDto) {
+    // Verify the Firebase ID token
+    let decodedToken: admin.auth.DecodedIdToken;
+    try {
+      decodedToken = await this.firebaseApp
+        .auth()
+        .verifyIdToken(dto.firebaseIdToken);
+    } catch {
+      throw new UnauthorizedException('Invalid or expired Firebase token');
+    }
+
+    // Extract phone number (Firebase stores in E.164 format)
+    const phone = decodedToken.phone_number;
+    if (!phone) {
+      throw new BadRequestException(
+        'Firebase token does not contain a phone number',
+      );
+    }
+
+    // Check if user exists
+    let user = await this.usersService.findByPhone(phone);
+
+    if (user) {
+      // LOGIN flow — existing user
+      // Update Firebase UID and mark phone as verified
+      if (!user.firebaseUid || user.firebaseUid !== decodedToken.uid) {
+        user = await this.usersService.update(user._id.toString(), {
+          firebaseUid: decodedToken.uid,
+          phoneVerified: true,
+        });
+      }
+      const tokens = await this.generateTokens(user);
+      return { user: this.sanitizeUser(user), ...tokens, isNewUser: false };
+    }
+
+    // REGISTRATION flow — new user
+    // If no name provided, signal the frontend to redirect to registration
+    if (!dto.name) {
+      return { needsRegistration: true, phone, isNewUser: true };
+    }
+
+    user = await this.usersService.create({
+      phone,
+      name: dto.name,
+      role: 'payer',
+      location: dto.location,
+      timezone: dto.timezone || 'Asia/Kolkata',
+      firebaseUid: decodedToken.uid,
+      phoneVerified: true,
+    });
+
+    const tokens = await this.generateTokens(user);
+    return { user: this.sanitizeUser(user), ...tokens, isNewUser: true };
   }
 
   async refreshToken(refreshToken: string) {

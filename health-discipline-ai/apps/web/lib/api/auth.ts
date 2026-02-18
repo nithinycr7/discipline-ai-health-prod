@@ -25,8 +25,22 @@ export interface AuthResponse {
   refreshToken: string;
 }
 
+export interface VerifyOtpRequest {
+  firebaseIdToken: string;
+  name?: string;
+  location?: string;
+  timezone?: string;
+}
+
+export interface VerifyOtpResponse extends AuthResponse {
+  isNewUser: boolean;
+  needsRegistration?: boolean;
+  phone?: string;
+}
+
 export const authApi = {
   login: (data: LoginRequest) => api.post<AuthResponse>('/auth/login', data),
+  verifyOtp: (data: VerifyOtpRequest) => api.post<VerifyOtpResponse>('/auth/verify-otp', data),
   registerPayer: (data: RegisterPayerRequest) => api.post<AuthResponse>('/auth/register/payer', data),
   registerHospital: (data: RegisterHospitalRequest) => api.post<AuthResponse>('/auth/register/hospital', data),
   refresh: (refreshToken: string) => api.post<AuthResponse>('/auth/refresh', { refreshToken }),

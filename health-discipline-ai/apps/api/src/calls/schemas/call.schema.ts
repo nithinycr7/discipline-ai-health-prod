@@ -147,6 +147,9 @@ export class Call {
 
   @Prop({ type: [String], default: [] })
   screeningQuestionsAsked: string[];
+
+  @Prop({ default: false })
+  reScheduled: boolean;
 }
 
 export const CallSchema = SchemaFactory.createForClass(Call);

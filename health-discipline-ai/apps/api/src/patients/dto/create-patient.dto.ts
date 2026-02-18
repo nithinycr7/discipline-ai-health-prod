@@ -24,7 +24,7 @@ export class CreatePatientDto {
   @ApiProperty({ example: '+919876543210' })
   @IsString()
   @IsNotEmpty()
-  @Matches(/^\+?[1-9]\d{7,14}$/, { message: 'Invalid phone number' })
+  @Matches(/^\+[1-9]\d{7,14}$/, { message: 'Phone number must include country code (e.g. +919876543210)' })
   phone: string;
 
   @ApiProperty({ example: 'hi', description: 'ISO language code' })

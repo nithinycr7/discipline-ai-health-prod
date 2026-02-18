@@ -51,9 +51,16 @@ export class User {
 
   @Prop({ default: false })
   emailVerified: boolean;
+
+  @Prop({ sparse: true, unique: true })
+  firebaseUid?: string;
+
+  @Prop({ default: false })
+  phoneVerified: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
 
 UserSchema.index({ phone: 1 }, { unique: true, sparse: true });
 UserSchema.index({ email: 1 }, { unique: true, sparse: true });
+UserSchema.index({ firebaseUid: 1 }, { unique: true, sparse: true });

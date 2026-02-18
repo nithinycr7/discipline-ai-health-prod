@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { authApi } from '../api/auth';
+import { authApi, VerifyOtpRequest } from '../api/auth';
 
 interface User {
   _id: string;
@@ -41,6 +41,25 @@ export function useAuth() {
     return response.user;
   }, []);
 
+  const loginWithOtp = useCallback(async (
+    firebaseIdToken: string,
+    registrationData?: Omit<VerifyOtpRequest, 'firebaseIdToken'>,
+  ) => {
+    const response = await authApi.verifyOtp({
+      firebaseIdToken,
+      ...registrationData,
+    });
+    // If backend says user needs to register first, pass that through
+    if (response.needsRegistration) {
+      return { user: null, isNewUser: true, needsRegistration: true, phone: response.phone };
+    }
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    setToken(response.token);
+    setUser(response.user);
+    return { user: response.user, isNewUser: response.isNewUser, needsRegistration: false };
+  }, []);
+
   const refreshUser = useCallback(async () => {
     const savedToken = token || localStorage.getItem('token');
     if (!savedToken) return;
@@ -56,5 +75,5 @@ export function useAuth() {
     window.location.href = '/login';
   }, []);
 
-  return { user, token, loading, login, logout, refreshUser };
+  return { user, token, loading, login, loginWithOtp, logout, refreshUser };
 }

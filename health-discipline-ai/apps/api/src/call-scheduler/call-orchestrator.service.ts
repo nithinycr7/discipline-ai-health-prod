@@ -63,14 +63,13 @@ export class CallOrchestratorService {
     const { patient, timing } = dueCall;
 
     try {
-      // Get medicines for this timing
-      const medicines = await this.medicinesService.findByPatientAndTiming(
+      // Get ALL medicines for the patient (we call once at night for everything)
+      const medicines = await this.medicinesService.findByPatient(
         patient._id.toString(),
-        timing,
       );
 
       if (medicines.length === 0) {
-        this.logger.log(`No ${timing} medicines for patient ${patient._id}, skipping`);
+        this.logger.log(`No medicines for patient ${patient._id}, skipping`);
         return;
       }
 
@@ -180,6 +179,92 @@ export class CallOrchestratorService {
       this.logger.error(
         `Failed to initiate call for patient ${patient._id}: ${error.message}`,
       );
+    }
+  }
+
+  /**
+   * Initiate a retry call using an existing call record.
+   * Called by RetryHandlerService.processRetries() when a scheduled retry is due.
+   */
+  async initiateRetryCall(call: any, patient: any, config: any, medicines: any[]) {
+    try {
+      const patientData = {
+        patientName: patient.preferredName,
+        medicines: medicines.map((med: any) => ({
+          name: med.nicknames?.[0] || med.brandName,
+          timing: med.timing,
+          medicineId: med._id.toString(),
+        })),
+        isNewPatient: patient.isNewPatient,
+        hasGlucometer: patient.hasGlucometer,
+        hasBPMonitor: patient.hasBPMonitor,
+        preferredLanguage: patient.preferredLanguage || 'hi',
+      };
+
+      // Dynamic prompt assembly (if enabled)
+      let dynamicPrompt: DynamicPromptResult | null = null;
+
+      if (this.dynamicPromptGlobalEnabled && config?.dynamicPromptEnabled !== false) {
+        try {
+          dynamicPrompt = await this.promptAssembler.assembleDynamicPrompt(
+            patient._id.toString(),
+          );
+        } catch (err: any) {
+          this.logger.warn(`Dynamic prompt failed for retry: ${err.message}`);
+        }
+      }
+
+      if (dynamicPrompt) {
+        await this.callsService.updateCallStatus(call._id.toString(), 'scheduled', {
+          conversationVariant: dynamicPrompt.variant,
+          toneUsed: dynamicPrompt.tone,
+          relationshipStage: dynamicPrompt.relationshipStage,
+          screeningQuestionsAsked: dynamicPrompt.screeningQuestionIds,
+        } as any);
+      }
+
+      let result: { conversationId: string; callSid: string };
+
+      if (this.voiceStack === 'sarvam') {
+        result = await this.sarvamAgentService.makeOutboundCall(
+          patient.phone,
+          call._id.toString(),
+          patientData,
+          dynamicPrompt,
+        );
+      } else {
+        result = await this.elevenLabsAgentService.makeOutboundCall(
+          patient.phone,
+          call._id.toString(),
+          patientData,
+          dynamicPrompt,
+        );
+      }
+
+      const callTrackingFields: any = { initiatedAt: new Date() };
+      if (this.voiceStack === 'sarvam') {
+        callTrackingFields.livekitRoomName = result.conversationId;
+        callTrackingFields.voiceStack = 'sarvam';
+      } else {
+        callTrackingFields.elevenlabsConversationId = result.conversationId;
+        callTrackingFields.voiceStack = 'elevenlabs';
+      }
+
+      await this.callsService.updateCallStatus(
+        call._id.toString(),
+        'in_progress',
+        callTrackingFields,
+      );
+
+      this.logger.log(
+        `Retry call initiated [${this.voiceStack}] for ${patient.preferredName}, ` +
+          `retry #${call.retryCount}, conversationId: ${result.conversationId}`,
+      );
+    } catch (error: any) {
+      this.logger.error(
+        `Failed to initiate retry call ${call._id}: ${error.message}`,
+      );
+      throw error;
     }
   }
 

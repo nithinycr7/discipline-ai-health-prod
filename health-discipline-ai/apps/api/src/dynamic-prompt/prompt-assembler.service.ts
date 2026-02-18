@@ -204,16 +204,16 @@ End with extra encouragement — tell them their family will be proud too.`;
   // --- First Message Variants ---
 
   private readonly greetingMap: Record<string, string> = {
-    hi: 'Namaste',
-    te: 'Namaskaram',
-    ta: 'Vanakkam',
-    kn: 'Namaskara',
-    ml: 'Namaskaram',
-    bn: 'Nomoshkar',
-    mr: 'Namaskar',
-    gu: 'Namaste',
-    pa: 'Sat Sri Akaal',
-    ur: 'Assalaam Alaikum',
+    hi: 'Hello',
+    te: 'Hello',
+    ta: 'Hello',
+    kn: 'Hello',
+    ml: 'Hello',
+    bn: 'Hello',
+    mr: 'Hello',
+    gu: 'Hello',
+    pa: 'Hello',
+    ur: 'Hello',
     en: 'Hello',
   };
 
