@@ -135,7 +135,7 @@ export default function PatientInfoPage() {
               </div>
               <div className="space-y-2">
                 <label className="text-sm font-medium">Preferred Language</label>
-                <div className="grid grid-cols-4 gap-2">
+                <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
                   {LANGUAGES.map((lang) => (
                     <button
                       key={lang.code}

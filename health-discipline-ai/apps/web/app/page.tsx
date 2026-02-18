@@ -37,7 +37,7 @@ export default function Home() {
               <span className="w-2 h-2 rounded-full bg-primary animate-pulse"></span>
               Trusted by 200+ families across India
             </div>
-            <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
+            <h1 className="text-3xl sm:text-5xl md:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
               Know how your parents
               <br />
               <span className="text-primary">are really doing</span>

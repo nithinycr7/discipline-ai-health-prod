@@ -1,0 +1,69 @@
+'use client';
+
+import { DemoConversation } from '@/components/demo-conversation';
+
+export default function DemoPage() {
+  return (
+    <div className="relative min-h-screen flex flex-col bg-warm-50">
+      {/* Background */}
+      <div className="pointer-events-none fixed inset-0 -z-10">
+        <div className="absolute inset-0 bg-gradient-to-b from-brand-50/40 via-warm-50 to-warm-100/50" />
+        <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] -translate-y-1/4 translate-x-1/4 rounded-full bg-brand-100/20 blur-3xl" />
+        <div className="absolute left-0 bottom-0 h-[250px] w-[250px] sm:h-[500px] sm:w-[500px] translate-y-1/4 -translate-x-1/4 rounded-full bg-accent-light/30 blur-3xl" />
+      </div>
+
+      {/* Top bar */}
+      <header className="relative z-10 flex items-center justify-between px-5 sm:px-8 lg:px-12 py-5">
+        <a href="/" className="flex items-center gap-2.5 group">
+          <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-brand-600">
+            <svg className="h-4 w-4 text-white" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M2.25 6.75c0 8.284 6.716 15 15 15h2.25a2.25 2.25 0 0 0 2.25-2.25v-1.372c0-.516-.351-.966-.852-1.091l-4.423-1.106c-.44-.11-.902.055-1.173.417l-.97 1.293c-.282.376-.769.542-1.21.38a12.035 12.035 0 0 1-7.143-7.143c-.162-.441.004-.928.38-1.21l1.293-.97c.363-.271.527-.734.417-1.173L6.963 3.102a1.125 1.125 0 0 0-1.091-.852H4.5A2.25 2.25 0 0 0 2.25 4.5v2.25Z" />
+            </svg>
+          </div>
+          <span className="text-base font-bold text-gray-900">Health Discipline</span>
+        </a>
+
+        <a
+          href="/"
+          className="text-sm font-medium text-gray-500 hover:text-brand-600 transition-colors flex items-center gap-1"
+        >
+          <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" d="M10.5 19.5 3 12m0 0 7.5-7.5M3 12h18" />
+          </svg>
+          Back to Home
+        </a>
+      </header>
+
+      {/* Main content */}
+      <main className="flex-1 flex items-center justify-center px-5 sm:px-8 py-8 sm:py-12">
+        <div className="w-full max-w-2xl">
+          <DemoConversation />
+        </div>
+      </main>
+
+      {/* Trust footer */}
+      <footer className="relative z-10 py-6 px-5 sm:px-8">
+        <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8 text-xs text-gray-400">
+          <span className="flex items-center gap-1.5">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
+            </svg>
+            Audio not recorded
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M12 18.75a6 6 0 0 0 6-6v-1.5m-6 7.5a6 6 0 0 1-6-6v-1.5m6 7.5v3.75m-3.75 0h7.5M12 15.75a3 3 0 0 1-3-3V4.5a3 3 0 1 1 6 0v8.25a3 3 0 0 1-3 3Z" />
+            </svg>
+            Microphone required
+          </span>
+          <span className="flex items-center gap-1.5">
+            <svg className="h-3.5 w-3.5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M21 8.25c0-2.485-2.099-4.5-4.688-4.5-1.935 0-3.597 1.126-4.312 2.733-.715-1.607-2.377-2.733-4.313-2.733C5.1 3.75 3 5.765 3 8.25c0 7.22 9 12 9 12s9-4.78 9-12Z" />
+            </svg>
+            Free, no sign-up needed
+          </span>
+        </div>
+      </footer>
+    </div>
+  );
+}

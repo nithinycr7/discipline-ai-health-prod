@@ -15,8 +15,8 @@ export function Hero() {
       {/* Subtle background pattern */}
       <div className="pointer-events-none absolute inset-0 -z-10">
         <div className="absolute inset-0 bg-gradient-to-b from-brand-50/40 via-transparent to-transparent" />
-        <div className="absolute right-0 top-0 h-[600px] w-[600px] -translate-y-1/4 translate-x-1/4 rounded-full bg-brand-100/30 blur-3xl" />
-        <div className="absolute left-0 bottom-0 h-[400px] w-[400px] translate-y-1/4 -translate-x-1/4 rounded-full bg-accent-light/40 blur-3xl" />
+        <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[600px] sm:w-[600px] -translate-y-1/4 translate-x-1/4 rounded-full bg-brand-100/30 blur-3xl" />
+        <div className="absolute left-0 bottom-0 h-[200px] w-[200px] sm:h-[400px] sm:w-[400px] translate-y-1/4 -translate-x-1/4 rounded-full bg-accent-light/40 blur-3xl" />
       </div>
 
       <div className="section-container">
@@ -49,8 +49,8 @@ export function Hero() {
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>
             </a>
-            <a href="#how-it-works" className="btn-secondary">
-              See How It Works
+            <a href="/demo" className="btn-secondary">
+              Try a Live Demo
             </a>
           </div>
 
@@ -68,7 +68,7 @@ export function Hero() {
             </div>
 
             {/* Floating WhatsApp card */}
-            <div className="absolute -bottom-6 -left-4 sm:-left-8 w-64 sm:w-72 rounded-xl glass shadow-card animate-fade-up animate-delay-400 p-4">
+            <div className="absolute -bottom-6 -left-2 sm:-left-8 w-56 sm:w-72 rounded-xl glass shadow-card animate-fade-up animate-delay-400 p-3 sm:p-4">
               <div className="flex items-start gap-3">
                 <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-green-500">
                   <svg className="h-5 w-5 text-white" viewBox="0 0 24 24" fill="currentColor">

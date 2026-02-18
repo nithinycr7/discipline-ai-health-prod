@@ -259,13 +259,13 @@ export default function HospitalsPage() {
                     {/* AI */}
                     <div className="relative p-8">
                       <div className="absolute right-4 top-4 rounded-full bg-brand-600 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
-                        99% cheaper
+                        93% cheaper
                       </div>
                       <p className="text-sm font-semibold uppercase tracking-wide text-brand-500">
                         Health Discipline AI
                       </p>
                       <p className="mt-4 text-4xl font-extrabold text-brand-600">
-                        ~₹2
+                        ~₹7
                       </p>
                       <p className="mt-1 text-sm text-gray-400">per call</p>
                       <ul className="mt-6 space-y-2 text-sm text-gray-500">
