@@ -38,13 +38,13 @@ export default function Home() {
               Trusted by 200+ families across India
             </div>
             <h1 className="text-5xl sm:text-6xl font-bold tracking-tight leading-[1.1] mb-6">
-              Your parents&apos; health,
+              Know how your parents
               <br />
-              <span className="text-primary">one call away</span>
+              <span className="text-primary">are really doing</span>
             </h1>
             <p className="text-lg text-muted-foreground max-w-xl mx-auto mb-10 leading-relaxed">
-              A warm AI voice calls your parents daily, checks if they took their medicines,
-              and sends you a report. In their language. No app needed.
+              A warm AI companion calls your parents daily, checks on their wellbeing,
+              medicines, and mood &mdash; then sends you the truth. In their language. No app needed.
             </p>
             <div className="flex flex-col sm:flex-row gap-3 justify-center">
               <Link
@@ -89,7 +89,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">AI calls daily</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  A warm voice calls them by name, in their language, checking each medicine.
+                  A warm voice calls them by name, in their language, checking on their health and wellbeing.
                 </p>
               </div>
               <div className="bg-card rounded-2xl p-8 shadow-sm border border-border/50">
@@ -98,7 +98,7 @@ export default function Home() {
                 </div>
                 <h3 className="text-lg font-semibold mb-2">You get updates</h3>
                 <p className="text-muted-foreground text-sm leading-relaxed">
-                  Instant WhatsApp reports after each call. Weekly health summaries. Peace of mind.
+                  Instant WhatsApp wellness reports after each call. Weekly summaries. Peace of mind.
                 </p>
               </div>
             </div>
@@ -110,7 +110,7 @@ export default function Home() {
           <div className="container mx-auto px-6">
             <div className="max-w-2xl mx-auto text-center">
               <h2 className="text-3xl font-bold tracking-tight mb-3">Built for Indian families</h2>
-              <p className="text-muted-foreground mb-12">Because your parents deserve more than a reminder app they&apos;ll never use.</p>
+              <p className="text-muted-foreground mb-12">Because your parents deserve more than a pill reminder they&apos;ll ignore.</p>
             </div>
             <div className="grid sm:grid-cols-2 gap-6 max-w-3xl mx-auto">
               <div className="flex gap-4 p-5 rounded-xl bg-card border border-border/50">

@@ -88,6 +88,7 @@ export class CallOrchestratorService {
           medicineName: med.brandName,
           nickname: med.nicknames?.[0] || med.brandName,
           response: 'pending',
+          isCritical: med.isCritical || false,
           timestamp: new Date(),
         })),
       });

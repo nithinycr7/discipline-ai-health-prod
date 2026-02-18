@@ -17,14 +17,14 @@ export function Problem() {
 
           <ScrollReveal delay={100}>
             <h2 className="mt-4 font-serif text-heading sm:text-display-sm text-gray-900 italic">
-              &ldquo;Dawai li?&rdquo;
+              &ldquo;Sab theek hai?&rdquo;
             </h2>
           </ScrollReveal>
 
           <ScrollReveal delay={200}>
             <p className="mt-6 text-body-lg text-gray-600 leading-relaxed">
-              You call them every day. They always say yes.{' '}
-              <span className="font-medium text-gray-800">But did they really take it?</span>
+              You call them every day. They always say &ldquo;I&apos;m fine.&rdquo;{' '}
+              <span className="font-medium text-gray-800">But are they really okay?</span>
             </p>
           </ScrollReveal>
         </div>
@@ -39,7 +39,7 @@ export function Problem() {
               ),
               title: 'You can\'t always call',
               description:
-                'Time zones, work hours, busy days — life gets in the way of the one call that matters most.',
+                'Time zones, work hours, busy days — life gets in the way of the one check-in that matters most.',
             },
             {
               icon: (
@@ -47,9 +47,9 @@ export function Problem() {
                   <path strokeLinecap="round" strokeLinejoin="round" d="M9.879 7.519c1.171-1.025 3.071-1.025 4.242 0 1.172 1.025 1.172 2.687 0 3.712-.203.179-.43.326-.67.442-.745.361-1.45.999-1.45 1.827v.75M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0Zm-9 5.25h.008v.008H12v-.008Z" />
                 </svg>
               ),
-              title: '"Yes" isn\'t data',
+              title: '"I\'m fine" isn\'t the truth',
               description:
-                'Your parents don\'t want you to worry. So they say they took their medicine — even when they didn\'t.',
+                'Your parents don\'t want you to worry. So they hide the skipped medicines, the low mood, the rising BP.',
             },
             {
               icon: (
@@ -59,7 +59,7 @@ export function Problem() {
               ),
               title: 'Guilt from a distance',
               description:
-                'Living abroad means missing the small things — and worrying about the big things you can\'t control.',
+                'Living abroad means missing the small things — the mood changes, the complaints they won\'t share, the days they just feel alone.',
             },
           ].map((card, index) => (
             <ScrollReveal key={card.title} delay={index * 100}>
@@ -77,9 +77,9 @@ export function Problem() {
         <ScrollReveal delay={300}>
           <div className="mx-auto mt-16 max-w-2xl rounded-2xl border border-brand-200/50 bg-brand-50/50 p-8 text-center">
             <p className="text-body-lg text-brand-600 font-medium leading-relaxed">
-              What if someone checked on your parents every day in their
-              language, recorded what actually happened, and sent you the truth
-              &mdash; not just reassurance?
+              What if someone checked on your parents every day &mdash; their
+              health, their mood, their medicines &mdash; and sent you the
+              truth, not just reassurance?
             </p>
           </div>
         </ScrollReveal>

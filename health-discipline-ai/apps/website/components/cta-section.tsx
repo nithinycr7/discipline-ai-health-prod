@@ -23,8 +23,8 @@ export function CTASection() {
               </h2>
               <p className="mx-auto mt-5 max-w-lg text-body-lg text-brand-200">
                 7-day free trial. No credit card. No app needed. Your parents
-                just answer the phone &mdash; you get a daily record of what
-                actually happened.
+                just answer the phone &mdash; you get a daily picture of how
+                they&apos;re really doing.
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <a

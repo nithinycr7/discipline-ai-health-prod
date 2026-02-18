@@ -6,7 +6,7 @@ import { ScrollReveal } from './ui/scroll-reveal';
 const testimonials = [
   {
     quote:
-      'I used to call Amma every morning from San Jose and ask "Dawai li?" She always said yes. Now I get actual data — and learned she was skipping her evening medicine for weeks.',
+      'I used to call Amma every morning from San Jose and ask "Sab theek hai?" She always said yes. Now I get real reports — her mood, her medicines, her BP — and I finally know how she\'s actually doing.',
     name: 'Priya Ramesh',
     location: 'San Jose, USA',
     role: 'Daughter, caring for mother in Chennai',
@@ -22,7 +22,7 @@ const testimonials = [
   },
   {
     quote:
-      'As a cardiologist, medication adherence is my biggest challenge with elderly patients. This gives me actual adherence data for the first time — and my patients actually enjoy the calls.',
+      'As a cardiologist, knowing how my elderly patients are doing between visits is my biggest challenge. This gives me daily wellness data — medicines, vitals, mood — and my patients actually enjoy the calls.',
     name: 'Dr. Anitha Venkatesh',
     location: 'Bangalore, India',
     role: 'Cardiologist, 15+ years practice',

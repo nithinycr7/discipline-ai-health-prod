@@ -29,6 +29,7 @@ export default function PatientInfoPage() {
   const [step, setStep] = useState(1);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const [customCondition, setCustomCondition] = useState('');
   const [form, setForm] = useState({
     fullName: '',
     preferredName: '',
@@ -172,6 +173,51 @@ export default function PatientInfoPage() {
                     </button>
                   ))}
                 </div>
+                <div className="flex gap-2 mt-3">
+                  <Input
+                    placeholder="Other condition (e.g., Asthma)"
+                    value={customCondition}
+                    onChange={(e) => setCustomCondition(e.target.value)}
+                    onKeyDown={(e) => {
+                      if (e.key === 'Enter' && customCondition.trim()) {
+                        e.preventDefault();
+                        const val = customCondition.trim().toLowerCase();
+                        if (!form.healthConditions.includes(val)) {
+                          setForm((prev) => ({ ...prev, healthConditions: [...prev.healthConditions, val] }));
+                        }
+                        setCustomCondition('');
+                      }
+                    }}
+                  />
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={() => {
+                      if (customCondition.trim()) {
+                        const val = customCondition.trim().toLowerCase();
+                        if (!form.healthConditions.includes(val)) {
+                          setForm((prev) => ({ ...prev, healthConditions: [...prev.healthConditions, val] }));
+                        }
+                        setCustomCondition('');
+                      }
+                    }}
+                  >
+                    Add
+                  </Button>
+                </div>
+                {form.healthConditions.filter((c) => !CONDITIONS.map((x) => x.toLowerCase()).includes(c)).length > 0 && (
+                  <div className="flex flex-wrap gap-1 mt-2">
+                    {form.healthConditions.filter((c) => !CONDITIONS.map((x) => x.toLowerCase()).includes(c)).map((c) => (
+                      <span
+                        key={c}
+                        className="inline-flex items-center gap-1 px-2.5 py-1 text-xs font-medium rounded-full bg-primary text-primary-foreground"
+                      >
+                        {c}
+                        <button onClick={() => toggleCondition(c)} className="hover:opacity-70">&times;</button>
+                      </span>
+                    ))}
+                  </div>
+                )}
               </div>
               {form.healthConditions.includes('diabetes') && (
                 <div className="flex items-center gap-2">
@@ -225,12 +271,12 @@ export default function PatientInfoPage() {
                 </div>
               </div>
               <div className="space-y-2">
-                <label className="text-sm font-medium">Digital Tier</label>
+                <label className="text-sm font-medium">Parent has access to</label>
                 <div className="grid grid-cols-3 gap-2">
                   {[
+                    { value: 1, label: 'Phone' },
                     { value: 2, label: 'WhatsApp' },
-                    { value: 1, label: 'Feature Phone' },
-                    { value: 0, label: 'No Phone' },
+                    { value: 3, label: 'Both' },
                   ].map((tier) => (
                     <button
                       key={tier.value}

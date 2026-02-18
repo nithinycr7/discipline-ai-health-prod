@@ -29,15 +29,15 @@ export function Hero() {
 
           {/* Headline */}
           <h1 className="text-display-sm sm:text-display text-gray-900 animate-fade-up">
-            Your parents&apos; health,{' '}
-            <span className="text-gradient">one call away</span>
+            Know how your parents{' '}
+            <span className="text-gradient">are really doing</span>
           </h1>
 
           {/* Subheading */}
           <p className="mx-auto mt-6 max-w-2xl text-body-lg text-gray-600 animate-fade-up animate-delay-100">
-            We call your parents daily in their language, check on their
-            medicines and health routines, and send you a record of what
-            actually happened &mdash; not just reassurance.{' '}
+            A warm AI companion calls your parents daily in their language,
+            checks on their wellbeing, medicines, and mood &mdash; then sends
+            you a clear picture of how they&apos;re actually doing.{' '}
             <span className="font-medium text-gray-800">No app needed.</span>
           </p>
 
@@ -59,7 +59,7 @@ export function Hero() {
             <div className="relative overflow-hidden rounded-2xl border border-warm-200/80 bg-white shadow-elevated">
               <Image
                 src="/images/hero-dashboard.png"
-                alt="Health Discipline AI dashboard showing medication adherence tracking"
+                alt="Health Discipline AI dashboard showing daily wellness tracking"
                 width={1200}
                 height={675}
                 className="w-full"

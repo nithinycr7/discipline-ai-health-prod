@@ -16,23 +16,23 @@ const playfair = Playfair_Display({
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://healthdiscipline.ai'),
-  title: 'Health Discipline AI — Your Parents\' Health, One Call Away',
+  title: 'Health Discipline AI — Know How Your Parents Are Really Doing',
   description:
-    'We call your parents daily in their language, check on their health routines, record what actually happened, and send you a clear report. No app needed. 11 Indian languages.',
+    'A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report. No app needed. 11 Indian languages.',
   keywords: [
-    'health routine monitoring',
+    'elderly wellness monitoring',
     'elderly care India',
     'NRI parents health',
-    'AI health calls',
-    'medicine reminder calls',
-    'daily health check',
-    'medication adherence',
-    'sentiment analysis',
+    'AI wellness calls',
+    'daily health check-in',
+    'parent wellness tracker',
+    'mood and health monitoring',
+    'senior care technology',
   ],
   openGraph: {
-    title: 'Health Discipline AI — Your Parents\' Health, One Call Away',
+    title: 'Health Discipline AI — Know How Your Parents Are Really Doing',
     description:
-      'We call your parents daily in their language, check on their health routines, and send you a real record of what happened. No app needed.',
+      'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth. No app needed.',
     type: 'website',
     locale: 'en_IN',
     siteName: 'Health Discipline AI',
@@ -40,9 +40,9 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Health Discipline AI — Your Parents\' Health, One Call Away',
+    title: 'Health Discipline AI — Know How Your Parents Are Really Doing',
     description:
-      'We call your parents daily in their language, check on their health routines, and send you a real record of what happened.',
+      'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth.',
   },
 };
 

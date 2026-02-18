@@ -2,9 +2,9 @@
 
 ## What Our Product Does
 
-Health Discipline AI is a voice-based system that ensures daily health routines are followed and recorded when families can't be physically present.
+Health Discipline AI is a daily wellness companion that checks on your parents through warm AI voice calls — tracking their health, medicines, mood, and vitals when you can't be there yourself.
 
-**In simple words:** We call your parent every day in their language, remind them of their health routines, record what actually happened, and send you a clear summary.
+**In simple words:** We call your parent every day in their language, check on how they're doing, verify their medicines and vitals, and send you a clear picture of their actual wellbeing.
 
 - No apps for parents.
 - No diagnosis.
@@ -17,11 +17,12 @@ Health Discipline AI is a voice-based system that ensures daily health routines 
 ### 1. Voice Call
 We place a scheduled phone call to the patient — in their preferred language, at the right time of day.
 
-### 2. Routine Reminders
+### 2. Wellness Check-in
 During the call, we:
-- Remind about medicines
-- Remind to check BP / sugar (if enabled)
-- Ask short confirmation questions
+- Ask how they're feeling today
+- Check each medicine by name
+- Ask about BP / sugar readings (if enabled)
+- Listen for concerns, complaints, or mood changes
 
 ### 3. Data Capture
 We record facts, not opinions:
@@ -46,12 +47,12 @@ After the call:
 
 ## What the Family Gets
 
-- Daily certainty, not reassurance
-- A single source of truth for routines
+- Daily certainty about how their parent is really doing
+- A single source of truth — medicines, vitals, mood
 - A history they can share with doctors
-- Alerts when routines are skipped
+- Alerts when something seems off
 
-They don't need to interpret anything — they just see what happened.
+They don't need to interpret anything — they just see the truth.
 
 ---
 
@@ -68,7 +69,7 @@ We collect and surface data only.
 
 ## Our Role in One Sentence
 
-**We are the daily health data and reminder layer — nothing more, nothing less.**
+**We are the daily wellness intelligence layer — we check on your parents so you always know how they're really doing.**
 
 ---
 
@@ -99,11 +100,11 @@ Same product. Same promise. New routines.
 
 ## Positioning
 
-**External:** "We help families stay on top of daily health routines through simple voice calls."
+**External:** "Know how your parents are really doing — every single day."
 
 **Internal:** "If it didn't get recorded, it didn't happen."
 
-**The line that wins deals:** "Most families don't pay us to remind their parents. They pay so they don't have to wonder anymore."
+**The line that wins deals:** "Families don't pay us to remind their parents. They pay because they're tired of wondering if everything is actually okay."
 
 ---
 
@@ -119,7 +120,7 @@ That does happen sometimes — and that's okay. The difference is: we ask about 
 
 ### "Isn't this just a reminder system?"
 
-If it were just reminders, it wouldn't be worth paying for. What families pay for is knowing what actually happened, not just reminding. Every day ends with a simple fact: did the routine happen or not? Most health issues don't escalate because of one missed pill — they escalate because nobody noticed small misses adding up.
+Not at all. Reminders tell people what to do. We check on how they're actually doing — their medicines, their mood, their vitals, their wellbeing. Every day ends with a clear picture: how is your parent really doing? Most health issues don't escalate because of one missed pill — they escalate because nobody noticed the small changes adding up.
 
 ### "₹1,500/month still feels expensive for phone calls."
 

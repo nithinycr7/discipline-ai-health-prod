@@ -44,8 +44,8 @@ export default function PayerRegisterPage() {
         <div className="w-10 h-10 rounded-xl bg-primary flex items-center justify-center mx-auto mb-4">
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="M22 12h-4l-3 9L9 3l-3 9H2"/></svg>
         </div>
-        <h1 className="text-2xl font-bold tracking-tight">Set Up Health Monitoring</h1>
-        <p className="text-muted-foreground text-sm mt-1">Create your account to start monitoring your parent&apos;s medicines</p>
+        <h1 className="text-2xl font-bold tracking-tight">Set Up Daily Wellness Check-ins</h1>
+        <p className="text-muted-foreground text-sm mt-1">Create your account to start knowing how your parent is really doing</p>
       </div>
       <Card className="glass shadow-card">
         <form onSubmit={handleSubmit}>
@@ -66,7 +66,7 @@ export default function PayerRegisterPage() {
               />
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="phone">WhatsApp Number</label>
+              <label className="text-sm font-medium" htmlFor="phone">Phone Number</label>
               <Input
                 id="phone"
                 placeholder="+91 98765 43210"
@@ -74,16 +74,29 @@ export default function PayerRegisterPage() {
                 onChange={(e) => setForm({ ...form, phone: e.target.value })}
                 required
               />
-              <p className="text-xs text-muted-foreground">We'll send daily reports to this number</p>
+              <p className="text-xs text-muted-foreground">We&apos;ll send daily wellness reports to this number</p>
             </div>
             <div className="space-y-2">
-              <label className="text-sm font-medium" htmlFor="location">Your Location</label>
-              <Input
+              <label className="text-sm font-medium" htmlFor="location">Country</label>
+              <select
                 id="location"
-                placeholder="e.g., Chicago, USA"
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
                 value={form.location}
                 onChange={(e) => setForm({ ...form, location: e.target.value })}
-              />
+              >
+                <option value="">Select country</option>
+                <option value="India">India</option>
+                <option value="United States">United States</option>
+                <option value="United Kingdom">United Kingdom</option>
+                <option value="Canada">Canada</option>
+                <option value="Australia">Australia</option>
+                <option value="Singapore">Singapore</option>
+                <option value="UAE">UAE</option>
+                <option value="Saudi Arabia">Saudi Arabia</option>
+                <option value="Malaysia">Malaysia</option>
+                <option value="Germany">Germany</option>
+                <option value="Other">Other</option>
+              </select>
             </div>
           </CardContent>
           <CardFooter className="flex flex-col gap-4">

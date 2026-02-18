@@ -18,8 +18,8 @@ const tiers = [
     price: '₹200',
     unit: 'per patient/month',
     features: [
-      'Daily AI calls in 11 languages',
-      'Medicine-by-medicine tracking',
+      'Daily AI wellness calls in 11 languages',
+      'Medicine-by-medicine adherence tracking',
       'WhatsApp reports to family',
       'Basic analytics dashboard',
       'Email support',
@@ -68,7 +68,7 @@ const benefits = [
   },
   {
     title: 'Reduce readmissions',
-    description: 'Proactive daily monitoring catches non-adherence before it leads to complications.',
+    description: 'Proactive daily wellness check-ins catch non-adherence and declining health before complications.',
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M9 12.75 11.25 15 15 9.75m-3-7.036A11.959 11.959 0 0 1 3.598 6 11.99 11.99 0 0 0 3 9.749c0 5.592 3.824 10.29 9 11.623 5.176-1.332 9-6.03 9-11.622 0-1.31-.21-2.571-.598-3.751h-.152c-3.196 0-6.1-1.248-8.25-3.285Z" />
@@ -131,14 +131,14 @@ export default function HospitalsPage() {
               </div>
 
               <h1 className="text-display-sm sm:text-display text-gray-900">
-                Post-discharge adherence,{' '}
+                Post-discharge wellness monitoring,{' '}
                 <span className="text-gradient">automated</span>
               </h1>
 
               <p className="mx-auto mt-6 max-w-2xl text-body-lg text-gray-600">
-                Replace expensive manual nurse follow-ups with AI voice calls that
-                monitor medication adherence in 11 Indian languages — at a fraction
-                of the cost.
+                Replace expensive manual nurse follow-ups with AI wellness calls that
+                monitor adherence, vitals, and patient wellbeing in 11 Indian languages
+                &mdash; at a fraction of the cost.
               </p>
 
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">

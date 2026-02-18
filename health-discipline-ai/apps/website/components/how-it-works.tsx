@@ -16,7 +16,7 @@ const steps = [
     number: '02',
     title: 'AI calls daily',
     description:
-      'A warm, natural voice calls at the scheduled time — greets them by name, checks each medicine individually.',
+      'A warm, natural voice calls at the scheduled time — greets them by name, asks about their wellbeing, checks on medicines and vitals.',
     image: '/images/step-ai-calls.png',
     accent: 'bg-accent-light text-accent-dark',
   },
@@ -24,7 +24,7 @@ const steps = [
     number: '03',
     title: 'Get real reports',
     description:
-      'Within 5 minutes, receive a detailed WhatsApp report. See exactly what was taken, what was missed, and how they\'re feeling.',
+      'Within 5 minutes, receive a detailed WhatsApp report — medicines, vitals, mood, and how they\'re really doing. Facts, not guesses.',
     image: '/images/step-get-reports.png',
     accent: 'bg-brand-50 text-brand-600',
   },

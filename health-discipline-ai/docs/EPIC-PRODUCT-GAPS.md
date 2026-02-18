@@ -27,12 +27,7 @@ After comprehensive testing of the AI calling pipeline (6 test calls to patient 
 
 ## P0 — Critical (Data Being Lost / Broken)
 
-### Task: Fix call history endpoint (500 error)
-- **Endpoint:** `GET /api/v1/patients/:patientId/calls`
-- **Issue:** Returns 500 error on production
-- **Impact:** Dashboard call history tab is broken
-- **File:** `apps/api/src/calls/calls.service.ts` → `findByPatient()`
-
+### ~~Task: Fix call history endpoint (500 error)~~ ✅ Fixed
 ### Task: Store call recording URL from ElevenLabs
 - **What:** ElevenLabs provides audio recording URL per conversation
 - **Where:** `Call.recordingUrl` field exists but is never populated
@@ -40,25 +35,40 @@ After comprehensive testing of the AI calling pipeline (6 test calls to patient 
 
 ---
 
+## Completed (2026-02-18) — Dashboard Redesign Sprint
+
+- [x] **Adherence trend charts** — AreaChart showing daily adherence % (7D/14D/30D)
+- [x] **Vitals history & trends** — Glucose LineChart + Blood Pressure dual-line chart
+- [x] **Complaints tracking UI** — Mood & wellness log with color-coded entries in patient detail + reports
+- [x] **Per-medicine adherence breakdown** — Horizontal BarChart with color-coded compliance rates
+- [x] **Patient stats API endpoint** — `GET /patients/:id/stats?days=N` returns all chart data in one call
+- [x] **Dashboard home redesign** — Aggregate stats, "Needs Attention" alerts, streak badges
+- [x] **Reports page rebuild** — Patient/period selectors, adherence donut, trend charts, vitals, mood log
+- [x] **Settings page wired up** — Working profile edit, notification toggles, subscription status
+- [x] **Website ↔ Web app linking** — All CTAs route to registration/login via APP_URL
+- [x] **Security: getCall() ownership check** — Prevents unauthorized access to other users' call data
+- [x] **Bug: critical medicine alert** — `isCritical` now passed to call record; WhatsApp alert fires correctly
+- [x] **Bug: days query param type** — Parsed as integer, no longer string coercion
+- [x] **Bug: medicinesChecked null safety** — Defensive `|| []` in stats aggregation loops
+- [x] **Onboarding UX** — Phone Number label, country dropdown, custom conditions, digital tier (Phone/WhatsApp/Both)
+
+---
+
 ## P1 — High Priority (Blocks Key Business Decisions)
 
-### Task: Adherence trend charts
-- **What:** Show adherence % over time (7-day, 30-day line chart)
-- **Current:** Dashboard only shows today's adherence
-- **Why:** Payer needs to see if their parent is improving or declining
-- **Files:** New API endpoint + frontend chart component
-
-### Task: Vitals history & trends
-- **What:** Graph glucose and BP readings over time
-- **Current:** Vitals captured per call but never visualized
-- **Why:** Doctor needs to see trends, not just latest reading
-- **Scope:** API endpoint for vitals history + frontend chart
-
-### Task: Complaints tracking UI
-- **What:** Show complaints from calls to payer/family
-- **Current:** Complaints stored in DB but never shown in dashboard
-- **Why:** Health issues mentioned by patient go completely unnoticed
-- **Scope:** Add complaints section to patient detail page
+### Task: WhatsApp medicine reminder nudges
+- **What:** Send lightweight WhatsApp message 15 min before medicine time: "Bauji, time for morning medicines (Metformin, Amlodipine)"
+- **Current:** Only AI calls exist — no pre-call nudge
+- **Why:** Reduces missed doses; calls check adherence but don't prevent non-adherence
+- **Approach:** Hybrid model — cheap WhatsApp nudges for all 4 timings, full AI call 1-2x daily
+- **Scope:**
+  - New `NudgeService` with cron checking 15 min before each call slot
+  - WhatsApp template message via Twilio/Meta API
+  - Only for patients with digitalTier = 2 (WhatsApp) or 3 (Both)
+  - Dashboard toggle to enable/disable per patient
+  - Track nudge delivery in a new `Nudge` collection or lightweight log
+- **Cost:** ~₹0.50/message vs ~₹40/call — massive cost savings for non-critical timings
+- **Impact:** Could reduce calls from 4/day to 1-2/day while maintaining adherence
 
 ### Task: Transcript viewer
 - **What:** Let payer read/listen to call transcripts

@@ -17,6 +17,9 @@ class MedicineCheckEntry {
   @Prop({ enum: ['taken', 'missed', 'unclear', 'pending'], default: 'pending' })
   response: string;
 
+  @Prop({ default: false })
+  isCritical: boolean;
+
   @Prop({ default: Date.now })
   timestamp: Date;
 }

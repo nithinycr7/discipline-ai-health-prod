@@ -7,7 +7,7 @@ const faqs = [
   {
     question: 'My parents won\'t talk to a robot.',
     answer:
-      'Our AI voice sounds natural and warm — many parents think they\'re talking to a real person. The voice greets them by name, speaks their language, and uses the medicine names they know. Most parents enjoy the daily calls within the first week.',
+      'Our AI voice sounds natural and warm — many parents think they\'re talking to a real person. It greets them by name, speaks their language, asks about their day, and checks on their health. Most parents enjoy the daily calls within the first week.',
   },
   {
     question: 'Do my parents need a smartphone?',
@@ -32,7 +32,7 @@ const faqs = [
   {
     question: 'Can the AI give medical advice?',
     answer:
-      'No. Health Discipline AI strictly monitors and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
+      'No. Health Discipline AI is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
   },
   {
     question: 'How do I cancel?',

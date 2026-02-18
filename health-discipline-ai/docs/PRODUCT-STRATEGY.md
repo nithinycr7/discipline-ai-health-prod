@@ -15,7 +15,7 @@
 
 ## Product Overview
 
-Health Discipline AI is an AI-powered medication adherence platform that makes automated voice calls to elderly patients in India to check if they've taken their daily medicines.
+Health Discipline AI is a daily wellness companion that checks on elderly parents through warm AI voice calls — tracking their health, medicines, mood, and vitals in their own language.
 
 **Core Insight:** Voice is the most inclusive interface. No app download, no smartphone, no tech skills required — the patient just answers a phone call.
 
@@ -37,9 +37,9 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 | Attribute | Detail |
 |-----------|--------|
 | **Who** | NRI children (25-45 years) living in US, UK, UAE, Canada, Australia |
-| **Pain** | Can't physically be there to ensure parents take medicines |
-| **Current Behavior** | Daily phone calls asking "Dawai li?" — met with "Haan haan" regardless of truth |
-| **Emotional Driver** | Guilt of being far away, anxiety about parent's health, desire for data over reassurance |
+| **Pain** | Can't physically be there to know how parents are really doing |
+| **Current Behavior** | Daily phone calls asking "Sab theek hai?" — met with "Haan haan" regardless of truth |
+| **Emotional Driver** | Guilt of being far away, anxiety about parent's wellbeing, desire for truth over reassurance |
 | **Decision Trigger** | Parent diagnosed with chronic condition (diabetes, BP, heart disease) |
 | **Willingness to Pay** | High — already spending on international calls, health apps, occasional India visits |
 
@@ -73,10 +73,10 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 
 ### For NRI Children (B2C)
 
-> "Stop wondering if your parents took their medicines. Health Discipline AI calls them every day in their own language, checks each medicine by name, and sends you a real report — not just 'haan beti, le li.'"
+> "Stop wondering if your parents are really okay. Health Discipline AI calls them every day in their own language, checks on their wellbeing, medicines, and mood — and sends you the truth, not just 'haan beti, sab theek hai.'"
 
 **Key Benefits:**
-1. **Real adherence data** — not self-reported reassurance
+1. **Real wellness data** — medicines, vitals, mood — not self-reported reassurance
 2. **Zero tech burden on parents** — no app, no smartphone needed
 3. **Speaks their language** — Hindi, Telugu, Tamil, and 5 more
 4. **Uses their words** — "BP wali goli" instead of "Amlodipine"
@@ -85,7 +85,7 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 
 ### For Hospitals (B2B)
 
-> "Replace expensive manual nurse follow-up calls with AI that costs 1/100th and scales to thousands of patients. Get structured adherence data for every outpatient, every day."
+> "Replace expensive manual nurse follow-up calls with AI wellness check-ins that cost 1/100th and scale to thousands of patients. Get structured data on adherence, vitals, and patient wellbeing for every outpatient, every day."
 
 **Key Benefits:**
 1. **100x cost reduction** vs manual nurse calls
@@ -155,7 +155,7 @@ Health Discipline AI is an AI-powered medication adherence platform that makes a
 | **Teleconsultation (Practo, etc.)** | Doctor video consultations | Doctor-facing, not daily adherence monitoring |
 | **CareVoice / similar** | AI health assistants | English-only, app-dependent, not India-focused |
 
-**Our Unique Position:** Only solution that requires ZERO technology from the patient. Voice is universally accessible. Deeply localized for India (8 languages, medicine nicknames, cultural context).
+**Our Unique Position:** Only daily wellness companion that requires ZERO technology from the patient. Voice is universally accessible. Deeply localized for India (8 languages, medicine nicknames, cultural context). Not just adherence tracking — holistic wellness monitoring including mood, vitals, and complaints.
 
 ---
 
@@ -438,7 +438,7 @@ Government programs are underperforming: PMMVY (Pradhan Mantri Matru Vandana Yoj
 
 ### The "Family Health Platform" Vision
 
-The long-term positioning is not just "medication reminders" but a **Family Health Companion** that covers every generation:
+The long-term positioning — already reflected in the current product — is a **Family Wellness Companion** that covers every generation:
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
@@ -462,12 +462,12 @@ The long-term positioning is not just "medication reminders" but a **Family Heal
 ```
 
 **Cross-Sell Flywheel:**
-- Current customer pays for parent's medication adherence calls
+- Current customer pays for parent's daily wellness check-in calls
 - Their sibling is pregnant → add pregnancy care
 - Baby is born → transition to vaccination tracking
 - Another elderly parent needs monitoring → add them too
 
-This transforms Health Discipline AI from a single-use tool into a platform with **3-5 year customer lifetime value** per NRI family, dramatically increasing ARPU, retention, and defensibility.
+This transforms Health Discipline AI from a single-use tool into a wellness platform with **3-5 year customer lifetime value** per NRI family, dramatically increasing ARPU, retention, and defensibility.
 
 ---
 
