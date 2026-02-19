@@ -17,6 +17,7 @@ import { ReportsModule } from './reports/reports.module';
 import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
+import { DistributedLockModule } from './distributed-lock/distributed-lock.module';
 import { FirebaseAdminModule } from './firebase/firebase-admin.module';
 
 @Module({
@@ -31,6 +32,7 @@ import { FirebaseAdminModule } from './firebase/firebase-admin.module';
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
+    DistributedLockModule,
     FirebaseAdminModule,
     AuthModule,
     UsersModule,

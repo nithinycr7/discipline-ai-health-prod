@@ -102,8 +102,28 @@ export class SarvamWebhookController {
         }
       }
 
-      // Update call status to completed
-      await this.callsService.updateCallStatus(callId, 'completed', {
+      // Determine if call was effectively unanswered
+      const allPending = call.medicinesChecked?.every((m) => m.response === 'pending') ?? true;
+      const terminationReason = body.terminationReason || '';
+      const isNoAnswer =
+        !reScheduled &&
+        allPending &&
+        (duration < 30 ||
+          /no.?answer|voicemail|unanswered/i.test(terminationReason));
+
+      const finalStatus = isNoAnswer ? 'no_answer' : 'completed';
+
+      // Build transcript array for proper schema storage
+      const transcriptArray = Array.isArray(transcript)
+        ? transcript.map((entry: any) => ({
+            role: entry.role || 'unknown',
+            message: entry.message || '',
+            timestamp: entry.timestamp ? new Date(entry.timestamp) : undefined,
+          }))
+        : [];
+
+      // Update call status
+      await this.callsService.updateCallStatus(callId, finalStatus, {
         endedAt: new Date(),
         duration: duration || 0,
         moodNotes: wellness || undefined,
@@ -111,9 +131,25 @@ export class SarvamWebhookController {
         transcriptUrl: roomName ? `sarvam:livekit:${roomName}` : undefined,
         livekitRoomName: roomName,
         medicinesChecked: call.medicinesChecked,
-        transcript: transcriptText || undefined,
+        transcript: transcriptArray.length > 0 ? transcriptArray : undefined,
+        terminationReason: terminationReason || undefined,
         reScheduled,
       } as any);
+
+      // If no_answer, trigger retry and skip post-call processing
+      if (isNoAnswer) {
+        this.logger.log(
+          `Call ${callId} detected as no_answer (duration=${duration}s, ` +
+            `allPending=${allPending}, termination=${terminationReason})`,
+        );
+        try {
+          await this.retryHandler.handleNoAnswer(callId);
+        } catch (retryErr: any) {
+          this.logger.warn(`No-answer retry scheduling failed: ${retryErr.message}`);
+        }
+
+        return { received: true, callId, roomName, status: 'no_answer' };
+      }
 
       // Update vitals if patient reported checking them
       if (vitalsChecked === 'yes') {

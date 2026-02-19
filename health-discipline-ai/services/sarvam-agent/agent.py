@@ -4,7 +4,7 @@ Sarvam AI Voice Agent Worker (LiveKit)
 This is a long-running Python process that connects to LiveKit and handles
 voice conversations using:
   - Sarvam STT (saaras:v3) for speech recognition
-  - Gemini 1.5 Flash for LLM responses
+  - Gemini 2.5 Flash for LLM responses
   - Sarvam TTS (bulbul:v3) for speech synthesis
 
 When the NestJS API creates a LiveKit room with patient metadata,
@@ -27,11 +27,11 @@ from http.server import BaseHTTPRequestHandler, HTTPServer
 import httpx
 from dotenv import load_dotenv
 from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
-from livekit.agents.voice import Agent, AgentSession, room_io
-from livekit.plugins import google, sarvam, silero
+from livekit.agents.voice import Agent, AgentSession
+from livekit.plugins import google, sarvam
 
 from data_extractor import extract_call_data
-from prompt import build_first_message, build_system_prompt
+from prompt import build_system_prompt
 
 load_dotenv()
 
@@ -79,7 +79,8 @@ class MedicineCheckAgent(Agent):
             instructions=build_system_prompt(patient_data),
             stt=sarvam.STT(
                 language=stt_lang,
-                model="saarika:v2.5",
+                model="saaras:v3",
+                mode="transcribe",
             ),
             llm=google.LLM(
                 model="gemini-2.5-flash",
@@ -91,6 +92,10 @@ class MedicineCheckAgent(Agent):
                 speaker="simran",  # Energetic, cheery female voice
             ),
         )
+
+    async def on_enter(self):
+        """Called when user joins — agent starts the conversation."""
+        self.session.generate_reply()
 
 
 async def entrypoint(ctx: JobContext):
@@ -107,19 +112,6 @@ async def entrypoint(ctx: JobContext):
         participant = await ctx.wait_for_participant()
         logger.info(f"Participant joined: {participant.identity}")
 
-    # Ensure we're subscribed to the participant's audio track
-    for track_pub in participant.track_publications.values():
-        logger.info(
-            f"Track: sid={track_pub.sid}, kind={track_pub.kind}, "
-            f"source={track_pub.source}, subscribed={track_pub.subscribed}"
-        )
-        if not track_pub.subscribed:
-            track_pub.set_subscribed(True)
-            logger.info(f"Manually subscribed to track {track_pub.sid}")
-
-    # Wait a moment for subscription to complete
-    await asyncio.sleep(1)
-
     # Read patient metadata from room (set by NestJS SarvamAgentService)
     metadata_str = ctx.room.metadata or "{}"
     try:
@@ -130,6 +122,7 @@ async def entrypoint(ctx: JobContext):
 
     call_id = patient_data.get("callId")
     webhook_url = patient_data.get("webhookUrl")
+    room_name = ctx.room.name  # Save before any variable shadowing
 
     if not call_id:
         logger.error("Room metadata missing callId, cannot proceed")
@@ -137,69 +130,117 @@ async def entrypoint(ctx: JobContext):
 
     logger.info(
         f"Starting call for patient {patient_data.get('patientName', '?')}, "
-        f"callId={call_id}, room={ctx.room.name}"
+        f"callId={call_id}, room={room_name}"
     )
 
-    # Track conversation
+    # Track conversation transcript in real-time
     transcript: list[dict] = []
     call_start_time = time.time()
 
     # Create agent and session
     agent = MedicineCheckAgent(patient_data)
-    session = AgentSession(
-        vad=silero.VAD.load(),
-    )
+    session = AgentSession()
 
     # Event to signal session closure
     session_closed = asyncio.Event()
 
-    # Track transcript via session events
+    # Real-time transcript capture via conversation_item_added
+    # This fires for BOTH user and agent messages when committed to chat history
     @session.on("conversation_item_added")
-    def on_conversation_item(item):
-        role = getattr(item, "role", "unknown")
-        # Extract text content from the conversation item
-        content = ""
-        if hasattr(item, "text_content"):
-            content = item.text_content
-        elif hasattr(item, "content"):
-            content = str(item.content)
-        elif hasattr(item, "text"):
-            content = item.text
-        else:
-            content = str(item)
+    def on_conversation_item(event):
+        try:
+            item = getattr(event, "item", event)
+            role = getattr(item, "role", "")
+            if role == "system":
+                return
 
-        if role == "user":
-            transcript.append({"role": "user", "message": content})
-            logger.info(f"[STT] Patient said: {content}")
-        elif role == "assistant":
-            transcript.append({"role": "agent", "message": content})
-            logger.info(f"[TTS] Agent said: {content}")
+            text = ""
+            content = getattr(item, "content", None)
+            if isinstance(content, list):
+                text = " ".join(
+                    str(getattr(c, "text", ""))
+                    for c in content
+                    if hasattr(c, "text") and getattr(c, "text", None)
+                ).strip()
+            elif isinstance(content, str):
+                text = content.strip()
+            if not text and hasattr(item, "text"):
+                text = str(item.text).strip()
+            if not text and hasattr(item, "text_content"):
+                tc = item.text_content
+                text = (tc() if callable(tc) else str(tc)).strip()
+
+            if text:
+                mapped = "user" if role == "user" else "agent"
+                transcript.append({"role": mapped, "message": text})
+                logger.info(f"[transcript:{mapped}] {text[:100]}")
+        except Exception as e:
+            logger.error(f"conversation_item_added handler error: {e}")
+
+    # Fallback: also capture user speech via user_input_transcribed
+    @session.on("user_input_transcribed")
+    def on_user_input(event):
+        text = getattr(event, "transcript", "") or getattr(event, "text", "")
+        is_final = getattr(event, "is_final", True)
+        if text.strip() and is_final:
+            logger.info(f"[STT] Patient said: {text}")
 
     @session.on("close")
     def on_close():
         logger.info("AgentSession closed")
         session_closed.set()
 
-    # Start the session — explicitly link to the SIP participant's audio
+    # Start the session — on_enter() will trigger generate_reply() for greeting
     await session.start(
         agent=agent,
         room=ctx.room,
-        room_options=room_io.RoomOptions(
-            participant_identity=participant.identity,
-        ),
     )
-    logger.info(f"AgentSession started (linked to {participant.identity}), sending greeting...")
-
-    # Send first greeting
-    first_message = build_first_message(patient_data)
-    await session.say(first_message)
-    transcript.append({"role": "agent", "message": first_message})
-    logger.info(f"Greeting sent: {first_message}")
+    logger.info("AgentSession started, agent will generate greeting via on_enter()")
 
     # Wait for the call to end (session closes when patient hangs up or timeout)
     await session_closed.wait()
 
     call_duration = int(time.time() - call_start_time)
+
+    # If conversation_item_added didn't capture anything, try chat_ctx fallback
+    if not transcript:
+        logger.info("No transcript from events, trying chat_ctx fallback...")
+        for source_name, source in [("agent", agent), ("session", session)]:
+            chat_ctx = getattr(source, "chat_ctx", None) or getattr(source, "_chat_ctx", None)
+            if not chat_ctx:
+                logger.info(f"{source_name} has no chat_ctx")
+                continue
+            try:
+                items = getattr(chat_ctx, "items", getattr(chat_ctx, "messages", []))
+                logger.info(f"{source_name}.chat_ctx has {len(items)} items")
+                for item in items:
+                    role = getattr(item, "role", "")
+                    if role == "system":
+                        continue
+                    text = ""
+                    content = getattr(item, "content", None)
+                    if isinstance(content, list):
+                        text = " ".join(
+                            str(getattr(c, "text", ""))
+                            for c in content
+                            if hasattr(c, "text") and getattr(c, "text", None)
+                        ).strip()
+                    elif isinstance(content, str):
+                        text = content.strip()
+                    if not text and hasattr(item, "text"):
+                        text = str(item.text).strip()
+                    if not text and hasattr(item, "text_content"):
+                        tc = item.text_content
+                        text = (tc() if callable(tc) else str(tc)).strip()
+                    if text:
+                        mapped = "user" if role == "user" else "agent"
+                        transcript.append({"role": mapped, "message": text})
+                        logger.info(f"[fallback:{mapped}] {text[:80]}")
+                if transcript:
+                    logger.info(f"Built {len(transcript)} entries from {source_name}.chat_ctx")
+                    break
+            except Exception as e:
+                logger.error(f"chat_ctx extraction failed on {source_name}: {e}")
 
     logger.info(
         f"Call ended for callId={call_id}, duration={call_duration}s, "
@@ -220,7 +261,7 @@ async def entrypoint(ctx: JobContext):
                     webhook_url,
                     json={
                         "callId": call_id,
-                        "roomName": ctx.room.name,
+                        "roomName": room_name,
                         "transcript": transcript,
                         "medicineResponses": extracted.get("medicine_responses", ""),
                         "vitalsChecked": extracted.get("vitals_checked", ""),

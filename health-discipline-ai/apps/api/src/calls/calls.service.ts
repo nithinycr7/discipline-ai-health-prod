@@ -65,11 +65,10 @@ export class CallsService {
     return { calls, total, page, pageSize: limit };
   }
 
-  async getAdherenceForDate(patientId: string, date: Date) {
-    const startOfDay = new Date(date);
-    startOfDay.setHours(0, 0, 0, 0);
-    const endOfDay = new Date(date);
-    endOfDay.setHours(23, 59, 59, 999);
+  async getAdherenceForDate(patientId: string, date: Date, timezone = 'Asia/Kolkata') {
+    const dt = DateTime.fromJSDate(date).setZone(timezone);
+    const startOfDay = dt.startOf('day').toJSDate();
+    const endOfDay = dt.endOf('day').toJSDate();
 
     const calls = await this.callModel.find({
       patientId: new Types.ObjectId(patientId),
@@ -108,6 +107,7 @@ export class CallsService {
       })),
       vitals: latestCall?.vitals,
       moodNotes: latestCall?.moodNotes,
+      complaints: latestCall?.complaints?.filter((c: string) => c && c !== 'none') || [],
       lastCallAt: latestCall?.endedAt || latestCall?.scheduledAt,
     };
   }
@@ -181,6 +181,10 @@ export class CallsService {
     return call;
   }
 
+  /**
+   * Update an existing medicine entry's response in-place (no duplicates).
+   * Falls back to $push only if the medicineId doesn't exist in the array.
+   */
   async addMedicineResponse(
     callId: string,
     medicineId: string,
@@ -188,6 +192,21 @@ export class CallsService {
     nickname: string,
     response: string,
   ): Promise<CallDocument> {
+    // Try to update existing entry first (positional $ operator)
+    const updated = await this.callModel.findOneAndUpdate(
+      { _id: callId, 'medicinesChecked.medicineId': new Types.ObjectId(medicineId) },
+      {
+        $set: {
+          'medicinesChecked.$.response': response,
+          'medicinesChecked.$.timestamp': new Date(),
+        },
+      },
+      { new: true },
+    );
+
+    if (updated) return updated;
+
+    // Entry doesn't exist yet — push a new one
     return this.callModel.findByIdAndUpdate(
       callId,
       {
@@ -226,12 +245,10 @@ export class CallsService {
     });
   }
 
-  async getPatientStats(patientId: string, days: number = 30) {
-    const endDate = new Date();
-    endDate.setHours(23, 59, 59, 999);
-    const startDate = new Date();
-    startDate.setDate(startDate.getDate() - days);
-    startDate.setHours(0, 0, 0, 0);
+  async getPatientStats(patientId: string, days: number = 30, timezone = 'Asia/Kolkata') {
+    const now = DateTime.now().setZone(timezone);
+    const endDate = now.endOf('day').toJSDate();
+    const startDate = now.minus({ days }).startOf('day').toJSDate();
 
     const calls = await this.callModel.find({
       patientId: new Types.ObjectId(patientId),
@@ -330,6 +347,29 @@ export class CallsService {
       callStats: { total: calls.length, completed, noAnswer, failed },
       period: { startDate: startDate.toISOString().split('T')[0], endDate: endDate.toISOString().split('T')[0], days },
     };
+  }
+
+  /**
+   * Find retry calls that are due for processing (scheduled + past due).
+   */
+  async findDueRetries(): Promise<CallDocument[]> {
+    return this.callModel.find({
+      status: 'scheduled',
+      isRetry: true,
+      scheduledAt: { $lte: new Date() },
+    });
+  }
+
+  /**
+   * Atomically claim a call for processing — only succeeds if still in expected status.
+   * Prevents race conditions where two processes try to handle the same call.
+   */
+  async claimForProcessing(callId: string, expectedStatus: string): Promise<CallDocument | null> {
+    return this.callModel.findOneAndUpdate(
+      { _id: callId, status: expectedStatus },
+      { $set: { status: 'in_progress' } },
+      { new: true },
+    );
   }
 
   async getDailyCostAggregation(date: Date) {

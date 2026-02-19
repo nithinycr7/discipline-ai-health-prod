@@ -45,19 +45,6 @@ export class CallConfigsService {
     return this.callConfigModel.find({ isActive: true });
   }
 
-  async getDueCallConfigs(currentHour: number, currentMinute: number): Promise<CallConfigDocument[]> {
-    const timeStr = `${String(currentHour).padStart(2, '0')}:${String(currentMinute).padStart(2, '0')}`;
-    return this.callConfigModel.find({
-      isActive: true,
-      $or: [
-        { morningCallTime: timeStr },
-        { afternoonCallTime: timeStr },
-        { eveningCallTime: timeStr },
-        { nightCallTime: timeStr },
-      ],
-    });
-  }
-
   /**
    * Auto-create or update a CallConfig when a medicine is added.
    * Always sets nightCallTime — we call once at night for ALL medicines.
@@ -79,11 +66,11 @@ export class CallConfigsService {
     const nightTime = await this.getLeastCrowdedSlot();
 
     if (existing) {
-      await this.callConfigModel.findByIdAndUpdate(
+      return this.callConfigModel.findByIdAndUpdate(
         existing._id,
         { $set: { nightCallTime: nightTime } },
+        { new: true },
       );
-      return this.findByPatient(patientId);
     }
 
     return this.callConfigModel.create({

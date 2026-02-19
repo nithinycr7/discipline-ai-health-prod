@@ -27,7 +27,7 @@ export function GlucoseChart({ data }: GlucoseProps) {
 
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
         <ReferenceArea y1={70} y2={140} fill="hsl(142 76% 36%)" fillOpacity={0.06} />
         <XAxis
@@ -85,7 +85,7 @@ export function BloodPressureChart({ data }: BPProps) {
 
   return (
     <ResponsiveContainer width="100%" height={180}>
-      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -20, bottom: 0 }}>
+      <LineChart data={chartData} margin={{ top: 5, right: 5, left: -10, bottom: 0 }}>
         <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--border))" opacity={0.5} />
         <ReferenceArea y1={60} y2={120} fill="hsl(142 76% 36%)" fillOpacity={0.06} />
         <XAxis

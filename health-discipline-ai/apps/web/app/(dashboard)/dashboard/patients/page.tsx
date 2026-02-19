@@ -60,32 +60,32 @@ export default function PatientsListPage() {
         {filtered.map((patient: any) => (
           <Link key={patient._id} href={`/dashboard/patients/${patient._id}`}>
             <Card className="hover:shadow-md transition-all cursor-pointer mb-3 border-border/50 hover:border-border">
-              <CardContent className="flex items-center justify-between p-5">
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
-                    <span className="text-sm font-semibold text-primary">
+              <CardContent className="flex items-start sm:items-center justify-between gap-3 p-4 sm:p-5">
+                <div className="flex items-center gap-3 sm:gap-4 min-w-0">
+                  <div className="w-9 h-9 sm:w-10 sm:h-10 rounded-full bg-primary/10 flex items-center justify-center shrink-0">
+                    <span className="text-xs sm:text-sm font-semibold text-primary">
                       {patient.preferredName?.charAt(0)?.toUpperCase()}
                     </span>
                   </div>
-                  <div>
-                    <p className="font-semibold">{patient.preferredName}</p>
-                    <p className="text-sm text-muted-foreground">
+                  <div className="min-w-0">
+                    <p className="font-semibold text-sm sm:text-base">{patient.preferredName}</p>
+                    <p className="text-xs sm:text-sm text-muted-foreground truncate">
                       {patient.fullName} &middot; Age {patient.age} &middot; {patient.preferredLanguage?.toUpperCase()}
                     </p>
-                    <div className="flex gap-1.5 mt-1.5">
+                    <div className="flex flex-wrap gap-1 sm:gap-1.5 mt-1.5">
                       {patient.healthConditions?.map((c: string) => (
-                        <Badge key={c} variant="outline" className="text-xs">{c}</Badge>
+                        <Badge key={c} variant="outline" className="text-[10px] sm:text-xs">{c}</Badge>
                       ))}
                     </div>
                   </div>
                 </div>
-                <div className="text-right">
+                <div className="text-right shrink-0">
                   {patient.isPaused ? (
                     <Badge variant="secondary">Paused</Badge>
                   ) : (
                     <Badge variant="success">Active</Badge>
                   )}
-                  <p className="text-xs text-muted-foreground mt-1.5">
+                  <p className="text-[10px] sm:text-xs text-muted-foreground mt-1.5">
                     {patient.callsCompletedCount} calls
                   </p>
                 </div>

@@ -20,7 +20,7 @@ interface PatientSummary {
   subscriptionStatus?: string;
   trialEndsAt?: string;
   healthConditions?: string[];
-  adherence?: { adherencePercentage: number; taken: number; totalMedicines: number; moodNotes?: string };
+  adherence?: { adherencePercentage: number; taken: number; totalMedicines: number; moodNotes?: string; complaints?: string[] };
 }
 
 export default function DashboardPage() {
@@ -103,6 +103,9 @@ export default function DashboardPage() {
       if (daysLeft >= 0 && daysLeft <= 3) {
         needsAttention.push({ patient: p, reason: `Trial expires in ${daysLeft} day${daysLeft !== 1 ? 's' : ''}`, severity: 'medium' });
       }
+    }
+    if (p.adherence?.complaints?.length) {
+      needsAttention.push({ patient: p, reason: `Complaints: ${p.adherence.complaints.join(', ')}`, severity: 'high' });
     }
     if (total === 0 && !p.isNewPatient) {
       needsAttention.push({ patient: p, reason: 'No call data today', severity: 'low' });
@@ -264,6 +267,14 @@ export default function DashboardPage() {
                       )}
                     </div>
                   </div>
+                  {patient.adherence?.complaints && patient.adherence.complaints.length > 0 && (
+                    <div className="flex flex-wrap gap-1 mt-3 pt-3 border-t border-border/50">
+                      <span className="text-xs text-destructive font-medium">Complaints:</span>
+                      {patient.adherence.complaints.map((c: string, i: number) => (
+                        <Badge key={i} variant="outline" className="text-xs text-destructive border-destructive/30">{c}</Badge>
+                      ))}
+                    </div>
+                  )}
                 </CardContent>
               </Card>
             </Link>

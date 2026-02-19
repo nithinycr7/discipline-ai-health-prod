@@ -189,8 +189,28 @@ export class ElevenLabsWebhookController {
 
       const totalCharges = Math.round((twilioCharges + elevenlabsCharges) * 100) / 100;
 
-      // Update call status to completed with all data
-      await this.callsService.updateCallStatus(callId, 'completed', {
+      // Determine if call was effectively unanswered
+      const allPending = call.medicinesChecked?.every((m) => m.response === 'pending') ?? true;
+      const isNoAnswer =
+        !reScheduled &&
+        allPending &&
+        (durationSecs < 30 ||
+          /no.?answer|voicemail|unanswered|caller_did_not/i.test(terminationReason));
+
+      // Determine final status
+      const finalStatus = isNoAnswer ? 'no_answer' : 'completed';
+
+      // Build transcript array for proper schema storage
+      const transcriptArray = Array.isArray(transcript)
+        ? transcript.map((entry: any) => ({
+            role: entry.role || 'unknown',
+            message: entry.message || '',
+            timestamp: entry.timestamp ? new Date(entry.timestamp) : undefined,
+          }))
+        : [];
+
+      // Update call status with all data
+      await this.callsService.updateCallStatus(callId, finalStatus, {
         endedAt: new Date(),
         duration: durationSecs,
         moodNotes: wellness || undefined,
@@ -200,7 +220,7 @@ export class ElevenLabsWebhookController {
           : undefined,
         elevenlabsConversationId: conversationId,
         medicinesChecked: call.medicinesChecked,
-        transcript: transcriptText || undefined,
+        transcript: transcriptArray.length > 0 ? transcriptArray : undefined,
         terminationReason: terminationReason || undefined,
         twilioCharges,
         elevenlabsCharges,
@@ -208,6 +228,21 @@ export class ElevenLabsWebhookController {
         totalCharges,
         reScheduled,
       } as any);
+
+      // If no_answer, trigger retry and skip post-call processing
+      if (isNoAnswer) {
+        this.logger.log(
+          `Call ${callId} detected as no_answer (duration=${durationSecs}s, ` +
+            `allPending=${allPending}, termination=${terminationReason})`,
+        );
+        try {
+          await this.retryHandler.handleNoAnswer(callId);
+        } catch (retryErr: any) {
+          this.logger.warn(`No-answer retry scheduling failed: ${retryErr.message}`);
+        }
+
+        return { received: true, callId, conversationId, status: 'no_answer' };
+      }
 
       // Update vitals if patient reported checking them
       if (vitalsChecked === 'yes') {

@@ -1,4 +1,4 @@
-import { Injectable, Logger } from '@nestjs/common';
+import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { CallsService } from '../calls/calls.service';
 import { MedicinesService } from '../medicines/medicines.service';
@@ -9,6 +9,7 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { CallConfigsService } from '../call-configs/call-configs.service';
 import { PromptAssemblerService } from '../dynamic-prompt/prompt-assembler.service';
 import { DynamicPromptResult } from '../dynamic-prompt/types/prompt-context.types';
+import { RetryHandlerService } from './retry-handler.service';
 
 interface DueCall {
   config: any;
@@ -33,6 +34,8 @@ export class CallOrchestratorService {
     private configService: ConfigService,
     private callConfigsService: CallConfigsService,
     private promptAssembler: PromptAssemblerService,
+    @Inject(forwardRef(() => RetryHandlerService))
+    private retryHandler: RetryHandlerService,
   ) {
     this.voiceStack = this.configService.get<string>('VOICE_STACK', 'elevenlabs');
     this.dynamicPromptGlobalEnabled =
@@ -61,6 +64,7 @@ export class CallOrchestratorService {
    */
   async initiateCall(dueCall: DueCall) {
     const { patient, timing } = dueCall;
+    let callId: string | null = null;
 
     try {
       // Get ALL medicines for the patient (we call once at night for everything)
@@ -91,6 +95,7 @@ export class CallOrchestratorService {
           timestamp: new Date(),
         })),
       });
+      callId = call._id.toString();
 
       const patientData = {
         patientName: patient.preferredName,
@@ -179,6 +184,16 @@ export class CallOrchestratorService {
       this.logger.error(
         `Failed to initiate call for patient ${patient._id}: ${error.message}`,
       );
+
+      // If a call record was created, mark it failed and trigger retry
+      if (callId) {
+        try {
+          await this.callsService.updateCallStatus(callId, 'failed');
+          await this.retryHandler.handleFailed(callId);
+        } catch (retryErr: any) {
+          this.logger.warn(`Failed to schedule retry for call ${callId}: ${retryErr.message}`);
+        }
+      }
     }
   }
 
@@ -276,6 +291,7 @@ export class CallOrchestratorService {
     await this.callsService.updateCallStatus(callId, status);
 
     if (errorCode === '21217') {
+      // Invalid phone number — pause patient, don't retry
       const call = await this.callsService.findById(callId);
       const patient = await this.patientsService.findById(call.patientId.toString());
       await this.patientsService.update(patient._id.toString(), patient.userId.toString(), {
@@ -284,6 +300,13 @@ export class CallOrchestratorService {
       } as any);
 
       await this.notificationsService.sendInvalidPhoneAlert(call, patient);
+    } else {
+      // Recoverable failure — trigger retry
+      try {
+        await this.retryHandler.handleFailed(callId);
+      } catch (retryErr: any) {
+        this.logger.warn(`Failed to schedule retry for call ${callId}: ${retryErr.message}`);
+      }
     }
   }
 }

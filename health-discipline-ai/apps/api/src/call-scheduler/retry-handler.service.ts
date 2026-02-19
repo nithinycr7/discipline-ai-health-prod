@@ -68,6 +68,15 @@ export class RetryHandlerService {
       return;
     }
 
+    // Respect retryOnlyForStatuses — only retry for allowed reasons
+    const allowedStatuses = config.retryOnlyForStatuses || ['no_answer', 'busy'];
+    if (!allowedStatuses.includes(reason)) {
+      this.logger.log(
+        `Retry reason '${reason}' not in allowed statuses [${allowedStatuses.join(', ')}] for patient ${call.patientId}, skipping`,
+      );
+      return;
+    }
+
     const maxRetries = config.maxRetries || 2;
 
     if (call.retryCount >= maxRetries) {
@@ -76,7 +85,7 @@ export class RetryHandlerService {
       const patient = await this.patientsService.findById(call.patientId.toString());
       await this.notificationsService.sendMissedCallAlert(call, patient);
 
-      // Mark pending medicines as missed
+      // Mark pending medicines as missed (uses upsert — no duplicates)
       for (const med of call.medicinesChecked) {
         if (med.response === 'pending') {
           await this.callsService.addMedicineResponse(
@@ -95,6 +104,16 @@ export class RetryHandlerService {
     const delayMinutes = config.retryIntervalMinutes || RETRY_DELAYS[reason];
     const scheduledAt = new Date(Date.now() + delayMinutes * 60 * 1000);
 
+    // Reset all medicine responses to 'pending' for the retry
+    const freshMedicines = (call.medicinesChecked || []).map((med: any) => ({
+      medicineId: med.medicineId,
+      medicineName: med.medicineName,
+      nickname: med.nickname,
+      response: 'pending',
+      isCritical: med.isCritical || false,
+      timestamp: new Date(),
+    }));
+
     const retryCall = await this.callsService.create({
       patientId: call.patientId,
       userId: call.userId,
@@ -103,7 +122,7 @@ export class RetryHandlerService {
       retryCount: call.retryCount + 1,
       isRetry: true,
       originalCallId: call.originalCallId || call._id,
-      medicinesChecked: call.medicinesChecked,
+      medicinesChecked: freshMedicines,
       usedNewPatientProtocol: call.usedNewPatientProtocol,
     });
 
@@ -115,15 +134,10 @@ export class RetryHandlerService {
 
   /**
    * Process due retry calls — triggered by cron every 30 minutes.
-   * Actually re-triggers calls through the orchestrator.
+   * Uses atomic claim to prevent race conditions.
    */
   async processRetries() {
-    const now = new Date();
-    const dueRetries = await this.callsService['callModel'].find({
-      status: 'scheduled',
-      isRetry: true,
-      scheduledAt: { $lte: now },
-    });
+    const dueRetries = await this.callsService.findDueRetries();
 
     if (dueRetries.length === 0) return;
 
@@ -131,10 +145,21 @@ export class RetryHandlerService {
 
     for (const retry of dueRetries) {
       try {
+        // Atomically claim the retry — prevents duplicate processing
+        const claimed = await this.callsService.claimForProcessing(
+          retry._id.toString(),
+          'scheduled',
+        );
+        if (!claimed) {
+          this.logger.log(`Retry ${retry._id} already claimed, skipping`);
+          continue;
+        }
+
         const patient = await this.patientsService.findById(retry.patientId.toString());
 
         if (patient.isPaused) {
           this.logger.log(`Patient ${patient._id} is paused, skipping retry ${retry._id}`);
+          await this.callsService.updateCallStatus(retry._id.toString(), 'scheduled');
           continue;
         }
 
@@ -149,9 +174,6 @@ export class RetryHandlerService {
           await this.callsService.updateCallStatus(retry._id.toString(), 'failed');
           continue;
         }
-
-        // Mark as in_progress immediately to prevent duplicate processing
-        await this.callsService.updateCallStatus(retry._id.toString(), 'in_progress');
 
         // Re-trigger the actual call via orchestrator
         await this.callOrchestratorService.initiateRetryCall(

@@ -23,14 +23,14 @@ export function MedicineAdherenceChart({ data }: Props) {
 
   const chartData = data.map((d) => ({
     ...d,
-    shortName: d.name.length > 15 ? d.name.slice(0, 14) + '...' : d.name,
+    shortName: d.name.length > 12 ? d.name.slice(0, 11) + '...' : d.name,
   }));
 
   return (
     <ResponsiveContainer width="100%" height={Math.max(180, data.length * 44)}>
-      <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 5, left: 5, bottom: 0 }}>
-        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 11, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
-        <YAxis type="category" dataKey="shortName" tick={{ fontSize: 12, fill: 'hsl(var(--foreground))' }} tickLine={false} axisLine={false} width={120} />
+      <BarChart data={chartData} layout="vertical" margin={{ top: 0, right: 5, left: 0, bottom: 0 }}>
+        <XAxis type="number" domain={[0, 100]} tick={{ fontSize: 10, fill: 'hsl(var(--muted-foreground))' }} tickLine={false} axisLine={false} tickFormatter={(v) => `${v}%`} />
+        <YAxis type="category" dataKey="shortName" tick={{ fontSize: 11, fill: 'hsl(var(--foreground))' }} tickLine={false} axisLine={false} width={90} />
         <Tooltip
           contentStyle={{
             borderRadius: '0.75rem',
