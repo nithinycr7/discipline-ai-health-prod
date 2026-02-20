@@ -1,8 +1,16 @@
 'use client';
 
+import { ReactNode } from 'react';
 import { ScrollReveal } from './ui/scroll-reveal';
 
-const solutions = [
+interface Solution {
+  problem: string;
+  solution: string;
+  detail: string;
+  icon: ReactNode;
+}
+
+const solutions: Solution[] = [
   {
     problem: 'You're always one crisis away from panic',
     solution: 'Real-time alerts notify you instantly',
