@@ -2,19 +2,21 @@ import { Injectable, NotFoundException, BadRequestException } from '@nestjs/comm
 import { InjectModel } from '@nestjs/mongoose';
 import { Model, Types } from 'mongoose';
 import { Subscription, SubscriptionDocument } from './schemas/subscription.schema';
+import { User, UserDocument } from '../users/schemas/user.schema';
 
 const PLAN_PRICES: Record<string, number> = {
   suraksha: 1350,
   sampurna: 1800,
 };
 
-const FREE_TRIAL_DAYS = 7;
+const FREE_TRIAL_DAYS = 3;
 const GRACE_PERIOD_DAYS = 3;
 
 @Injectable()
 export class SubscriptionsService {
   constructor(
     @InjectModel(Subscription.name) private subscriptionModel: Model<SubscriptionDocument>,
+    @InjectModel(User.name) private userModel: Model<UserDocument>,
   ) {}
 
   async create(userId: string, patientId: string, plan: string, paymentGateway?: string): Promise<SubscriptionDocument> {
@@ -31,9 +33,19 @@ export class SubscriptionsService {
       throw new BadRequestException('Patient already has an active subscription');
     }
 
+    // Check if user is a test user (lifetime access)
+    const user = await this.userModel.findById(userId);
+    const isTestUser = user?.tag === 'test';
+
     const now = new Date();
-    const trialEnd = new Date(now);
-    trialEnd.setDate(trialEnd.getDate() + FREE_TRIAL_DAYS);
+    let trialEnd = new Date(now);
+
+    if (isTestUser) {
+      // Lifetime access: set expiration to year 9999
+      trialEnd = new Date('9999-12-31');
+    } else {
+      trialEnd.setDate(trialEnd.getDate() + FREE_TRIAL_DAYS);
+    }
 
     return this.subscriptionModel.create({
       userId: new Types.ObjectId(userId),
@@ -41,7 +53,7 @@ export class SubscriptionsService {
       plan,
       planPrice: PLAN_PRICES[plan],
       billingCycle: 'monthly',
-      status: 'trial',
+      status: isTestUser ? 'active' : 'trial',
       trialStartedAt: now,
       trialEndsAt: trialEnd,
       currentPeriodStart: now,
@@ -110,6 +122,12 @@ export class SubscriptionsService {
     });
 
     for (const sub of expiredTrials) {
+      // Check if user is a test user - skip expiration for test users
+      const user = await this.userModel.findById(sub.userId);
+      if (user?.tag === 'test') {
+        continue;
+      }
+
       sub.status = 'expired';
       sub.expiresAt = new Date();
       await sub.save();

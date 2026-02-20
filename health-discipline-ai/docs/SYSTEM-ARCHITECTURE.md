@@ -49,7 +49,7 @@ Health Discipline AI is an AI-powered medication adherence monitoring platform t
 | **Database** | MongoDB Atlas (Mongoose ODM) | All persistent data |
 | **AI Voice** | ElevenLabs Conversational AI | Autonomous voice agent for patient calls |
 | **TTS** | ElevenLabs v3 Conversational (`eleven_v3_conversational`) | Multilingual text-to-speech for voice generation |
-| **LLM (Agent)** | Google Gemini 1.5 Flash (`gemini-1.5-flash`) | Fast, low-cost LLM for voice conversations |
+| **LLM (Agent)** | Google Gemini 2.5 Flash (`gemini-2.5-flash`) | Fast, low-cost LLM for voice conversations + post-call extraction |
 | **Telephony** | Twilio | Outbound phone calls, WhatsApp messaging |
 | **Build System** | Turborepo | Monorepo management |
 | **Styling** | Tailwind CSS + Shadcn UI | Component library |
@@ -134,8 +134,8 @@ health-discipline-ai/
 │   │   │   │   │   └── whatsapp-webhook.controller.ts # Incoming WhatsApp messages
 │   │   │   │   │
 │   │   │   │   ├── sarvam/                             # Sarvam AI voice stack (LiveKit-based)
-│   │   │   │   │   ├── sarvam-agent.service.ts          # Sarvam outbound call initiation
-│   │   │   │   │   ├── sarvam-webhook.controller.ts     # Post-call webhook (data + streak update)
+│   │   │   │   │   ├── sarvam-agent.service.ts          # Sarvam outbound call initiation + LiveKit room
+│   │   │   │   │   ├── sarvam-webhook.controller.ts     # Post-call webhook (transcript → parser)
 │   │   │   │   │   └── sarvam.module.ts
 │   │   │   │   │
 │   │   │   │   └── exotel/                            # Backup telephony (India)
@@ -210,10 +210,9 @@ health-discipline-ai/
 │   └── eslint-config/                # Shared ESLint configs (Next.js + NestJS)
 │
 ├── services/
-│   └── sarvam-agent/                 # Python-based Sarvam AI agent
-│       ├── agent.py                     # LiveKit agent with Sarvam TTS/STT
-│       ├── prompt.py                    # System prompt builder (supports dynamic prompt injection)
-│       ├── data_extractor.py            # Post-call data extraction
+│   └── sarvam-agent/                 # Python-based Sarvam AI agent (LiveKit worker)
+│       ├── agent.py                     # Main entrypoint: connects to LiveKit, runs voice agent
+│       ├── prompt.py                    # System prompt + dynamic prompt assembly
 │       ├── Dockerfile                   # Container for Cloud Run deployment
 │       └── requirements.txt
 │
@@ -341,13 +340,18 @@ health-discipline-ai/
 | vitals | Object | { glucose, bloodPressure: { systolic, diastolic } } |
 | moodNotes | String | good, okay, not_well |
 | complaints | String[] | Health complaints mentioned |
-| twilioCallSid | String | ElevenLabs conversation ID |
+| twilioCallSid | String | Twilio call SID (legacy) |
+| **elevenlabsConversationId** | **String** | **ElevenLabs conversation ID (if voiceStack='elevenlabs')** |
+| **livekitRoomName** | **String** | **LiveKit room name (if voiceStack='sarvam')** |
+| **voiceStack** | **Enum** | **'elevenlabs' or 'sarvam'** |
 | transcript | Array | [{ role: agent/user, message, timestamp }] |
 | isFirstCall | Boolean | First call ever for this patient |
 | **conversationVariant** | **Enum** | **standard, wellness_first, quick_check, celebration, gentle_reengagement** |
 | **toneUsed** | **Enum** | **warm_cheerful, gentle_concerned, celebratory_proud, light_breezy, reassuring_patient, festive_joyful** |
 | **relationshipStage** | **Enum** | **stranger, acquaintance, familiar, trusted, family** |
 | **screeningQuestionsAsked** | **String[]** | **IDs of screening questions asked (e.g. ['diabetes_glucose', 'hypertension_bp'])** |
+| **screeningAnswers** | **Array** | **[{ questionId, answer, dataType }] — extracted answers to screening questions** |
+| **reScheduled** | **Boolean** | **True if patient requested to reschedule the call** |
 
 #### `call_configs`
 | Field | Type | Description |
@@ -471,10 +475,11 @@ This is the **core feature** of the platform. Here's exactly what happens from s
 ┌─────────────────┐      ┌──────────────────────┐      ┌─────────────────────┐
 │  CallScheduler  │      │   CallConfigsService │      │   PatientsService   │
 │  (Cron: * * * *)│─────>│                      │─────>│                     │
-│                 │      │ Get active configs    │      │ Filter: !isPaused   │
-│ Every minute,   │      │ with morningCallTime  │      │         !invalid    │
-│ check if any    │      │ and eveningCallTime   │      │                     │
-│ calls are due   │      │                      │      │                     │
+│  (every minute) │      │ Get active configs    │      │ Filter: !isPaused   │
+│                 │      │ with morningCallTime  │      │         !invalid    │
+│ Checks if any   │      │ afternoonCallTime     │      │                     │
+│ calls are due   │      │ eveningCallTime       │      │                     │
+│                 │      │ nightCallTime         │      │                     │
 └────────┬────────┘      └──────────────────────┘      └─────────────────────┘
          │
          │ Due calls found
@@ -581,37 +586,81 @@ This is the **core feature** of the platform. Here's exactly what happens from s
                                     ===============
 
 ┌─────────────────────────────────────────────────────────────────────┐
-│  ElevenLabsWebhookController.handlePostCall()                       │
+│  Webhook Controller (ElevenLabs or Sarvam)                          │
 │                                                                     │
-│  1. Parse medicine responses → normalize to taken/missed/unclear   │
-│  2. Parse vitals → yes/no/not_asked                                │
-│  3. Parse wellness (or mood) → good/okay/not_well                  │
-│  4. Parse complaints → string[]                                    │
-│  5. Update Call record:                                             │
+│  1. Extract conversationId / callId from payload                    │
+│  2. Build transcript text from array of { role, message } pairs     │
+│  3. Fetch Call record from MongoDB (idempotency check)              │
+│  4. Call TranscriptParserService.parseTranscript() with:            │
+│     - Transcript text                                               │
+│     - Medicines list (brandName + nicknames)                       │
+│     - Screening questions (if any asked)                            │
+│  5. TranscriptParserService (Gemini 2.5 Flash):                     │
+│     - Sends structured prompt to LLM with JSON schema               │
+│     - Extracts: medicine_responses, vitals_checked,                 │
+│       wellness, complaints, re_scheduled, skip_today,              │
+│       screening_answers                                             │
+│     - Returns ParsedCallData object                                 │
+│  6. Webhook updates Call record:                                    │
 │     - status → 'completed'                                         │
-│     - duration, endedAt                                            │
-│     - medicinesChecked[].response = 'taken'/'missed'               │
-│     - moodNotes, complaints                                        │
-│  6. Update Patient:                                                │
+│     - medicinesChecked[].response from LLM matches                  │
+│     - vitals, wellness, complaints, screeningAnswers               │
+│     - conversationId (for ElevenLabs) or roomName (for Sarvam)      │
+│  7. Update Patient:                                                │
 │     - setFirstCallAt() (if first call)                             │
 │     - incrementCallCount()                                         │
-│  7. Send WhatsApp report to payer:                                 │
+│     - updateStreak() if ≥80% adherence                              │
+│  8. Send WhatsApp report to payer:                                 │
 │     "Bauji's Call Report:                                          │
 │      ✓ Metformin 500mg: taken                                     │
 │      ✓ Amlodipine 5mg: taken                                      │
 │      Mood: good"                                                    │
+│  9. Handle re_scheduled / skip_today flags if present               │
+│  10. If retry was scheduled, cancel it                              │
 └─────────────────────────────────────────────────────────────────────┘
 ```
 
-### Response Normalization
+### TranscriptParserService (Single Source of Truth)
 
-The webhook controller normalizes Hindi/English responses:
+**Location:** `apps/api/src/integrations/elevenlabs/transcript-parser.service.ts`
 
-| Patient Says | Normalized To |
-|-------------|---------------|
-| "haan", "yes", "li hai", "le li" | `taken` |
-| "nahi", "nhi", "no", "bhool gayi" | `missed` |
-| anything else | `unclear` |
+Used by **both** ElevenLabs and Sarvam webhook controllers. This is the single source of truth for all post-call data extraction.
+
+**Input:**
+- Transcript: Array of `{ role: 'agent'|'user', message: string }` or formatted text
+- Medicines: Array of `{ brandName, nickname?, timing }`
+- Screening questions: Optional array of `{ questionId, question, dataType }`
+
+**Process:**
+1. Builds comprehensive prompt for Gemini 2.5 Flash
+2. Includes medicine names (exact brand names + nicknames as aliases)
+3. Includes screening question definitions (if asked)
+4. Sends to LLM with strict JSON schema
+
+**Output (ParsedCallData):**
+```typescript
+{
+  medicineResponses: [
+    { medicineName: "Metformin 500mg", response: "taken"|"not_taken"|"unclear" }
+  ],
+  vitalsChecked: "yes"|"no"|"not_applicable",
+  wellness: "good"|"okay"|"not_well",
+  complaints: ["knee pain", "fever"],
+  reScheduled: false,        // Patient requested reschedule
+  skipToday: false,          // Patient said "don't call today"
+  screeningAnswers: [        // Extracted answers to screening questions
+    { questionId: "diabetes_glucose", answer: "120", dataType: "number_mgdl" }
+  ]
+}
+```
+
+**Supported Answer Types:**
+- `number_mgdl` → numeric glucose reading (e.g., "120")
+- `systolic_diastolic` → BP format (e.g., "120/80")
+- `yes_no` → "yes" or "no"
+- `better_same_worse` → symptom comparison
+- `good_okay_low` → state assessment
+- `not_discussed` → question was skipped or not answered
 
 ---
 
@@ -802,9 +851,9 @@ data_collection: {
 
 ```javascript
 // LLM settings
-llm: 'gemini-1.5-flash',  // Google Gemini — fast, cheap, good multilingual support
-temperature: 0.3,          // Low = follows script closely (good for medical)
-max_tokens: 300,           // Max response per turn
+llm: 'gemini-2.5-flash',  // Google Gemini 2.5 Flash — fast, cheap, good multilingual support
+temperature: 0.3,         // Low = follows script closely (good for medical)
+max_tokens: 300,          // Max response per turn
 
 // Voice settings
 voice_id: 'TRnaQb7q41oL7sV0w6Bu',     // ElevenLabs Hindi female voice
@@ -852,7 +901,7 @@ Namaste {{patient_name}}!
 | Ask about specific medicines by name | Make prompt say "You MUST ask about each medicine by its exact name from the list" | "Kya aapne Metformin li?" |
 | Add emergency protocol | Expand `RULES` section | Specific symptom triggers |
 | Change max call duration | `max_duration_seconds` | 180 for 3 minutes |
-| Switch LLM | Change `llm` | 'gpt-4o' for better comprehension, 'gemini-1.5-flash' (current) |
+| Switch LLM | Change `llm` | 'gpt-4o' for better comprehension, 'gemini-2.5-flash' (current) |
 
 #### Step-by-Step: Making a Prompt Change
 
@@ -1064,12 +1113,191 @@ The final assembled result passed to the voice agent:
 
 ### Dual Voice Stack Support
 
-Dynamic prompts work identically across both voice stacks:
+The system supports two voice stacks, selectable via `VOICE_STACK` env var (`elevenlabs` or `sarvam`).
 
-| Stack | How Dynamic Prompt Is Injected |
-|-------|-------------------------------|
-| **ElevenLabs** | Passed as `dynamic_variables` in the outbound call API. The system prompt contains `{{placeholders}}` that ElevenLabs substitutes. Empty strings = no effect on prompt. |
-| **Sarvam** | Passed as `dynamicPrompt` JSON in the LiveKit room metadata. The Python agent's `prompt.py` builds dynamic sections into the system prompt string. `None` = falls back to static prompt. |
+#### ElevenLabs Stack
+- **Flow:** NestJS → ElevenLabs REST API → Twilio SIP → Patient phone
+- **Conversation:** ElevenLabs agent handles the entire call autonomously using Gemini LLM
+- **Transcript:** Posted back to NestJS webhook
+- **Dynamic Prompts:** Injected as `dynamic_variables` in the outbound call API. ElevenLabs substitutes `{{placeholder}}` values. Empty strings = no effect.
+
+#### Sarvam Stack (LiveKit-based)
+- **Flow:** NestJS → LiveKit → Sarvam Python agent worker → SIP trunk → Patient phone
+- **Conversation:** Python agent (`services/sarvam-agent/agent.py`) handles the call using Sarvam STT/TTS + Gemini LLM
+- **Architecture:**
+  1. NestJS creates a LiveKit room with patient metadata (including `dynamicPrompt` JSON)
+  2. Python agent worker subscribes to the room
+  3. SIP participant (patient) joins via SIP trunk
+  4. Agent starts conversation with `build_system_prompt(patient_data)` + dynamic sections
+  5. Real-time transcript captured via `conversation_item_added` event
+  6. When call ends, Python agent POSTs transcript to NestJS webhook
+- **Dynamic Prompts:** Passed as JSON in `room.metadata.dynamicPrompt`. The Python `prompt.py` builds dynamic sections directly into the system prompt string. `None` = falls back to static prompt.
+- **Supported Languages:** Hindi, Telugu, Tamil, Kannada, Malayalam, Bengali, Marathi, Gujarati, Punjabi, English (via Sarvam language mappings)
+
+**Key Differences:**
+| Aspect | ElevenLabs | Sarvam |
+|--------|-----------|--------|
+| **LLM** | Gemini Flash | Gemini Flash |
+| **TTS** | ElevenLabs v3 Conversational | Sarvam bulbul:v3 (speaker: simran) |
+| **STT** | ElevenLabs built-in | Sarvam saaras:v3 |
+| **Infrastructure** | Cloud-based agent | Self-hosted Python worker + LiveKit |
+| **Latency** | Lower (direct) | Higher (SIP + LiveKit) |
+| **Cost** | Per-minute billing | Infrastructure + metering |
+
+---
+
+## Sarvam Python Agent Implementation
+
+**File:** `services/sarvam-agent/agent.py`
+
+The Python agent is a long-running process that connects to LiveKit and handles voice conversations using the Sarvam + Gemini stack.
+
+### Architecture
+
+```
+┌────────────────────────────────────────┐
+│   NestJS SarvamAgentService            │
+│                                        │
+│   1. Create LiveKit room               │
+│   2. Set room metadata:                │
+│      - patientName                     │
+│      - medicines[]                     │
+│      - preferredLanguage               │
+│      - hasGlucometer, hasBPMonitor     │
+│      - dynamicPrompt (if enabled)      │
+│      - callId, webhookUrl              │
+│   3. Trigger SIP participant join      │
+│   4. Wait for agent to POST webhook    │
+└────────┬───────────────────────────────┘
+         │
+         ▼
+┌────────────────────────────────────────┐
+│   Sarvam Python Agent Worker           │
+│   (Cloud Run or Docker container)      │
+│                                        │
+│   1. Connect to LiveKit                │
+│   2. Wait for SIP participant          │
+│   3. Read room.metadata()              │
+│   4. Build system prompt via           │
+│      prompt.py:build_system_prompt()   │
+│   5. Create MedicineCheckAgent with:   │
+│      - Sarvam STT (saaras:v3)          │
+│      - Gemini LLM (2.5 Flash, T=0.3)   │
+│      - Sarvam TTS (bulbul:v3, simran)  │
+│   6. Start AgentSession                │
+│   7. Capture real-time transcript via  │
+│      @session.on("conversation_item_  │
+│      added") event handler             │
+│   8. When patient hangs up:            │
+│      - Collect transcript[]            │
+│      - POST to webhookUrl              │
+└────────────────────────────────────────┘
+```
+
+### Key Components
+
+#### agent.py:entrypoint()
+- Called when a new LiveKit room is dispatched
+- Waits for SIP participant to join
+- Creates `MedicineCheckAgent` instance
+- Starts `AgentSession`
+- Handles session lifecycle and transcript capture
+- POSTs to webhook when call ends
+
+#### agent.py:MedicineCheckAgent
+- Extends `livekit.agents.voice.Agent`
+- Initialized with system prompt + STT/LLM/TTS
+- Language-specific: STT/TTS mapped via `SARVAM_LANG_MAP` based on `preferredLanguage`
+- `on_enter()` triggers `agent.session.generate_reply()` for the greeting
+
+#### Transcript Capture
+Real-time transcript is captured via two fallback mechanisms:
+
+1. **Primary:** `@session.on("conversation_item_added")` event
+   - Fires when items are committed to chat history
+   - Both agent and user messages captured with role labels
+
+2. **Fallback:** `@session.on("user_input_transcribed")` and `chat_ctx` extraction
+   - If event-based capture fails, reads from `agent.chat_ctx` or `session.chat_ctx`
+   - Extracts items array and rebuilds transcript
+
+#### Webhook POST
+When the call ends:
+```python
+POST {webhook_url}
+{
+  "callId": "6990a183...",
+  "roomName": "room_abc123",
+  "transcript": [
+    { "role": "agent", "message": "Namaste Bauji! Kaise hain aap aaj?" },
+    { "role": "user", "message": "Haan beta, main theek hoon" },
+    ...
+  ],
+  "duration": 180,              # seconds
+  "terminationReason": "call_ended"
+}
+```
+
+The NestJS `SarvamWebhookController` receives this, extracts the transcript, and passes it to `TranscriptParserService` for data extraction.
+
+### System Prompt Assembly (prompt.py)
+
+**File:** `services/sarvam-agent/prompt.py`
+
+Builds the complete system prompt for the agent, supporting both static and dynamic prompt sections.
+
+```python
+def build_system_prompt(patient_data: dict) -> str:
+    # Extract patient data
+    lang_code = patient_data.get('preferredLanguage', 'hi')
+    preferred_language = LANGUAGE_MAP[lang_code]
+    patient_name = patient_data.get('patientName')
+    is_new_patient = patient_data.get('isNewPatient', False)
+    medicines = patient_data.get('medicines', [])  # List of dicts with 'name', 'timing'
+
+    # Extract dynamic prompt sections (empty strings if disabled)
+    dynamic = patient_data.get('dynamicPrompt') or {}
+    relationship_directive = dynamic.get('relationshipDirective', '')
+    tone_directive = dynamic.get('toneDirective', '')
+    flow_directive = dynamic.get('flowDirective', '')
+    context_notes = dynamic.get('contextNotes', '')
+    screening_questions = dynamic.get('screeningQuestions', '')
+
+    # Build full system prompt string
+    # Includes: language, personality, patient info, medicines,
+    # conversation flow, rules, and dynamic sections
+    return formatted_prompt
+```
+
+**Dynamic Prompt Integration:**
+The prompt includes placeholders for dynamic sections that are **directly substituted** (not using Jinja2 or handlebars). If dynamic sections are empty, the base prompt works identically to the static version.
+
+### Language Support
+
+Both STT and TTS are dynamically mapped:
+
+```python
+SARVAM_LANG_MAP = {
+    "hi": "hi-IN",    # Hindi
+    "te": "te-IN",    # Telugu
+    "ta": "ta-IN",    # Tamil
+    "kn": "kn-IN",    # Kannada
+    "ml": "ml-IN",    # Malayalam
+    "bn": "bn-IN",    # Bengali
+    "mr": "mr-IN",    # Marathi
+    "gu": "gu-IN",    # Gujarati
+    "pa": "pa-IN",    # Punjabi
+    "en": "en-IN",    # English
+}
+```
+
+### Health Check Server
+
+The Python agent also runs an HTTP health check server (port 8080 by default) for Cloud Run readiness checks:
+```
+GET /
+→ { "status": "ok", "service": "sarvam-agent-worker" }
+```
 
 ---
 
@@ -1367,8 +1595,9 @@ trial (7 days) → active → past_due (3-day grace) → expired
 #### Webhooks (External → Our API)
 | Method | Path | Auth | Description |
 |--------|------|------|-------------|
-| POST | `/webhooks/elevenlabs/post-call` | Public | ElevenLabs post-call data |
-| GET | `/webhooks/elevenlabs/post-call` | Public | Webhook verification |
+| POST | `/webhooks/elevenlabs/post-call` | Public | ElevenLabs post-call transcript + data |
+| GET | `/webhooks/elevenlabs/post-call` | Public | ElevenLabs webhook verification |
+| POST | `/webhooks/sarvam/post-call` | Public | Sarvam Python agent post-call transcript |
 | POST | `/webhooks/twilio/status` | Public | Twilio call status updates |
 | POST | `/webhooks/whatsapp/incoming` | Public | Incoming WhatsApp messages |
 
@@ -1424,14 +1653,18 @@ RAZORPAY_KEY_SECRET=
 STRIPE_SECRET_KEY=
 STRIPE_WEBHOOK_SECRET=
 
+# Google AI (Transcript parsing + dynamic prompts)
+GOOGLE_AI_API_KEY=                 # Gemini API key for post-call transcript parsing
+
 # Dynamic Prompt Assembly
-DYNAMIC_PROMPT_ENABLED=false   # Set to 'true' to enable dynamic prompt assembly globally
-VOICE_STACK=elevenlabs         # 'elevenlabs' or 'sarvam'
+DYNAMIC_PROMPT_ENABLED=false       # Set to 'true' to enable dynamic prompt assembly globally
+VOICE_STACK=elevenlabs             # 'elevenlabs' or 'sarvam'
 
 # Sarvam AI (Alternative Voice Stack)
 LIVEKIT_URL=
 LIVEKIT_API_KEY=
 LIVEKIT_API_SECRET=
+SARVAM_API_KEY=
 
 # URLs
 API_BASE_URL=http://localhost:3001
@@ -1795,6 +2028,7 @@ This is what ElevenLabs uses for the post-call webhook. Without a public URL, ca
 | **Dynamic prompt types & constants** | `apps/api/src/dynamic-prompt/types/prompt-context.types.ts` |
 | **Call scheduler** | `apps/api/src/call-scheduler/call-scheduler.service.ts` |
 | **Call orchestrator** | `apps/api/src/call-scheduler/call-orchestrator.service.ts` |
+| **Transcript parser (Gemini)** | `apps/api/src/integrations/elevenlabs/transcript-parser.service.ts` |
 | **Post-call webhook (ElevenLabs)** | `apps/api/src/integrations/elevenlabs/elevenlabs-webhook.controller.ts` |
 | **Post-call webhook (Sarvam)** | `apps/api/src/integrations/sarvam/sarvam-webhook.controller.ts` |
 | **Sarvam Python agent + prompt** | `services/sarvam-agent/agent.py`, `services/sarvam-agent/prompt.py` |
@@ -1819,7 +2053,8 @@ This is what ElevenLabs uses for the post-call webhook. Without a public URL, ca
 | Twilio Account SID | `<REDACTED>` |
 | ElevenLabs Voice (Female) | `TRnaQb7q41oL7sV0w6Bu` |
 | ElevenLabs TTS Model | `eleven_v3_conversational` |
-| ElevenLabs LLM | `gemini-1.5-flash` |
+| ElevenLabs LLM (Agent) | `gemini-2.5-flash` |
+| Post-Call Parser LLM | `gemini-2.5-flash` |
 | Test Patient (Bauji) | `6990a18304607c6995d78b49` |
 | Test Patient (Surya) | `69918c72fe77af5a45ab34a9` (Telugu) |
 | GCP Project | `discipline-ai-health` |

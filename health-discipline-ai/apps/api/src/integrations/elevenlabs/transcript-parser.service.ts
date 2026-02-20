@@ -1,20 +1,28 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 
-interface ParsedCallData {
+export interface ScreeningQuestionInput {
+  questionId: string;
+  question: string;
+  dataType: string;
+}
+
+export interface ParsedCallData {
   medicineResponses: Array<{ medicineName: string; response: string }>;
   vitalsChecked: string | null;
   wellness: string | null;
   complaints: string[];
   reScheduled: boolean;
+  skipToday: boolean;
+  screeningAnswers: Array<{ questionId: string; answer: string; dataType: string }>;
 }
 
 /**
- * Post-call transcript parser using Gemini 2.0 Flash.
+ * Post-call transcript parser using Gemini 2.5 Flash.
  *
- * Takes raw transcript + medicine list → structured extraction.
- * This is more reliable than ElevenLabs data_collection because the LLM
- * can understand nicknames, Hindi/Telugu words, and map them back to brand names.
+ * Single source of truth for ALL post-call data extraction.
+ * Takes raw transcript + medicine list + screening questions → structured JSON.
+ * Used by both ElevenLabs and Sarvam webhook controllers.
  */
 @Injectable()
 export class TranscriptParserService {
@@ -29,6 +37,7 @@ export class TranscriptParserService {
   async parseTranscript(
     transcript: string,
     medicines: Array<{ brandName: string; nickname?: string; timing: string }>,
+    screeningQuestions?: ScreeningQuestionInput[],
   ): Promise<ParsedCallData | null> {
     if (!this.apiKey) {
       this.logger.warn('GOOGLE_AI_API_KEY not configured, skipping LLM parse');
@@ -40,45 +49,144 @@ export class TranscriptParserService {
     }
 
     const medicineList = medicines
-      .map((m) => `${m.brandName} (${m.timing})${m.nickname ? ` — also called "${m.nickname}"` : ''}`)
+      .map((m, i) => `  ${i + 1}. ${m.brandName} (${m.timing})${m.nickname ? ` — nickname: "${m.nickname}"` : ''}`)
       .join('\n');
 
-    const prompt = `You are a medical call data extractor. Analyze this phone call transcript between an AI assistant and a patient. The call was about checking whether the patient took their medicines today.
+    // Build screening questions section
+    let screeningSection = '';
+    let screeningJsonSchema = '';
+    if (screeningQuestions && screeningQuestions.length > 0) {
+      const questionList = screeningQuestions
+        .map((q) => `  - ID: "${q.questionId}" | Type: ${q.dataType} | Question: "${q.question}"`)
+        .join('\n');
 
-MEDICINES LIST (use these EXACT brand names in output):
+      screeningSection = `
+SCREENING QUESTIONS (asked during this call — extract patient's answers):
+${questionList}
+
+Answer format by data type:
+  number_mgdl → numeric value as string, e.g. "120", "95"
+  systolic_diastolic → "120/80" format
+  yes_no → "yes" or "no"
+  better_same_worse → "better", "same", or "worse"
+  good_okay_low → "good", "okay", or "low"
+  not_discussed → question was skipped or patient didn't answer`;
+
+      screeningJsonSchema = `,
+  "screening_answers": [
+    { "question_id": "<exact ID from above>", "answer": "<extracted answer or not_discussed>" }
+  ]`;
+    }
+
+    const prompt = `You are a multilingual medical transcript analyst. Your job is to extract structured data from a phone call between an AI health companion ("Assistant") and an elderly patient ("Patient") in India.
+
+The call's purpose: check whether the patient took their prescribed medicines today, ask about vitals, and note any health complaints.
+
+MEDICINES PRESCRIBED (use these EXACT brand names in your output — never nicknames or translations):
 ${medicineList}
 
 TRANSCRIPT:
 ${transcript}
+${screeningSection}
 
-Extract the following as JSON. Use ONLY the brand names from the medicines list above — never nicknames, translations, or Hindi/Telugu words.
-
+OUTPUT FORMAT — return ONLY this JSON, no explanation:
 {
   "medicine_responses": [
-    { "name": "<EXACT brand name>", "response": "taken" | "not_taken" | "unclear" }
+    { "name": "<EXACT brand name from list>", "response": "taken" | "not_taken" | "unclear" }
   ],
   "vitals_checked": "yes" | "no" | "not_applicable",
   "wellness": "good" | "okay" | "not_well",
-  "complaints": ["complaint1 in English"] or [],
-  "re_scheduled": true | false
+  "complaints": ["<complaint in English>"] or [],
+  "re_scheduled": true | false,
+  "skip_today": true | false${screeningJsonSchema}
 }
 
-Rules:
-- TAKEN: patient confirmed taking it
-  Hindi: haan, le liya, kha liya, li hai, le li, kha li | Telugu: veskunna, teeskunna, thinna | Tamil: eduthuten, saapten | Kannada: thogondidini | Bengali: kheye niyechi | Marathi: ghetla, khalla | English: yes, taken
-- TAKEN ALL: patient said they took ALL medicines → mark EVERY medicine as "taken"
-  Hindi: sab le liya, saari le li, sab kha li | Telugu: anni veskunna, anni teeskunna | Tamil: ellam eduthuten, ellam saapten | Kannada: ella thogondidini | Bengali: sob kheye niyechi | Marathi: sagla ghetla | English: took all, all taken
-- NOT TAKEN: patient said no or missed
-  Hindi: nahi, nahi liya, bhool gaya, nahi khayi | Telugu: ledhu, veskoledhu, marchipoya | Tamil: illa, edukala, marandhuten | Kannada: illa, thogondilla | Bengali: na, khaini, bhule gechi | Marathi: nahi, ghetla nahi | English: no, missed, forgot
-- NOT TIME YET → mark "not_taken" (they haven't taken it)
-  Hindi: abhi time nahi hua, abhi raat nahi hui, baad mein lungi | Telugu: inka time kaale, tarvata vestanu | Tamil: innum time aagala, appuram edupeen | English: not time yet, will take later
-- re_scheduled: true if patient asked to call back later or said they are busy
-  Hindi: baad mein call karo, abhi busy hoon | Telugu: tarvata call cheyandi, ippudu busy | Tamil: appuram call pannunga, ippodhu busy | English: call me later, I am busy
-- If unclear or not discussed, mark "unclear"
-- Map nicknames to brand names: "BP tablet"/"BP ki goli" = Amlodipine, "sugar tablet"/"sugar ki goli" = Metformin, etc.
-- vitals_checked: "not_applicable" if patient has no glucometer/BP monitor
-- complaints: translate to English. "none" if no complaints
-- Return ONLY valid JSON, no markdown or explanation`;
+EXTRACTION RULES:
+
+1. MEDICINE RESPONSES — classify each medicine into exactly one category:
+
+   TAKEN — patient confirms they took it:
+     Hindi: haan, le liya, le li, kha liya, kha li, li hai, liya hai, liya tha, kha li thi
+     Telugu: veskunna, veskunnanu, teeskunna, thinna, teeskunnanu
+     Tamil: eduthuten, eduthukitten, saapten, saappittein
+     Kannada: thogondidini, thogondenu, thogothini
+     Bengali: kheye niyechi, niyechi, kheyelam
+     Marathi: ghetla, ghetli, khalla, khalli
+     English: yes, taken, I took it, had it, done
+
+   TAKEN ALL — patient says they took ALL medicines at once → mark EVERY medicine as "taken":
+     Hindi: sab le liya, saari le li, sab kha li, saare le liye, sab ho gaya
+     Telugu: anni veskunna, anni teeskunna, annee thinna, antha ayyindi
+     Tamil: ellam eduthuten, ellam saapten, ellam eduthukitten
+     Kannada: ella thogondidini, ella tablets thogondidini
+     Bengali: sob kheye niyechi, sob niyechi
+     Marathi: sagla ghetla, sagli ghetli, sagla khalla
+     English: took all, all taken, took everything, all done, yes all of them
+
+   NOT TAKEN — patient missed or forgot:
+     Hindi: nahi, nahi liya, nahi li, bhool gaya, bhool gayi, nahi khayi, nahi khaya
+     Telugu: ledhu, veskoledhu, marchipoya, teeskoledhu, thinnaledhu
+     Tamil: illa, edukala, marandhuten, saapidala, edukkalai
+     Kannada: illa, thogondilla, marethidini
+     Bengali: na, khaini, bhule gechi, khaini to
+     Marathi: nahi, ghetla nahi, visarlo, khalla nahi
+     English: no, missed, forgot, didn't take, haven't taken
+
+   NOT TIME YET — medicine is for later (night/evening) → mark as "not_taken":
+     Hindi: abhi time nahi hua, baad mein lungi, raat ko lungi, woh toh raat ki hai, abhi nahi
+     Telugu: inka time kaale, tarvata vestanu, adi night tablet, inka time avvaledhu
+     Tamil: innum time aagala, appuram edupeen, adhu night tablet
+     Kannada: innu time aagilla, mele thogothini
+     Bengali: ekhono shomoy hoyni, pore khabo
+     Marathi: ajun time nahi zhala, nantar ghein
+     English: not time yet, will take later, that's for night, evening one not yet
+
+   UNCLEAR — not discussed, ambiguous, or you can't determine → "unclear"
+
+   IMPORTANT:
+   - If patient says "all taken" / "sab le liya", mark EVERY medicine as "taken"
+   - Map nicknames to brand names: "BP ki goli" / "BP tablet" → the BP medicine in the list; "sugar ki goli" → Metformin/diabetes medicine
+   - One medicine, one response. Include ALL medicines from the list, even if not discussed (mark those "unclear")
+
+2. VITALS:
+   - "yes" if patient said they checked BP/sugar/glucose today
+   - "no" if they have the device but didn't check
+   - "not_applicable" if no glucometer and no BP monitor, or vitals not discussed
+
+3. WELLNESS — patient's overall mood/state during the call:
+   - "good" — cheerful, happy, normal, fine, feeling well
+   - "okay" — neutral, so-so, not great but not bad, theek hai, chalra hai
+   - "not_well" — complaints, pain, tiredness, sadness, low energy, worried
+
+4. COMPLAINTS — any health issues mentioned by the patient:
+   - Translate to English: "sar mein dard" → "headache", "bukhar" → "fever"
+   - Empty array [] if no complaints or patient said "sab theek hai"
+   - Don't include "didn't take medicine" as a complaint
+
+5. RE_SCHEDULED:
+   - true if patient asked to be called back later or said they're busy
+     Hindi: baad mein call karo, abhi busy hoon, baad mein baat karte hain
+     Telugu: tarvata call cheyandi, ippudu busy
+     Tamil: appuram call pannunga, ippodhu busy
+     Kannada: amele call maadi, iga busy
+     Bengali: pore call korun, ekhon busy
+     Marathi: nantar call kara, ata busy aahe
+     English: call me later, I'm busy, not now, call back
+   - false otherwise
+
+6. SKIP_TODAY — patient explicitly asked NOT to be called again today (different from re_scheduled):
+   - true if patient said:
+     Hindi: aaj mat karo, aaj nahi chahiye, aaj chhod do, aaj band karo
+     Telugu: ee roju vaddu, ee roju call cheyakandi
+     Tamil: innikku vendaam, innikku call pannaadheenga
+     Kannada: ivattu beda, ivattu call maadabedi
+     Bengali: aaj korben na, aaj darkar nei
+     Marathi: aaj nako, aaj call karu naka
+     English: don't call today, not today, skip today, no calls today
+   - false otherwise
+   - If both re_scheduled and skip_today seem true, prefer skip_today (patient doesn't want any more calls today)
+
+Return ONLY valid JSON.`;
 
     try {
       const response = await fetch(
@@ -90,7 +198,7 @@ Rules:
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               temperature: 0.1,
-              maxOutputTokens: 500,
+              maxOutputTokens: 1000,
               responseMimeType: 'application/json',
             },
           }),
@@ -113,6 +221,21 @@ Rules:
 
       const parsed = JSON.parse(text);
 
+      // Map screening answers back with their dataType
+      const screeningAnswers: Array<{ questionId: string; answer: string; dataType: string }> = [];
+      if (parsed.screening_answers && screeningQuestions) {
+        for (const sa of parsed.screening_answers) {
+          const qDef = screeningQuestions.find((q) => q.questionId === sa.question_id);
+          if (qDef && sa.answer && sa.answer !== 'not_discussed') {
+            screeningAnswers.push({
+              questionId: sa.question_id,
+              answer: sa.answer,
+              dataType: qDef.dataType,
+            });
+          }
+        }
+      }
+
       return {
         medicineResponses: (parsed.medicine_responses || []).map((m: any) => ({
           medicineName: m.name,
@@ -124,6 +247,8 @@ Rules:
           ? parsed.complaints.filter((c: string) => c && c !== 'none')
           : [],
         reScheduled: parsed.re_scheduled === true || parsed.re_scheduled === 'true',
+        skipToday: parsed.skip_today === true || parsed.skip_today === 'true',
+        screeningAnswers,
       };
     } catch (error: any) {
       this.logger.error(`Transcript parse error: ${error.message}`);

@@ -44,6 +44,7 @@ export class SarvamAgentService {
       hasGlucometer: boolean;
       hasBPMonitor: boolean;
       preferredLanguage: string;
+      callTiming?: string;
     },
     dynamicPrompt?: DynamicPromptResult | null,
   ): Promise<{ conversationId: string; callSid: string }> {
@@ -67,6 +68,7 @@ export class SarvamAgentService {
       hasGlucometer: patientData.hasGlucometer,
       hasBPMonitor: patientData.hasBPMonitor,
       preferredLanguage: patientData.preferredLanguage,
+      callTiming: patientData.callTiming || 'morning',
       webhookUrl: `${apiBaseUrl}/api/v1/webhooks/sarvam/post-call`,
       // Dynamic prompt context (null when disabled — Python agent falls back to static prompt)
       dynamicPrompt: dynamicPrompt

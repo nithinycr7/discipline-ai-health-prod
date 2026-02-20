@@ -190,4 +190,11 @@ export class PatientsService {
   async getActivePatients(): Promise<PatientDocument[]> {
     return this.patientModel.find({ isPaused: false, phoneStatus: 'valid' });
   }
+
+  async getPausedPatientsWithExpiry(): Promise<PatientDocument[]> {
+    return this.patientModel.find({
+      isPaused: true,
+      pausedUntil: { $exists: true, $lte: new Date() },
+    });
+  }
 }

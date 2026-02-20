@@ -17,7 +17,7 @@ export class User {
   @Prop({ required: true })
   name: string;
 
-  @Prop({ required: true, enum: ['payer', 'hospital_admin', 'monitor'] })
+  @Prop({ required: true, enum: ['payer', 'hospital_admin', 'monitor', 'super_admin'] })
   role: string;
 
   @Prop()
@@ -57,6 +57,9 @@ export class User {
 
   @Prop({ default: false })
   phoneVerified: boolean;
+
+  @Prop({ enum: ['test', 'normal'], default: 'test' })
+  tag: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

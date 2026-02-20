@@ -30,7 +30,6 @@ from livekit.agents import AutoSubscribe, JobContext, WorkerOptions, cli
 from livekit.agents.voice import Agent, AgentSession
 from livekit.plugins import google, sarvam
 
-from data_extractor import extract_call_data
 from prompt import build_system_prompt
 
 load_dotenv()
@@ -247,13 +246,8 @@ async def entrypoint(ctx: JobContext):
         f"transcript_entries={len(transcript)}"
     )
 
-    # Extract structured data from transcript using Gemini
-    google_api_key = os.environ.get("GOOGLE_API_KEY", "")
-    extracted = await extract_call_data(transcript, google_api_key)
-
-    logger.info(f"Extracted data: {extracted}")
-
-    # POST results to NestJS webhook
+    # POST transcript to NestJS webhook — all data extraction happens server-side
+    # via TranscriptParserService (Gemini)
     if webhook_url:
         try:
             async with httpx.AsyncClient(timeout=30) as client:
@@ -263,11 +257,6 @@ async def entrypoint(ctx: JobContext):
                         "callId": call_id,
                         "roomName": room_name,
                         "transcript": transcript,
-                        "medicineResponses": extracted.get("medicine_responses", ""),
-                        "vitalsChecked": extracted.get("vitals_checked", ""),
-                        "wellness": extracted.get("wellness", ""),
-                        "complaints": extracted.get("complaints", "none"),
-                        "re_scheduled": extracted.get("re_scheduled", "false"),
                         "duration": call_duration,
                         "terminationReason": "call_ended",
                     },
@@ -278,7 +267,7 @@ async def entrypoint(ctx: JobContext):
         except Exception as e:
             logger.error(f"Failed to POST webhook: {e}")
     else:
-        logger.warn("No webhookUrl in metadata, skipping post-call report")
+        logger.warning("No webhookUrl in metadata, skipping post-call report")
 
 
 # --- Cloud Run health check server ---

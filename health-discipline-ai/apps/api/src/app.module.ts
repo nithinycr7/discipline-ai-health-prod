@@ -19,6 +19,7 @@ import { HealthModule } from './health/health.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { DistributedLockModule } from './distributed-lock/distributed-lock.module';
 import { FirebaseAdminModule } from './firebase/firebase-admin.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { FirebaseAdminModule } from './firebase/firebase-admin.module';
     NotificationsModule,
     HealthModule,
     WebhooksModule,
+    AdminModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

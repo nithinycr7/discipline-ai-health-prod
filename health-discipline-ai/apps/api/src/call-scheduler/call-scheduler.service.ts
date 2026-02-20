@@ -109,16 +109,14 @@ export class CallSchedulerService {
     }
   }
 
-  @Cron(CronExpression.EVERY_DAY_AT_MIDNIGHT)
+  @Cron('0 */30 * * * *') // Every 30 minutes (skip_today pauses expire mid-day, not just midnight)
   async checkPausedPatients() {
     const ran = await this.lockService.withLock('cron:checkPausedPatients', 600, async () => {
       try {
-        const patients = await this.patientsService.getActivePatients();
+        const patients = await this.patientsService.getPausedPatientsWithExpiry();
         for (const patient of patients) {
-          if (patient.isPaused && patient.pausedUntil && new Date() >= patient.pausedUntil) {
-            await this.patientsService.resume(patient._id.toString(), patient.userId.toString());
-            this.logger.log(`Auto-resumed patient ${patient._id}`);
-          }
+          await this.patientsService.resume(patient._id.toString(), patient.userId.toString());
+          this.logger.log(`Auto-resumed patient ${patient._id} (pausedUntil expired)`);
         }
       } catch (error) {
         this.logger.error('Error checking paused patients', error.stack);

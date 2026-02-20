@@ -148,6 +148,9 @@ export class Call {
   @Prop({ type: [String], default: [] })
   screeningQuestionsAsked: string[];
 
+  @Prop({ type: [Object], default: [] })
+  screeningAnswers: Array<{ questionId: string; answer: string; dataType: string }>;
+
   @Prop({ default: false })
   reScheduled: boolean;
 }

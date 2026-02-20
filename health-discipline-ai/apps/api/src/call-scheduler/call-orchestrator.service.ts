@@ -1,5 +1,6 @@
 import { Injectable, Logger, Inject, forwardRef } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
+import { DateTime } from 'luxon';
 import { CallsService } from '../calls/calls.service';
 import { MedicinesService } from '../medicines/medicines.service';
 import { PatientsService } from '../patients/patients.service';
@@ -108,6 +109,7 @@ export class CallOrchestratorService {
         hasGlucometer: patient.hasGlucometer,
         hasBPMonitor: patient.hasBPMonitor,
         preferredLanguage: patient.preferredLanguage || 'hi',
+        callTiming: timing,
       };
 
       // Dynamic prompt assembly (if enabled)
@@ -214,6 +216,7 @@ export class CallOrchestratorService {
         hasGlucometer: patient.hasGlucometer,
         hasBPMonitor: patient.hasBPMonitor,
         preferredLanguage: patient.preferredLanguage || 'hi',
+        callTiming: this.getCurrentCallTiming(),
       };
 
       // Dynamic prompt assembly (if enabled)
@@ -281,6 +284,17 @@ export class CallOrchestratorService {
       );
       throw error;
     }
+  }
+
+  /**
+   * Determine the call timing slot based on the current IST hour.
+   */
+  private getCurrentCallTiming(): string {
+    const hour = DateTime.now().setZone('Asia/Kolkata').hour;
+    if (hour >= 5 && hour < 12) return 'morning';
+    if (hour >= 12 && hour < 17) return 'afternoon';
+    if (hour >= 17 && hour < 21) return 'evening';
+    return 'night';
   }
 
   /**

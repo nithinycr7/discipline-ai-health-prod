@@ -1,23 +1,22 @@
 import { Controller, Post, Body, Logger, Get } from '@nestjs/common';
 import { ApiTags, ApiExcludeEndpoint } from '@nestjs/swagger';
+import { DateTime } from 'luxon';
 import { Public } from '../../common/decorators/public.decorator';
 import { CallsService } from '../../calls/calls.service';
 import { PatientsService } from '../../patients/patients.service';
 import { MedicinesService } from '../../medicines/medicines.service';
 import { NotificationsService } from '../../notifications/notifications.service';
 import { ElevenLabsAgentService } from './elevenlabs-agent.service';
-import { TranscriptParserService } from './transcript-parser.service';
+import { TranscriptParserService, ScreeningQuestionInput } from './transcript-parser.service';
 import { RetryHandlerService } from '../../call-scheduler/retry-handler.service';
+import { SCREENING_SCHEDULE } from '../../dynamic-prompt/types/prompt-context.types';
 
 /**
  * ElevenLabs Post-Call Webhook Controller
  *
- * After each AI voice call completes, ElevenLabs sends a POST webhook with
- * the same structure as GET /convai/conversations/{id}:
- *   - transcript[]
- *   - analysis.data_collection_results (medicine_responses, vitals, wellness, complaints)
- *   - metadata (call_duration_secs, termination_reason, etc.)
- *   - conversation_initiation_client_data.dynamic_variables (call_id, patient_name, etc.)
+ * After each AI voice call completes, ElevenLabs sends a POST webhook.
+ * The transcript is passed to TranscriptParserService (Gemini) which extracts
+ * all structured data (medicines, vitals, wellness, complaints, re_scheduled).
  *
  * The payload may arrive raw or wrapped in { type, event_timestamp, data: {...} }.
  */
@@ -56,8 +55,6 @@ export class ElevenLabsWebhookController {
         payload.conversation_initiation_client_data?.dynamic_variables?.call_id;
 
       const transcript = payload.transcript || [];
-      const analysis = payload.analysis || {};
-      const dcResults = analysis.data_collection_results || {};
       const metadata = payload.metadata || {};
 
       if (!callId) {
@@ -67,62 +64,40 @@ export class ElevenLabsWebhookController {
         return { received: true, warning: 'no_call_id' };
       }
 
-      // Parse extracted data from analysis.data_collection_results
-      // Each field has { value, rationale, ... } — we read .value
-      const medicineResponsesStr = dcResults.medicine_responses?.value || '';
-      let vitalsChecked = dcResults.vitals_checked?.value || null;
-      let wellness = dcResults.wellness?.value || dcResults.mood?.value || null;
-      const complaintsStr = dcResults.complaints?.value || '';
-      const reScheduled = dcResults.re_scheduled?.value === 'true';
-
-      // Parse medicine string: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
-      const medicineResponses = this.parseMedicineString(medicineResponsesStr);
-
-      // Parse complaints string: "fever, headache" or "none"
-      let complaints = this.parseComplaintsString(complaintsStr);
-
-      // Build transcript text
+      // Build transcript text for LLM extraction
       const transcriptText = this.buildTranscriptText(transcript);
 
       // Fetch the call record
       const call = await this.callsService.findById(callId);
 
-      // Update each medicine's response on the existing medicinesChecked array.
-      // The AI may transliterate names (e.g. "Hp1" → "Hp ek", "Hp one"),
-      // so we use fuzzy matching: normalize both strings, then check containment.
-      if (call.medicinesChecked && call.medicinesChecked.length > 0) {
-        for (const existingMed of call.medicinesChecked) {
-          const match = medicineResponses.find((mr) =>
-            this.fuzzyMedicineMatch(
-              mr.medicineName,
-              existingMed.nickname || existingMed.medicineName || '',
-              existingMed.medicineName || '',
-            ),
-          );
-          if (match) {
-            existingMed.response = match.response;
-            existingMed.timestamp = new Date();
-          }
-        }
-
-        // If only one medicine and one response, force-match regardless of name
-        if (
-          call.medicinesChecked.length === 1 &&
-          medicineResponses.length === 1 &&
-          call.medicinesChecked[0].response === 'pending'
-        ) {
-          call.medicinesChecked[0].response = medicineResponses[0].response;
-          call.medicinesChecked[0].timestamp = new Date();
-        }
+      // Idempotency: skip if call already processed (duplicate webhook)
+      if (['completed', 'no_answer'].includes(call.status)) {
+        this.logger.warn(`Call ${callId} already in status '${call.status}', skipping duplicate webhook`);
+        return { received: true, callId, conversationId, status: call.status, duplicate: true };
       }
 
-      // LLM transcript parser: if any medicines still pending, use Gemini to re-extract
-      const hasPending = call.medicinesChecked?.some((m) => m.response === 'pending');
-      if (hasPending && transcriptText) {
+      // Extract ALL data from transcript via Gemini parser (single source of truth)
+      let vitalsChecked: string | null = null;
+      let wellness: string | null = null;
+      let complaints: string[] = [];
+      let reScheduled = false;
+      let skipToday = false;
+      let screeningAnswers: Array<{ questionId: string; answer: string; dataType: string }> = [];
+
+      if (transcriptText) {
         try {
           const medicines = await this.medicinesService.findByPatient(
             call.patientId.toString(),
           );
+
+          // Build screening question inputs from IDs stored on the call record
+          const screeningQuestions: ScreeningQuestionInput[] = (call.screeningQuestionsAsked || [])
+            .map((qId: string) => {
+              const def = SCREENING_SCHEDULE.find((q) => q.id === qId);
+              return def ? { questionId: def.id, question: def.question, dataType: def.dataType } : null;
+            })
+            .filter(Boolean) as ScreeningQuestionInput[];
+
           const llmResult = await this.transcriptParser.parseTranscript(
             transcriptText,
             medicines.map((m: any) => ({
@@ -130,37 +105,48 @@ export class ElevenLabsWebhookController {
               nickname: m.nicknames?.[0] || undefined,
               timing: m.timing,
             })),
+            screeningQuestions.length > 0 ? screeningQuestions : undefined,
           );
 
           if (llmResult) {
-            // Update pending medicines with LLM results
-            for (const existingMed of call.medicinesChecked || []) {
-              if (existingMed.response !== 'pending') continue;
-              const llmMatch = llmResult.medicineResponses.find(
-                (lr) =>
-                  lr.medicineName.toLowerCase() ===
-                  existingMed.medicineName.toLowerCase(),
-              );
-              if (llmMatch) {
-                existingMed.response = llmMatch.response;
-                existingMed.timestamp = new Date();
+            // Update medicines from LLM results
+            if (call.medicinesChecked && call.medicinesChecked.length > 0) {
+              for (const existingMed of call.medicinesChecked) {
+                const llmMatch = llmResult.medicineResponses.find(
+                  (lr) =>
+                    lr.medicineName.toLowerCase() ===
+                    existingMed.medicineName.toLowerCase(),
+                );
+                if (llmMatch) {
+                  existingMed.response = llmMatch.response;
+                  existingMed.timestamp = new Date();
+                }
+              }
+
+              // If only one medicine and one response, force-match regardless of name
+              if (
+                call.medicinesChecked.length === 1 &&
+                llmResult.medicineResponses.length === 1 &&
+                call.medicinesChecked[0].response === 'pending'
+              ) {
+                call.medicinesChecked[0].response = llmResult.medicineResponses[0].response;
+                call.medicinesChecked[0].timestamp = new Date();
               }
             }
 
-            // Also use LLM wellness/complaints if ElevenLabs didn't extract them
-            if (!wellness && llmResult.wellness) {
-              wellness = llmResult.wellness;
-            }
-            if (complaints.length === 0 && llmResult.complaints.length > 0) {
-              complaints = llmResult.complaints;
-            }
-            if (!vitalsChecked && llmResult.vitalsChecked) {
-              vitalsChecked = llmResult.vitalsChecked;
-            }
-            this.logger.log(`LLM parser resolved pending medicines`);
+            vitalsChecked = llmResult.vitalsChecked;
+            wellness = llmResult.wellness;
+            complaints = llmResult.complaints;
+            reScheduled = llmResult.reScheduled;
+            skipToday = llmResult.skipToday;
+            screeningAnswers = llmResult.screeningAnswers;
+            this.logger.log(
+              `Transcript parser extracted all data for call ${callId}` +
+                (screeningAnswers.length > 0 ? `, screening=${screeningAnswers.length}` : ''),
+            );
           }
         } catch (llmErr: any) {
-          this.logger.warn(`LLM transcript parse failed: ${llmErr.message}`);
+          this.logger.warn(`Transcript parse failed: ${llmErr.message}`);
         }
       }
 
@@ -190,9 +176,11 @@ export class ElevenLabsWebhookController {
       const totalCharges = Math.round((twilioCharges + elevenlabsCharges) * 100) / 100;
 
       // Determine if call was effectively unanswered
+      // skipToday must be excluded — patient explicitly answered and refused calls today
       const allPending = call.medicinesChecked?.every((m) => m.response === 'pending') ?? true;
       const isNoAnswer =
         !reScheduled &&
+        !skipToday &&
         allPending &&
         (durationSecs < 30 ||
           /no.?answer|voicemail|unanswered|caller_did_not/i.test(terminationReason));
@@ -227,6 +215,7 @@ export class ElevenLabsWebhookController {
         elevenlabsCostCredits,
         totalCharges,
         reScheduled,
+        screeningAnswers: screeningAnswers.length > 0 ? screeningAnswers : undefined,
       } as any);
 
       // If no_answer, trigger retry and skip post-call processing
@@ -270,8 +259,29 @@ export class ElevenLabsWebhookController {
         this.logger.warn(`Post-call notification failed: ${notifErr.message}`);
       }
 
-      // Schedule retry if patient asked to be called later
-      if (reScheduled) {
+      // Handle "skip today" — patient doesn't want any more calls today
+      if (skipToday) {
+        try {
+          // Pause patient until end of today IST (23:59:59)
+          const pauseUntilUTC = DateTime.now()
+            .setZone('Asia/Kolkata')
+            .endOf('day')
+            .toJSDate();
+
+          await this.patientsService.pause(
+            patient._id.toString(),
+            patient.userId.toString(),
+            'patient_skip_today',
+            pauseUntilUTC,
+          );
+          this.logger.log(
+            `Patient ${patient._id} paused until end of today (skip_today) for call ${callId}`,
+          );
+        } catch (pauseErr: any) {
+          this.logger.warn(`Failed to pause patient for skip_today: ${pauseErr.message}`);
+        }
+      } else if (reScheduled) {
+        // Schedule retry if patient asked to be called later (but NOT if skip_today)
         try {
           await this.retryHandler.handleReScheduled(callId);
           this.logger.log(`Retry scheduled for reScheduled call ${callId}`);
@@ -280,18 +290,19 @@ export class ElevenLabsWebhookController {
         }
       }
 
+      const medicinesResolved = call.medicinesChecked?.filter((m) => m.response !== 'pending').length || 0;
       this.logger.log(
         `Post-call processed: call=${callId}, ` +
-          `medicines=${medicineResponses.length}, wellness=${wellness}, ` +
+          `medicines=${medicinesResolved}, wellness=${wellness}, ` +
           `vitals=${vitalsChecked}, complaints=${complaints.length}, ` +
-          `duration=${durationSecs}s, cost=₹${totalCharges}, reScheduled=${reScheduled}`,
+          `duration=${durationSecs}s, cost=₹${totalCharges}, reScheduled=${reScheduled}, skipToday=${skipToday}`,
       );
 
       return {
         received: true,
         callId,
         conversationId,
-        medicinesProcessed: medicineResponses.length,
+        medicinesProcessed: medicinesResolved,
       };
     } catch (error: any) {
       this.logger.error(`Post-call webhook error: ${error.message}`, error.stack);
@@ -304,104 +315,6 @@ export class ElevenLabsWebhookController {
   @ApiExcludeEndpoint()
   async verifyWebhook() {
     return { status: 'ok', service: 'health-discipline-elevenlabs-webhook' };
-  }
-
-  /**
-   * Parse ElevenLabs medicine response string.
-   * Format: "HP120:taken, Ecosprin:not_taken, Metformin:unclear"
-   */
-  private parseMedicineString(
-    str: string,
-  ): Array<{ medicineName: string; response: string }> {
-    if (!str || str === 'null' || str === 'undefined') return [];
-
-    return str
-      .split(',')
-      .map((part) => part.trim())
-      .filter((part) => part.includes(':'))
-      .map((part) => {
-        const colonIdx = part.indexOf(':');
-        const name = part.substring(0, colonIdx).trim();
-        const rawResponse = part.substring(colonIdx + 1).trim();
-        return {
-          medicineName: name,
-          response: this.normalizeResponse(rawResponse),
-        };
-      });
-  }
-
-  /**
-   * Parse complaints string: "fever, headache" or "none"
-   */
-  private parseComplaintsString(str: string): string[] {
-    if (!str || str === 'none' || str === 'null' || str === 'undefined') {
-      return [];
-    }
-    return str
-      .split(',')
-      .map((c) => c.trim())
-      .filter((c) => c && c !== 'none');
-  }
-
-  private normalizeResponse(response: string): string {
-    const lower = response.toLowerCase().trim();
-    // Check not_taken BEFORE taken — "not_taken" contains "taken"
-    if (
-      lower.includes('not_taken') ||
-      lower.includes('missed') ||
-      lower === 'no' ||
-      lower.includes('nahi') ||
-      lower.includes('bhool')
-    ) {
-      return 'missed';
-    }
-    if (
-      lower.includes('taken') ||
-      lower === 'yes' ||
-      lower.includes('li hai') ||
-      lower.includes('le li') ||
-      lower.includes('haan')
-    ) {
-      return 'taken';
-    }
-    return 'unclear';
-  }
-
-  /**
-   * Fuzzy match an extracted medicine name against stored names.
-   * Handles transliterations like "Hp ek" vs "Hp1", "Hp one" vs "Hp1".
-   */
-  private fuzzyMedicineMatch(
-    extracted: string,
-    nickname: string,
-    brandName: string,
-  ): boolean {
-    const norm = (s: string) =>
-      s
-        .toLowerCase()
-        .replace(/\bone\b/g, '1')
-        .replace(/\btwo\b/g, '2')
-        .replace(/\bthree\b/g, '3')
-        .replace(/\bek\b/g, '1')
-        .replace(/\bdo\b/g, '2')
-        .replace(/\bteen\b/g, '3')
-        .replace(/[^a-z0-9]/g, '');
-
-    const ext = norm(extracted);
-    const nick = norm(nickname);
-    const brand = norm(brandName);
-
-    if (!ext) return false;
-
-    // Exact after normalization
-    if (nick && ext === nick) return true;
-    if (brand && ext === brand) return true;
-
-    // One contains the other (only when both sides are non-empty)
-    if (nick && (ext.includes(nick) || nick.includes(ext))) return true;
-    if (brand && (ext.includes(brand) || brand.includes(ext))) return true;
-
-    return false;
   }
 
   private buildTranscriptText(transcript: any[]): string {
