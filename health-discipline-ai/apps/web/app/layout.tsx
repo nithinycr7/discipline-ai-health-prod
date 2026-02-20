@@ -8,7 +8,10 @@ const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfa
 
 export const metadata: Metadata = {
   metadataBase: new URL('https://echocare.ai'),
-  title: 'Health Discipline AI — Know How Your Parents Are Really Doing',
+  title: {
+    default: 'EchoCare AI — Know How Your Parents Are Really Doing',
+    template: '%s | EchoCare AI',
+  },
   description:
     'A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report. No app needed. 11 Indian languages.',
   keywords: [
@@ -20,22 +23,46 @@ export const metadata: Metadata = {
     'parent wellness tracker',
     'mood and health monitoring',
     'senior care technology',
+    'echocare',
+    'medicine reminder for parents',
+    'elderly care app India',
+    'AI health companion',
+    'voice call health check',
   ],
+  authors: [{ name: 'EchoCare AI', url: 'https://echocare.ai' }],
+  creator: 'EchoCare AI',
+  publisher: 'EchoCare AI',
+  alternates: {
+    canonical: '/',
+  },
   openGraph: {
-    title: 'Health Discipline AI — Know How Your Parents Are Really Doing',
+    title: 'EchoCare AI — Know How Your Parents Are Really Doing',
     description:
       'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth. No app needed.',
     type: 'website',
     locale: 'en_IN',
-    siteName: 'Health Discipline AI',
-    images: [{ url: '/og-image.png', width: 1200, height: 630 }],
+    siteName: 'EchoCare AI',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'EchoCare AI — Daily wellness calls for your parents' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'Health Discipline AI — Know How Your Parents Are Really Doing',
+    title: 'EchoCare AI — Know How Your Parents Are Really Doing',
     description:
       'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth.',
+    images: ['/og-image.png'],
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      'max-video-preview': -1,
+      'max-image-preview': 'large',
+      'max-snippet': -1,
+    },
+  },
+  verification: {},
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

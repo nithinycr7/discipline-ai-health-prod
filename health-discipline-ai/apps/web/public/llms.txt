@@ -1,0 +1,50 @@
+# EchoCare AI
+
+> A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report.
+
+## What is EchoCare AI?
+
+EchoCare AI is an AI-powered wellness companion designed for elderly care in India. It makes daily voice calls to elderly parents in 11 Indian languages (Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Gujarati, Malayalam, Punjabi, Odia, and English), checking on their health, medicine adherence, mood, and overall wellbeing. After each call, it sends a structured wellness report to family members via WhatsApp.
+
+## Who is it for?
+
+- **Families (NRIs and working professionals)**: Children living away from their elderly parents who want daily peace of mind about their parents' health and wellbeing.
+- **Hospitals and Clinics**: Healthcare providers who need automated post-discharge follow-up and medicine adherence monitoring at scale.
+
+## Key Features
+
+- Daily AI wellness calls in 11 Indian languages
+- No app or smartphone required — works on any phone
+- Medicine-by-medicine adherence tracking
+- Emotional wellness and mood monitoring
+- Vitals tracking (blood pressure, glucose)
+- Instant WhatsApp wellness reports after each call
+- Weekly wellness summaries
+- Missed call alerts
+- Wellness streaks and gamification
+
+## How it Works
+
+1. **Add your parent**: Name, medicines, phone number. Takes 2 minutes.
+2. **AI calls daily**: A warm voice calls them by name, in their language.
+3. **You get updates**: Instant WhatsApp reports and weekly summaries.
+
+## Pricing
+
+- **Starter**: ₹1,350/month (~$15) — 1 parent, daily calls, WhatsApp reports
+- **Family**: ₹2,250/month (~$25) — 2 parents, priority scheduling
+- **Premium**: ₹4,050/month (~$45) — 4 parents, vitals tracking, priority support
+
+## Hospital Pricing
+
+- **Starter**: ₹200/patient/month (up to 100 patients)
+- **Growth**: ₹150/patient/month (100-500 patients)
+- **Enterprise**: Custom volume pricing (500+ patients)
+
+## Links
+
+- Website: https://echocare.ai
+- Live Demo: https://echocare.ai/demo
+- For Hospitals: https://echocare.ai/hospitals
+- Sign Up: https://echocare.ai/register/payer
+- Contact: hello@echocare.ai
