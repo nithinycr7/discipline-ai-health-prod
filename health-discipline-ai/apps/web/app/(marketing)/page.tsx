@@ -1,6 +1,7 @@
 import { Navbar } from '@/components/marketing/navbar';
 import { Hero } from '@/components/marketing/hero';
 import { Problem } from '@/components/marketing/problem';
+import { SolutionBridge } from '@/components/marketing/solution-bridge';
 import { HowItWorks } from '@/components/marketing/how-it-works';
 import { Features } from '@/components/marketing/features';
 import { Languages } from '@/components/marketing/languages';
@@ -170,11 +171,12 @@ export default function HomePage() {
       <main>
         <Hero />
         <Problem />
+        <SolutionBridge />
+        <Pricing />
+        <Testimonials />
         <HowItWorks />
         <Features />
         <Languages />
-        <Pricing />
-        <Testimonials />
         <FAQ />
         <CTASection />
       </main>

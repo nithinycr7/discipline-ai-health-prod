@@ -72,37 +72,56 @@ export function Pricing() {
               Pricing
             </p>
             <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
-              Less than a cup of coffee per day
+              Less than what you'd spend on one flight home
             </h2>
             <p className="mt-4 text-body-lg text-muted-foreground">
-              Start with a free 7-day trial. No credit card required.
-              Cancel anytime with a WhatsApp message.
+              <strong className="text-foreground/90">Echo Care:</strong> $349/year = $29/month = $0.95 per day
+            </p>
+            <p className="mt-2 text-sm text-muted-foreground">
+              Start with a free 7-day trial. No credit card required. Cancel anytime with a WhatsApp message.
             </p>
 
-            <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-border/60 bg-background/70 backdrop-blur-sm p-1.5">
-              <button
-                onClick={() => setIsYearly(false)}
-                className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
-                  !isYearly
-                    ? 'bg-card text-foreground shadow-soft'
-                    : 'text-muted-foreground hover:text-foreground/80'
-                }`}
-              >
-                Monthly
-              </button>
-              <button
-                onClick={() => setIsYearly(true)}
-                className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
-                  isYearly
-                    ? 'bg-card text-foreground shadow-soft'
-                    : 'text-muted-foreground hover:text-foreground/80'
-                }`}
-              >
-                Yearly
-                <span className="ml-1.5 inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
-                  2 months free
-                </span>
-              </button>
+            <div className="mt-8 flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-center">
+              <div className="inline-flex items-center gap-3 rounded-full border border-border/60 bg-background/70 backdrop-blur-sm p-1.5">
+                <button
+                  onClick={() => setIsYearly(false)}
+                  className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                    !isYearly
+                      ? 'bg-card text-foreground shadow-soft'
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  Monthly
+                </button>
+                <button
+                  onClick={() => setIsYearly(true)}
+                  className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
+                    isYearly
+                      ? 'bg-card text-foreground shadow-soft'
+                      : 'text-muted-foreground hover:text-foreground/80'
+                  }`}
+                >
+                  Yearly
+                  <span className="ml-1.5 inline-block rounded-full bg-green-100 px-2 py-0.5 text-xs font-semibold text-green-700">
+                    2 months free
+                  </span>
+                </button>
+              </div>
+            </div>
+
+            <div className="mt-6 inline-flex flex-wrap items-center justify-center gap-4 text-xs text-muted-foreground/70">
+              <span className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                7-day free trial
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                No card needed
+              </span>
+              <span className="flex items-center gap-1.5">
+                <svg className="h-4 w-4 text-green-600" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" /></svg>
+                Cancel anytime
+              </span>
             </div>
           </div>
         </ScrollReveal>

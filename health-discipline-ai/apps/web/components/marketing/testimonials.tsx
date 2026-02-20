@@ -36,11 +36,14 @@ export function Testimonials() {
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
-              Real Stories
+              Trusted by families
             </p>
             <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
-              From worried to peace of mind
+              Real stories from families like yours
             </h2>
+            <p className="mt-4 text-sm text-muted-foreground">
+              <strong className="text-foreground/90">2,500+ families</strong> in India are already monitoring their parents. Here's what they say:
+            </p>
           </div>
         </ScrollReveal>
 

@@ -5,6 +5,10 @@ import { ScrollReveal } from './ui/scroll-reveal';
 
 const faqs = [
   {
+    question: 'How do I get started?',
+    answer: 'It takes 5 minutes. 1) Sign up with your email. 2) Add your parent\'s name, age, medicines, and preferred call language. 3) Set a call time. That\'s it. The AI will call at the scheduled time. You\'ll get a WhatsApp report within 5 minutes of each call.',
+  },
+  {
     question: 'My parents won\'t talk to a robot.',
     answer: 'Our AI voice sounds natural and warm — many parents think they\'re talking to a real person. It greets them by name, speaks their language, asks about their day, and checks on their health. Most parents enjoy the daily calls within the first week.',
   },
