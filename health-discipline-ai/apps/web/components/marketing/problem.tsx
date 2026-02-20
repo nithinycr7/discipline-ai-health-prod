@@ -5,26 +5,26 @@ import { ScrollReveal } from './ui/scroll-reveal';
 export function Problem() {
   return (
     <section className="relative section-padding overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-warm-50 via-warm-100/50 to-warm-50" />
+      <div className="absolute inset-0 -z-10 bg-gradient-to-b from-background via-secondary/50 to-background" />
 
       <div className="section-container">
         <div className="mx-auto max-w-3xl text-center">
           <ScrollReveal>
-            <p className="text-sm font-semibold uppercase tracking-widest text-accent-dark">
+            <p className="text-sm font-semibold uppercase tracking-widest text-gold-dark">
               The daily worry
             </p>
           </ScrollReveal>
 
           <ScrollReveal delay={100}>
-            <h2 className="mt-4 font-serif text-heading sm:text-display-sm text-gray-900 italic">
+            <h2 className="mt-4 font-serif text-heading sm:text-display-sm text-foreground italic">
               &ldquo;Sab theek hai?&rdquo;
             </h2>
           </ScrollReveal>
 
           <ScrollReveal delay={200}>
-            <p className="mt-6 text-body-lg text-gray-600 leading-relaxed">
+            <p className="mt-6 text-body-lg text-muted-foreground leading-relaxed">
               You call them every day. They always say &ldquo;I&apos;m fine.&rdquo;{' '}
-              <span className="font-medium text-gray-800">But are they really okay?</span>
+              <span className="font-medium text-foreground/90">But are they really okay?</span>
             </p>
           </ScrollReveal>
         </div>
@@ -38,8 +38,7 @@ export function Problem() {
                 </svg>
               ),
               title: 'You can\'t always call',
-              description:
-                'Time zones, work hours, busy days — life gets in the way of the one check-in that matters most.',
+              description: 'Time zones, work hours, busy days — life gets in the way of the one check-in that matters most.',
             },
             {
               icon: (
@@ -48,8 +47,7 @@ export function Problem() {
                 </svg>
               ),
               title: '"I\'m fine" isn\'t the truth',
-              description:
-                'Your parents don\'t want you to worry. So they hide the skipped medicines, the low mood, the rising BP.',
+              description: 'Your parents don\'t want you to worry. So they hide the skipped medicines, the low mood, the rising BP.',
             },
             {
               icon: (
@@ -58,25 +56,24 @@ export function Problem() {
                 </svg>
               ),
               title: 'Guilt from a distance',
-              description:
-                'Living abroad means missing the small things — the mood changes, the complaints they won\'t share, the days they just feel alone.',
+              description: 'Living abroad means missing the small things — the mood changes, the complaints they won\'t share, the days they just feel alone.',
             },
           ].map((card, index) => (
             <ScrollReveal key={card.title} delay={index * 100}>
-              <div className="card group h-full">
-                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-accent-light text-accent-dark transition-colors group-hover:bg-accent group-hover:text-white">
+              <div className="marketing-card group h-full">
+                <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold-light text-gold-dark transition-colors group-hover:bg-gold group-hover:text-white">
                   {card.icon}
                 </div>
-                <h3 className="mt-4 text-heading-sm text-gray-900">{card.title}</h3>
-                <p className="mt-2 text-body text-gray-500">{card.description}</p>
+                <h3 className="mt-4 text-heading-sm text-foreground">{card.title}</h3>
+                <p className="mt-2 text-body text-muted-foreground">{card.description}</p>
               </div>
             </ScrollReveal>
           ))}
         </div>
 
         <ScrollReveal delay={300}>
-          <div className="mx-auto mt-16 max-w-2xl rounded-2xl border border-brand-200/50 bg-brand-50/50 p-8 text-center">
-            <p className="text-body-lg text-brand-600 font-medium leading-relaxed">
+          <div className="mx-auto mt-16 max-w-2xl rounded-2xl border border-primary/20 bg-primary/5 p-8 text-center">
+            <p className="text-body-lg text-primary font-medium leading-relaxed">
               What if someone checked on your parents every day &mdash; their
               health, their mood, their medicines &mdash; and sent you the
               truth, not just reassurance?

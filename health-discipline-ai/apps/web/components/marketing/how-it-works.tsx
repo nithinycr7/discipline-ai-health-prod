@@ -10,7 +10,7 @@ const steps = [
     description:
       'Enter their name, medicines, preferred language, and when they should be called. Takes 2 minutes.',
     image: '/images/step-add-parent.png',
-    accent: 'bg-brand-50 text-brand-600',
+    accent: 'bg-primary/5 text-primary',
   },
   {
     number: '02',
@@ -18,7 +18,7 @@ const steps = [
     description:
       'A warm, natural voice calls at the scheduled time — greets them by name, asks about their wellbeing, checks on medicines and vitals.',
     image: '/images/step-ai-calls.png',
-    accent: 'bg-accent-light text-accent-dark',
+    accent: 'bg-gold-light text-gold-dark',
   },
   {
     number: '03',
@@ -26,7 +26,7 @@ const steps = [
     description:
       'Within 5 minutes, receive a detailed WhatsApp report — medicines, vitals, mood, and how they\'re really doing. Facts, not guesses.',
     image: '/images/step-get-reports.png',
-    accent: 'bg-brand-50 text-brand-600',
+    accent: 'bg-primary/5 text-primary',
   },
 ];
 
@@ -36,13 +36,13 @@ export function HowItWorks() {
       <div className="section-container">
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">
+            <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
               How it works
             </p>
-            <h2 className="mt-4 text-heading sm:text-display-sm text-gray-900">
+            <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
               Simple as a phone call
             </h2>
-            <p className="mt-4 text-body-lg text-gray-500">
+            <p className="mt-4 text-body-lg text-muted-foreground">
               No downloads. No tech skills. Your parents just answer the phone.
             </p>
           </div>
@@ -56,24 +56,22 @@ export function HowItWorks() {
                   index % 2 === 1 ? 'lg:flex-row-reverse' : ''
                 } ${index > 0 ? 'mt-8 lg:mt-0' : ''}`}
               >
-                {/* Text */}
                 <div className="flex-1 text-center lg:text-left">
                   <span
                     className={`inline-flex h-10 w-10 items-center justify-center rounded-xl text-sm font-bold ${step.accent}`}
                   >
                     {step.number}
                   </span>
-                  <h3 className="mt-4 text-heading-sm sm:text-heading text-gray-900">
+                  <h3 className="mt-4 text-heading-sm sm:text-heading text-foreground">
                     {step.title}
                   </h3>
-                  <p className="mt-3 text-body-lg text-gray-500 max-w-md mx-auto lg:mx-0">
+                  <p className="mt-3 text-body-lg text-muted-foreground max-w-md mx-auto lg:mx-0">
                     {step.description}
                   </p>
                 </div>
 
-                {/* Visual */}
                 <div className="flex-1">
-                  <div className="relative overflow-hidden rounded-2xl border border-warm-200/60 bg-white shadow-card">
+                  <div className="relative overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
                     <Image
                       src={step.image}
                       alt={step.title}
@@ -85,9 +83,8 @@ export function HowItWorks() {
                 </div>
               </div>
 
-              {/* Connector line */}
               {index < steps.length - 1 && (
-                <div className="mx-auto my-4 hidden h-16 w-px bg-gradient-to-b from-warm-300 to-transparent lg:block" />
+                <div className="mx-auto my-4 hidden h-16 w-px bg-gradient-to-b from-border to-transparent lg:block" />
               )}
             </ScrollReveal>
           ))}

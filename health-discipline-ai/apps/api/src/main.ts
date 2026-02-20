@@ -14,6 +14,8 @@ async function bootstrap() {
         'http://localhost:3000',
         'https://discipline-ai-health-prod.vercel.app',
         'https://discipline-ai-health-prod-f7venw1y1-nithinycr7s-projects.vercel.app',
+        'https://echocare.ai',
+        'https://www.echocare.ai',
       ];
       // Allow requests with no origin (mobile apps, curl, etc.)
       // Allow any Vercel preview deployment for this project

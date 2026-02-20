@@ -1,8 +1,8 @@
 'use client';
 
 import { useState } from 'react';
+import Link from 'next/link';
 import { ScrollReveal } from './ui/scroll-reveal';
-import { APP_URL } from '@/lib/constants';
 
 const plans = [
   {
@@ -51,25 +51,24 @@ export function Pricing() {
       <div className="section-container">
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">
+            <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
               Pricing
             </p>
-            <h2 className="mt-4 text-heading sm:text-display-sm text-gray-900">
+            <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
               Less than a cup of coffee per day
             </h2>
-            <p className="mt-4 text-body-lg text-gray-500">
+            <p className="mt-4 text-body-lg text-muted-foreground">
               Start with a free 7-day trial. No credit card required.
               Cancel anytime with a WhatsApp message.
             </p>
 
-            {/* Billing toggle */}
-            <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-warm-200/60 bg-warm-50/70 backdrop-blur-sm p-1.5">
+            <div className="mt-8 inline-flex items-center gap-3 rounded-full border border-border/60 bg-background/70 backdrop-blur-sm p-1.5">
               <button
                 onClick={() => setIsYearly(false)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
                   !isYearly
-                    ? 'bg-white text-gray-900 shadow-soft'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-card text-foreground shadow-soft'
+                    : 'text-muted-foreground hover:text-foreground/80'
                 }`}
               >
                 Monthly
@@ -78,8 +77,8 @@ export function Pricing() {
                 onClick={() => setIsYearly(true)}
                 className={`rounded-full px-5 py-2 text-sm font-medium transition-all duration-200 ${
                   isYearly
-                    ? 'bg-white text-gray-900 shadow-soft'
-                    : 'text-gray-500 hover:text-gray-700'
+                    ? 'bg-card text-foreground shadow-soft'
+                    : 'text-muted-foreground hover:text-foreground/80'
                 }`}
               >
                 Yearly
@@ -97,13 +96,13 @@ export function Pricing() {
               <div
                 className={`relative overflow-hidden rounded-2xl border p-8 transition-all duration-300 ${
                   plan.popular
-                    ? 'border-brand-500/40 bg-white/80 backdrop-blur-md shadow-elevated scale-[1.02]'
-                    : 'border-warm-200/60 bg-white/70 backdrop-blur-sm shadow-soft hover:shadow-card'
+                    ? 'border-primary/40 bg-card/80 backdrop-blur-md shadow-elevated scale-[1.02]'
+                    : 'border-border/60 bg-card/70 backdrop-blur-sm shadow-soft hover:shadow-card'
                 }`}
               >
                 {plan.popular && (
                   <div className="absolute right-0 top-0">
-                    <div className="rounded-bl-xl bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white">
+                    <div className="rounded-bl-xl bg-primary px-4 py-1.5 text-xs font-semibold text-white">
                       Most Popular
                     </div>
                   </div>
@@ -111,22 +110,22 @@ export function Pricing() {
 
                 <div>
                   <div className="flex items-baseline gap-2">
-                    <h3 className="text-xl font-bold text-gray-900">{plan.name}</h3>
-                    <span className="text-sm text-gray-400 font-medium">{plan.nameHindi}</span>
+                    <h3 className="text-xl font-bold text-foreground">{plan.name}</h3>
+                    <span className="text-sm text-muted-foreground/70 font-medium">{plan.nameHindi}</span>
                   </div>
-                  <p className="mt-1 text-sm text-gray-500">{plan.subtitle}</p>
+                  <p className="mt-1 text-sm text-muted-foreground">{plan.subtitle}</p>
                 </div>
 
                 <div className="mt-6">
                   {isYearly ? (
                     <>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-extrabold text-gray-900">
+                        <span className="text-4xl font-extrabold text-foreground">
                           ${plan.yearly.priceUSD}
                         </span>
-                        <span className="text-gray-400">/year</span>
+                        <span className="text-muted-foreground/70">/year</span>
                       </div>
-                      <p className="mt-1 text-sm text-gray-400">
+                      <p className="mt-1 text-sm text-muted-foreground/70">
                         ${Math.round(plan.yearly.priceUSD / 12)}/month &middot; ₹{plan.yearly.priceINR.toLocaleString('en-IN')}/year
                       </p>
                       <p className="mt-1.5 text-sm font-medium text-green-600">
@@ -136,12 +135,12 @@ export function Pricing() {
                   ) : (
                     <>
                       <div className="flex items-baseline gap-1">
-                        <span className="text-4xl font-extrabold text-gray-900">
+                        <span className="text-4xl font-extrabold text-foreground">
                           ${plan.monthly.priceUSD}
                         </span>
-                        <span className="text-gray-400">/month</span>
+                        <span className="text-muted-foreground/70">/month</span>
                       </div>
-                      <p className="mt-1 text-sm text-gray-400">
+                      <p className="mt-1 text-sm text-muted-foreground/70">
                         ₹{plan.monthly.priceINR.toLocaleString('en-IN')}/month
                       </p>
                     </>
@@ -152,7 +151,7 @@ export function Pricing() {
                   {plan.features.map((feature) => (
                     <li key={feature} className="flex items-start gap-3">
                       <svg
-                        className="mt-0.5 h-5 w-5 shrink-0 text-brand-500"
+                        className="mt-0.5 h-5 w-5 shrink-0 text-primary/80"
                         fill="none"
                         viewBox="0 0 24 24"
                         strokeWidth={2}
@@ -165,21 +164,21 @@ export function Pricing() {
                         />
                         <circle cx="12" cy="12" r="9.75" strokeWidth={1.5} />
                       </svg>
-                      <span className="text-sm text-gray-600">{feature}</span>
+                      <span className="text-sm text-muted-foreground">{feature}</span>
                     </li>
                   ))}
                 </ul>
 
-                <a
-                  href={`${APP_URL}/register/payer`}
+                <Link
+                  href="/register/payer"
                   className={`mt-8 block w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 ${
                     plan.popular
-                      ? 'bg-brand-600 text-white shadow-soft hover:bg-brand-500 hover:shadow-card hover:-translate-y-0.5'
-                      : 'border border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:shadow-card hover:-translate-y-0.5'
+                      ? 'bg-primary text-white shadow-soft hover:bg-primary/90 hover:shadow-card hover:-translate-y-0.5'
+                      : 'border border-border bg-card text-foreground/90 hover:border-border/80 hover:shadow-card hover:-translate-y-0.5'
                   }`}
                 >
                   Start 7-Day Free Trial
-                </a>
+                </Link>
               </div>
             </ScrollReveal>
           ))}
@@ -187,16 +186,16 @@ export function Pricing() {
 
         <ScrollReveal delay={300}>
           <div className="mx-auto mt-10 max-w-lg text-center">
-            <p className="text-sm text-gray-400">
+            <p className="text-sm text-muted-foreground/70">
               Both plans include a 7-day free trial. No credit card needed to start.
               Pay via Stripe (USD/GBP) or Razorpay (UPI/cards).
               For hospitals and bulk pricing,{' '}
-              <a
+              <Link
                 href="/hospitals"
-                className="font-medium text-brand-600 underline decoration-brand-200 underline-offset-2 hover:decoration-brand-500"
+                className="font-medium text-primary underline decoration-primary/20 underline-offset-2 hover:decoration-primary/80"
               >
                 see our B2B plans
-              </a>
+              </Link>
               .
             </p>
           </div>

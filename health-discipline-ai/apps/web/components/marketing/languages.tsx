@@ -19,7 +19,7 @@ const languages = [
 export function Languages() {
   return (
     <section className="section-padding relative overflow-hidden">
-      <div className="absolute inset-0 -z-10 bg-brand-600" />
+      <div className="absolute inset-0 -z-10 bg-primary" />
       <div className="absolute inset-0 -z-10 opacity-10">
         <div className="absolute -top-24 -right-24 h-96 w-96 rounded-full bg-white/20 blur-3xl" />
         <div className="absolute -bottom-24 -left-24 h-96 w-96 rounded-full bg-white/10 blur-3xl" />
@@ -28,13 +28,13 @@ export function Languages() {
       <div className="section-container">
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
-            <p className="text-sm font-semibold uppercase tracking-widest text-brand-200">
+            <p className="text-sm font-semibold uppercase tracking-widest text-primary-foreground/70">
               Languages
             </p>
             <h2 className="mt-4 text-heading sm:text-display-sm text-white">
               We speak their language
             </h2>
-            <p className="mt-4 text-body-lg text-brand-200">
+            <p className="mt-4 text-body-lg text-primary-foreground/70">
               Not just translation — culturally adapted conversations with
               medicine nicknames, local expressions, and natural warmth.
             </p>
@@ -46,8 +46,8 @@ export function Languages() {
             <ScrollReveal key={lang.name} delay={index * 50}>
               <div className="group relative overflow-hidden rounded-xl border border-white/10 bg-white/5 px-5 py-4 backdrop-blur-sm transition-all duration-300 hover:border-white/25 hover:bg-white/10">
                 <p className="text-lg font-bold text-white">{lang.script}</p>
-                <p className="mt-0.5 text-sm text-brand-200">{lang.name}</p>
-                <p className="mt-1 text-xs text-brand-300 italic">
+                <p className="mt-0.5 text-sm text-primary-foreground/70">{lang.name}</p>
+                <p className="mt-1 text-xs text-primary-foreground/50 italic">
                   &ldquo;{lang.greeting}&rdquo;
                 </p>
               </div>
@@ -56,7 +56,7 @@ export function Languages() {
         </div>
 
         <ScrollReveal delay={400}>
-          <p className="mt-10 text-center text-sm text-brand-300">
+          <p className="mt-10 text-center text-sm text-primary-foreground/50">
             Your parent hears &ldquo;BP wali goli li?&rdquo; not
             &ldquo;Have you taken your Amlodipine?&rdquo;
           </p>

@@ -1,9 +1,9 @@
 'use client';
 
-import { Navbar } from '@/components/navbar';
-import { Footer } from '@/components/footer';
-import { ScrollReveal } from '@/components/ui/scroll-reveal';
-import { APP_URL } from '@/lib/constants';
+import Link from 'next/link';
+import { Navbar } from '@/components/marketing/navbar';
+import { Footer } from '@/components/marketing/footer';
+import { ScrollReveal } from '@/components/marketing/ui/scroll-reveal';
 
 const stats = [
   { value: '50%', label: 'of discharged patients miss medicines in the first week' },
@@ -121,33 +121,33 @@ export default function HospitalsPage() {
         {/* Hero */}
         <section className="relative overflow-hidden pt-28 pb-16 sm:pt-36 sm:pb-24">
           <div className="pointer-events-none absolute inset-0 -z-10">
-            <div className="absolute inset-0 bg-gradient-to-b from-brand-50/40 via-transparent to-transparent" />
+            <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
           </div>
 
           <div className="section-container">
             <div className="mx-auto max-w-3xl text-center">
-              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-brand-200 bg-brand-50 px-4 py-1.5 text-sm font-medium text-brand-600">
+              <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary">
                 For Hospitals & Clinics
               </div>
 
-              <h1 className="text-display-sm sm:text-display text-gray-900">
+              <h1 className="text-display-sm sm:text-display text-foreground">
                 Post-discharge wellness monitoring,{' '}
                 <span className="text-gradient">automated</span>
               </h1>
 
-              <p className="mx-auto mt-6 max-w-2xl text-body-lg text-gray-600">
+              <p className="mx-auto mt-6 max-w-2xl text-body-lg text-muted-foreground">
                 Replace expensive manual nurse follow-ups with AI wellness calls that
                 monitor adherence, vitals, and patient wellbeing in 11 Indian languages
                 &mdash; at a fraction of the cost.
               </p>
 
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                <a href={`${APP_URL}/register/hospital`} className="btn-primary">
+                <Link href="/register/hospital" className="btn-primary">
                   Request a Pilot
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                   </svg>
-                </a>
+                </Link>
                 <a href="#" className="btn-secondary">
                   Download Brochure
                 </a>
@@ -157,15 +157,15 @@ export default function HospitalsPage() {
         </section>
 
         {/* Stats */}
-        <section className="border-y border-warm-200/60 bg-warm-100/30 py-12">
+        <section className="border-y border-border/60 bg-secondary/30 py-12">
           <div className="section-container">
             <div className="grid gap-8 sm:grid-cols-3">
               {stats.map((stat) => (
                 <div key={stat.label} className="text-center">
-                  <p className="text-3xl font-extrabold text-brand-600 sm:text-4xl">
+                  <p className="text-3xl font-extrabold text-primary sm:text-4xl">
                     {stat.value}
                   </p>
-                  <p className="mt-2 text-sm text-gray-500 max-w-[200px] mx-auto">
+                  <p className="mt-2 text-sm text-muted-foreground max-w-[200px] mx-auto">
                     {stat.label}
                   </p>
                 </div>
@@ -179,10 +179,10 @@ export default function HospitalsPage() {
           <div className="section-container">
             <ScrollReveal>
               <div className="mx-auto max-w-2xl text-center">
-                <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">
+                <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
                   Why hospitals choose us
                 </p>
-                <h2 className="mt-4 text-heading sm:text-display-sm text-gray-900">
+                <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
                   Better outcomes. Lower costs.
                 </h2>
               </div>
@@ -191,14 +191,14 @@ export default function HospitalsPage() {
             <div className="mx-auto mt-14 grid max-w-5xl gap-6 sm:grid-cols-2 lg:grid-cols-3">
               {benefits.map((benefit, index) => (
                 <ScrollReveal key={benefit.title} delay={index * 80}>
-                  <div className="card group h-full">
-                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-brand-50 text-brand-600 transition-colors group-hover:bg-brand-600 group-hover:text-white">
+                  <div className="marketing-card group h-full">
+                    <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-primary-foreground">
                       {benefit.icon}
                     </div>
-                    <h3 className="mt-4 text-lg font-semibold text-gray-900">
+                    <h3 className="mt-4 text-lg font-semibold text-foreground">
                       {benefit.title}
                     </h3>
-                    <p className="mt-2 text-body text-gray-500">
+                    <p className="mt-2 text-muted-foreground">
                       {benefit.description}
                     </p>
                   </div>
@@ -210,31 +210,31 @@ export default function HospitalsPage() {
 
         {/* ROI Calculator visual */}
         <section className="section-padding relative overflow-hidden">
-          <div className="absolute inset-0 -z-10 bg-warm-100/50" />
+          <div className="absolute inset-0 -z-10 bg-secondary/50" />
           <div className="section-container">
             <ScrollReveal>
               <div className="mx-auto max-w-3xl">
                 <div className="text-center">
-                  <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">
+                  <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
                     The math
                   </p>
-                  <h2 className="mt-4 text-heading sm:text-display-sm text-gray-900">
+                  <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
                     The ROI speaks for itself
                   </h2>
                 </div>
 
-                <div className="mt-12 overflow-hidden rounded-2xl border border-warm-200/60 bg-white shadow-card">
-                  <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 divide-warm-200/60">
+                <div className="mt-12 overflow-hidden rounded-2xl border border-border/60 bg-card shadow-card">
+                  <div className="grid divide-y sm:grid-cols-2 sm:divide-x sm:divide-y-0 divide-border/60">
                     {/* Manual */}
                     <div className="p-8">
-                      <p className="text-sm font-semibold uppercase tracking-wide text-gray-400">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-muted-foreground/70">
                         Manual Nurse Calls
                       </p>
-                      <p className="mt-4 text-4xl font-extrabold text-gray-900">
+                      <p className="mt-4 text-4xl font-extrabold text-foreground">
                         ₹100+
                       </p>
-                      <p className="mt-1 text-sm text-gray-400">per call</p>
-                      <ul className="mt-6 space-y-2 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-muted-foreground/70">per call</p>
+                      <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                         <li className="flex items-center gap-2">
                           <svg className="h-4 w-4 text-red-400" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
@@ -258,31 +258,31 @@ export default function HospitalsPage() {
 
                     {/* AI */}
                     <div className="relative p-8">
-                      <div className="absolute right-4 top-4 rounded-full bg-brand-600 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
+                      <div className="absolute right-4 top-4 rounded-full bg-primary px-3 py-1 text-[10px] font-bold text-primary-foreground uppercase tracking-wide">
                         93% cheaper
                       </div>
-                      <p className="text-sm font-semibold uppercase tracking-wide text-brand-500">
+                      <p className="text-sm font-semibold uppercase tracking-wide text-primary/80">
                         Health Discipline AI
                       </p>
-                      <p className="mt-4 text-4xl font-extrabold text-brand-600">
+                      <p className="mt-4 text-4xl font-extrabold text-primary">
                         ~₹7
                       </p>
-                      <p className="mt-1 text-sm text-gray-400">per call</p>
-                      <ul className="mt-6 space-y-2 text-sm text-gray-500">
+                      <p className="mt-1 text-sm text-muted-foreground/70">per call</p>
+                      <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                         <li className="flex items-center gap-2">
-                          <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <svg className="h-4 w-4 text-primary/80" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                           </svg>
                           Infinitely scalable
                         </li>
                         <li className="flex items-center gap-2">
-                          <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <svg className="h-4 w-4 text-primary/80" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                           </svg>
                           Structured data
                         </li>
                         <li className="flex items-center gap-2">
-                          <svg className="h-4 w-4 text-brand-500" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                          <svg className="h-4 w-4 text-primary/80" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                           </svg>
                           11 Indian languages
@@ -301,13 +301,13 @@ export default function HospitalsPage() {
           <div className="section-container">
             <ScrollReveal>
               <div className="mx-auto max-w-2xl text-center">
-                <p className="text-sm font-semibold uppercase tracking-widest text-brand-500">
+                <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
                   Hospital Pricing
                 </p>
-                <h2 className="mt-4 text-heading sm:text-display-sm text-gray-900">
+                <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
                   Transparent volume pricing
                 </h2>
-                <p className="mt-4 text-body-lg text-gray-500">
+                <p className="mt-4 text-body-lg text-muted-foreground">
                   Start with a 30-day pilot. No setup fees.
                 </p>
               </div>
@@ -319,37 +319,37 @@ export default function HospitalsPage() {
                   <div
                     className={`relative flex flex-col rounded-2xl border p-8 transition-all duration-300 ${
                       tier.popular
-                        ? 'border-brand-500 bg-white shadow-elevated'
-                        : 'border-warm-200 bg-white shadow-soft hover:shadow-card'
+                        ? 'border-primary bg-card shadow-elevated'
+                        : 'border-border bg-card shadow-soft hover:shadow-card'
                     }`}
                   >
                     {tier.popular && (
                       <div className="absolute right-0 top-0">
-                        <div className="rounded-bl-xl bg-brand-600 px-4 py-1.5 text-xs font-semibold text-white">
+                        <div className="rounded-bl-xl bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
                           Recommended
                         </div>
                       </div>
                     )}
 
                     <div>
-                      <h3 className="text-xl font-bold text-gray-900">{tier.name}</h3>
-                      <p className="mt-1 text-sm text-gray-500">{tier.patients}</p>
+                      <h3 className="text-xl font-bold text-foreground">{tier.name}</h3>
+                      <p className="mt-1 text-sm text-muted-foreground">{tier.patients}</p>
                     </div>
 
                     <div className="mt-6">
                       <div className="flex items-baseline gap-1">
-                        <span className="text-3xl font-extrabold text-gray-900">
+                        <span className="text-3xl font-extrabold text-foreground">
                           {tier.price}
                         </span>
                       </div>
-                      <p className="mt-1 text-sm text-gray-400">{tier.unit}</p>
+                      <p className="mt-1 text-sm text-muted-foreground/70">{tier.unit}</p>
                     </div>
 
                     <ul className="mt-8 flex-1 space-y-3">
                       {tier.features.map((feature) => (
                         <li key={feature} className="flex items-start gap-3">
                           <svg
-                            className="mt-0.5 h-5 w-5 shrink-0 text-brand-500"
+                            className="mt-0.5 h-5 w-5 shrink-0 text-primary/80"
                             fill="none"
                             viewBox="0 0 24 24"
                             strokeWidth={2}
@@ -357,21 +357,21 @@ export default function HospitalsPage() {
                           >
                             <path strokeLinecap="round" strokeLinejoin="round" d="m4.5 12.75 6 6 9-13.5" />
                           </svg>
-                          <span className="text-sm text-gray-600">{feature}</span>
+                          <span className="text-sm text-muted-foreground">{feature}</span>
                         </li>
                       ))}
                     </ul>
 
-                    <a
-                      href={tier.price === 'Custom' ? `mailto:hello@healthdiscipline.ai` : `${APP_URL}/register/hospital`}
+                    <Link
+                      href={tier.price === 'Custom' ? 'mailto:hello@echocare.ai' : '/register/hospital'}
                       className={`mt-8 block w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 ${
                         tier.popular
-                          ? 'bg-brand-600 text-white hover:bg-brand-500 hover:-translate-y-0.5'
-                          : 'border border-gray-200 bg-white text-gray-800 hover:border-gray-300 hover:-translate-y-0.5'
+                          ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:-translate-y-0.5'
+                          : 'border border-border bg-card text-foreground/90 hover:border-border/80 hover:-translate-y-0.5'
                       }`}
                     >
                       {tier.price === 'Custom' ? 'Contact Sales' : 'Start 30-Day Pilot'}
-                    </a>
+                    </Link>
                   </div>
                 </ScrollReveal>
               ))}
@@ -383,7 +383,7 @@ export default function HospitalsPage() {
         <section className="section-padding">
           <div className="section-container">
             <ScrollReveal>
-              <div className="relative overflow-hidden rounded-3xl bg-brand-600 px-8 py-16 sm:px-16 sm:py-20 text-center">
+              <div className="relative overflow-hidden rounded-3xl bg-primary px-8 py-16 sm:px-16 sm:py-20 text-center">
                 <div className="pointer-events-none absolute inset-0">
                   <div className="absolute -top-32 -right-32 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
                   <div className="absolute -bottom-32 -left-32 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
@@ -392,19 +392,19 @@ export default function HospitalsPage() {
                   <h2 className="text-heading sm:text-display-sm text-white">
                     Ready to transform patient follow-up?
                   </h2>
-                  <p className="mx-auto mt-5 max-w-lg text-body-lg text-brand-200">
+                  <p className="mx-auto mt-5 max-w-lg text-body-lg text-primary-foreground/70">
                     Start a 30-day pilot with up to 50 patients. See the difference
                     in adherence rates, costs, and patient satisfaction.
                   </p>
                   <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
-                    <a
-                      href={`${APP_URL}/register/hospital`}
-                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-[0.938rem] font-semibold text-brand-600 shadow-soft transition-all duration-300 hover:bg-brand-50 hover:-translate-y-0.5"
+                    <Link
+                      href="/register/hospital"
+                      className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-[0.938rem] font-semibold text-primary shadow-soft transition-all duration-300 hover:bg-primary/5 hover:-translate-y-0.5"
                     >
                       Request a Pilot
-                    </a>
+                    </Link>
                     <a
-                      href="mailto:hello@healthdiscipline.ai"
+                      href="mailto:hello@echocare.ai"
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-[0.938rem] font-semibold text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10"
                     >
                       Schedule a Demo
