@@ -53,7 +53,7 @@ export function Hero() {
             <div className="relative overflow-hidden rounded-2xl border border-border bg-card shadow-elevated">
               <Image
                 src="/images/hero-dashboard.png"
-                alt="Health Discipline AI dashboard showing daily wellness tracking"
+                alt="EchoCare AI dashboard showing daily wellness tracking"
                 width={1200}
                 height={675}
                 className="w-full"
