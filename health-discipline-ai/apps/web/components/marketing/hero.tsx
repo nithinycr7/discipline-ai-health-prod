@@ -26,20 +26,18 @@ export function Hero() {
           </div>
 
           <h1 className="text-display-sm sm:text-display text-foreground animate-fade-up">
-            Know how your parents{' '}
-            <span className="text-gradient">are really doing</span>
+            Your parents are in{' '}
+            <span className="text-gradient">good hands</span>
           </h1>
 
           <p className="mx-auto mt-6 max-w-2xl text-body-lg text-muted-foreground animate-fade-up animate-delay-100">
-            A warm AI companion calls your parents daily in their language,
-            checks on their wellbeing, medicines, and mood &mdash; then sends
-            you a clear picture of how they&apos;re actually doing.{' '}
-            <span className="font-medium text-foreground/90">No app needed.</span>
+            8,000 miles away doesn&apos;t mean disconnected. An AI companion calls your parents daily in their language, checks their medicines and mood, and sends you the truth — not just reassurance.{' '}
+            <span className="font-medium text-foreground/90">No app. No complicated setup. Peace of mind in 5 minutes.</span>
           </p>
 
           <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center animate-fade-up animate-delay-200">
             <Link href="/register/payer" className="btn-primary">
-              Start 7-Day Free Trial
+              Get 7 Days Free
               <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                 <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
               </svg>

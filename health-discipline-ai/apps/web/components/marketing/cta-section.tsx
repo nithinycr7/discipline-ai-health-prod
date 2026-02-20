@@ -16,21 +16,19 @@ export function CTASection() {
 
             <div className="relative mx-auto max-w-2xl text-center">
               <h2 className="text-heading sm:text-display-sm text-white">
-                Stop wondering.
+                Your parents are in
                 <br />
-                Start knowing.
+                <span className="font-light">good hands.</span>
               </h2>
               <p className="mx-auto mt-5 max-w-lg text-body-lg text-primary-foreground/70">
-                7-day free trial. No credit card. No app needed. Your parents
-                just answer the phone &mdash; you get a daily picture of how
-                they&apos;re really doing.
+                Stop calling and asking "Sab theek hai?" when they'll just say yes. Start getting the truth — their mood, their medicines, their real health — delivered to you every single day.
               </p>
               <div className="mt-10 flex flex-col items-center gap-4 sm:flex-row sm:justify-center">
                 <Link
                   href="/register/payer"
                   className="inline-flex items-center justify-center gap-2 rounded-xl bg-white px-8 py-4 text-[0.938rem] font-semibold text-primary shadow-soft transition-all duration-300 hover:bg-primary/5 hover:shadow-card hover:-translate-y-0.5"
                 >
-                  Start Free Trial
+                  Get 7 Days Free
                   <svg className="h-4 w-4" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M13.5 4.5 21 12m0 0-7.5 7.5M21 12H3" />
                   </svg>

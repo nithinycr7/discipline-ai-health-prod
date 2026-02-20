@@ -11,18 +11,22 @@ async function bootstrap() {
   app.enableCors({
     origin: (origin, callback) => {
       const allowed = [
+        // Local development
         'http://localhost:3000',
-        'https://discipline-ai-health-prod.vercel.app',
-        'https://discipline-ai-health-prod-f7venw1y1-nithinycr7s-projects.vercel.app',
+        // Production deployments
         'https://echocare.ai',
         'https://www.echocare.ai',
+        'https://discipline-ai-health-prod.vercel.app',
+        // Vercel preview deployments (matches discipline-ai-health-prod-*.vercel.app)
+        'https://discipline-ai-health-prod-f7venw1y1-nithinycr7s-projects.vercel.app',
       ];
-      // Allow requests with no origin (mobile apps, curl, etc.)
-      // Allow any Vercel preview deployment for this project
+      // Allow requests with no origin (mobile apps, Postman, curl, etc.)
+      // Allow exact matches from whitelist
+      // Allow any Vercel preview deployment matching the project pattern
       if (
         !origin ||
         allowed.includes(origin) ||
-        /^https:\/\/discipline-ai-health-prod.*\.vercel\.app$/.test(origin)
+        /^https:\/\/discipline-ai-health-prod[-.].*\.vercel\.app$/.test(origin)
       ) {
         callback(null, true);
       } else {

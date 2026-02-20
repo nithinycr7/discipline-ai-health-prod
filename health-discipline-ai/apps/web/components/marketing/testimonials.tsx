@@ -36,10 +36,10 @@ export function Testimonials() {
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
-              Stories
+              Real Stories
             </p>
             <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
-              Peace of mind, delivered daily
+              From worried to peace of mind
             </h2>
           </div>
         </ScrollReveal>

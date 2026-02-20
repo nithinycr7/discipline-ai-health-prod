@@ -22,8 +22,8 @@ const features = [
     size: 'medium',
   },
   {
-    title: 'WhatsApp reports in 5 minutes',
-    description: 'Every call generates a structured report — medicines taken, vitals, mood, and wellness — delivered straight to WhatsApp. Facts, not guesses.',
+    title: 'Daily reports in your inbox',
+    description: 'Every call generates a clean report — medicines, vitals, mood — delivered straight to your WhatsApp. No guesswork. Just facts you can act on. In the morning, when you check your messages from India.',
     icon: (<svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" d="M7.5 8.25h9m-9 3H12m-9.75 1.51c0 1.6 1.123 2.994 2.707 3.227 1.129.166 2.27.293 3.423.379.35.026.67.21.865.501L12 21l2.755-4.133a1.14 1.14 0 0 1 .865-.501 48.172 48.172 0 0 0 3.423-.379c1.584-.233 2.707-1.626 2.707-3.228V6.741c0-1.602-1.123-2.995-2.707-3.228A48.394 48.394 0 0 0 12 3c-2.392 0-4.744.175-7.043.513C3.373 3.746 2.25 5.14 2.25 6.741v6.018Z" /></svg>),
     size: 'large',
   },
@@ -66,14 +66,13 @@ export function Features() {
         <ScrollReveal>
           <div className="mx-auto max-w-2xl text-center">
             <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
-              Features
+              How it Works
             </p>
             <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
-              Everything your family needs
+              Monitoring your parents, the right way
             </h2>
             <p className="mt-4 text-body-lg text-muted-foreground">
-              Built with deep understanding of Indian families, not copied from
-              Western health apps.
+              Designed for elderly parents who don't use apps, and NRI children who need real answers. No complexity. Just care.
             </p>
           </div>
         </ScrollReveal>
