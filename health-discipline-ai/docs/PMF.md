@@ -289,11 +289,13 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 
 ### 5.2 Recommended 3-Tier Structure (NRI Elderly Care)
 
-| Tier | Name | Annual Price | Monthly Equivalent | Key Features |
-|---|---|---|---|---|
-| **Basic** | Echo Basic | **$199/year** | $16.58/mo | 1 monthly AI wellness call, medication reminder alerts, family dashboard, quarterly health report, 24/7 emergency contact chain, **dedicated care manager** |
-| **Core (HERO)** | Echo Care | **$349/year** | $29.08/mo | 1 weekly AI wellness call, daily medication reminders, bi-weekly health summary, **quarterly doctor consults via video**, alert escalation to family members |
-| **Premium** | Echo Guardian | **$599/year** | $49.92/mo | Daily AI check-ins, vitals tracking and analysis, **unlimited monthly doctor tele-visits**, full care coordination, specialist referral management, emergency dispatch coordination, dedicated care manager |
+| Tier | Name | Annual Price | Monthly Equivalent | Call Frequency | Doctor Consults | Key Features |
+|---|---|---|---|---|---|---|
+| **Basic** | Echo Basic | **$199/year** | $16.58/mo | Monthly | — | Medication alerts, family dashboard, quarterly report, emergency chain |
+| **Core (HERO)** | Echo Care | **$349/year** | $29.08/mo | **Weekly** | **1 quarterly** | Vitals tracking, daily med reminders, real-time alerts, bi-weekly summary |
+| **Premium** | Echo Guardian | **$599/year** | $49.92/mo | **Daily** | **1 monthly** | Advanced vitals (BP/glucose/SpO2), anomaly alerts, full coordination, care manager, 24/7 support |
+
+**Key principle**: Tiers are differentiated by **call frequency** (monthly → weekly → daily) and **monitoring depth**, not by converting EchoCare into a medical platform. Doctor consults are a **supporting feature**, not the core value proposition. Families use their own doctors; EchoCare is the continuous monitoring layer.
 
 ### 5.3 Why $349 is the Hero Tier
 
@@ -302,6 +304,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 - **Relative to income**: $349/year ≈ 0.15% of US median NRI income ($200K) — trivial purchasing decision
 - **Competitive positioning**: Premium to generic telehealth (Apollo, Practo at $24–60/year) but justified by NRI-specific UX and voice AI
 - **Upsell ceiling**: Room to upgrade to $599 Guardian tier for highly engaged families
+- **Tier differentiation**: Tiers are segmented by **call frequency** (monthly → weekly → daily) and **monitoring depth** (alerts → tracking → continuous), with doctor consults as a supporting feature. EchoCare remains the monitoring layer, not the clinic. Families manage doctor relationships separately; EchoCare helps coordinate and surface health data.
 
 ### 5.4 Chronic Disease Monitoring Add-On / Standalone (India B2C)
 
@@ -324,7 +327,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 | BeatO (diabetes) | ₹299–799/month | $43–115/year | EchoCare integrates full eldercare + family view |
 | Apollo 24x7 | Per consult + subscription | ~$120–200/year | EchoCare is proactive (prevents crises) vs reactive (responds to episodes) |
 
-**Positioning**: EchoCare's $349/year sits at the technology-premium tier — more expensive than pure telehealth (Apollo, Practo) but less expensive than comprehensive home care (Emoha, HCAH). It occupies the underserved "intelligent monitoring" middle ground.
+**Positioning**: EchoCare's $349/year sits at the technology-premium tier — more expensive than pure telehealth (Apollo, Practo) but less expensive than comprehensive home care (Emoha, HCAH). It occupies the underserved "intelligent monitoring" middle ground. **EchoCare's role is proactive health monitoring, not clinical delivery** — doctor consults are a supporting feature for families who want coordination support. Families primarily manage their own doctor relationships; EchoCare provides the continuous visibility layer.
 
 ### 5.6 Revenue Per User Potential
 

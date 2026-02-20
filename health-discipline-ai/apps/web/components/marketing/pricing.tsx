@@ -6,39 +6,56 @@ import { ScrollReveal } from './ui/scroll-reveal';
 
 const plans = [
   {
-    name: 'Suraksha',
+    name: 'Echo Basic',
     nameHindi: 'सुरक्षा',
-    subtitle: 'Essential Care',
-    monthly: { priceUSD: 15, priceINR: 1350 },
-    yearly: { priceUSD: 149, priceINR: 13400, saveUSD: 31, saveINR: 2800 },
+    subtitle: 'Essential Monitoring',
+    monthly: { priceUSD: 17, priceINR: 1499 },
+    yearly: { priceUSD: 199, priceINR: 16900, saveUSD: 5, saveINR: 900 },
     popular: false,
     features: [
-      '1 daily wellness check-in call',
-      'Real-time alerts if something seems off',
-      'Up to 3 family members',
-      'Daily WhatsApp wellness reports',
-      'Weekly health & mood summaries',
-      'Blood pressure & glucose tracking',
+      '1 monthly AI wellness call',
+      'Medication reminder alerts',
+      'Family dashboard access',
+      'Quarterly health report',
+      '24/7 emergency contact chain',
+      'Up to 5 family members',
       'All 11 Indian languages',
     ],
   },
   {
-    name: 'Sampurna',
+    name: 'Echo Care',
     nameHindi: 'सम्पूर्ण',
     subtitle: 'Complete Care',
-    monthly: { priceUSD: 20, priceINR: 1800 },
-    yearly: { priceUSD: 199, priceINR: 17900, saveUSD: 41, saveINR: 3700 },
+    monthly: { priceUSD: 30, priceINR: 2699 },
+    yearly: { priceUSD: 349, priceINR: 29900, saveUSD: 11, saveINR: 1300 },
     popular: true,
     features: [
-      '2 daily wellness check-in calls',
-      'Real-time alerts if something seems off',
-      'Human follow-up on missed check-ins',
-      'Priority outreach & escalation to local contact',
+      '1 weekly AI wellness call',
+      'Daily medication reminders',
+      'Vitals tracking (BP, glucose)',
+      'Bi-weekly health summary',
+      'Real-time alerts to family',
+      '1 quarterly doctor video consult*',
       'Unlimited family members',
-      'Daily WhatsApp reports with mood & sentiment',
-      'Weekly deep wellness review',
-      'Doctor-ready health reports',
-      'Wellness streak tracking',
+      'WhatsApp health reports',
+    ],
+  },
+  {
+    name: 'Echo Guardian',
+    nameHindi: 'रक्षक',
+    subtitle: 'Premium Care',
+    monthly: { priceUSD: 50, priceINR: 4499 },
+    yearly: { priceUSD: 599, priceINR: 50900, saveUSD: 1, saveINR: 4900 },
+    popular: false,
+    features: [
+      'Daily AI check-in calls',
+      'Advanced vitals tracking (BP, glucose, SpO2)',
+      'Real-time anomaly detection',
+      '1 monthly doctor tele-visit*',
+      'Full care coordination',
+      'Emergency dispatch support',
+      'Dedicated care manager',
+      'Priority support 24/7',
     ],
   },
 ];
@@ -187,7 +204,7 @@ export function Pricing() {
         <ScrollReveal delay={300}>
           <div className="mx-auto mt-10 max-w-lg text-center">
             <p className="text-sm text-muted-foreground/70">
-              Both plans include a 7-day free trial. No credit card needed to start.
+              All plans include a 7-day free trial. No credit card needed to start.
               Pay via Stripe (USD/GBP) or Razorpay (UPI/cards).
               For hospitals and bulk pricing,{' '}
               <Link
@@ -197,6 +214,9 @@ export function Pricing() {
                 see our B2B plans
               </Link>
               .
+            </p>
+            <p className="mt-3 text-xs text-muted-foreground/60">
+              *Doctor consultations are for health coordination & monitoring review. Your family manages their own primary care relationships.
             </p>
           </div>
         </ScrollReveal>
