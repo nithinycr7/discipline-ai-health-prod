@@ -6,6 +6,8 @@ import { NotificationsService } from '../notifications/notifications.service';
 import { PatientsService } from '../patients/patients.service';
 import { MedicinesService } from '../medicines/medicines.service';
 import { DistributedLockService } from '../distributed-lock/distributed-lock.service';
+import { ConfigService } from '@nestjs/config';
+import { CloudTasksService } from '../cloud-tasks/cloud-tasks.service';
 
 // Default retry delays (minutes) per scenario
 const RETRY_DELAYS = {
@@ -28,6 +30,8 @@ export class RetryHandlerService {
     @Inject(forwardRef(() => CallOrchestratorService))
     private callOrchestratorService: CallOrchestratorService,
     private lockService: DistributedLockService,
+    private configService: ConfigService,
+    private cloudTasksService: CloudTasksService,
   ) {}
 
   /**
@@ -161,6 +165,18 @@ export class RetryHandlerService {
       medicinesChecked: freshMedicines,
       usedNewPatientProtocol: call.usedNewPatientProtocol,
     });
+
+    // Enqueue Cloud Task to trigger the retry at the scheduled time
+    if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') {
+      await this.cloudTasksService.enqueueRetryTask(
+        patientId,
+        retryCall._id.toString(),
+        retryCall.retryCount,
+        scheduledAt,
+      ).catch((err) => {
+        this.logger.warn(`Failed to enqueue retry task for call ${retryCall._id}: ${err.message}`);
+      });
+    }
 
     this.logger.log(
       `Retry ${retryCall.retryCount}/${maxRetries} scheduled for call ${callId} ` +

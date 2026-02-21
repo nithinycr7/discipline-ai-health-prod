@@ -16,6 +16,8 @@ async function bootstrap() {
         // Production deployments
         'https://echocare.ai',
         'https://www.echocare.ai',
+        'https://www.cocarely.com',
+        'https://cocarely.com',
         'https://discipline-ai-health-prod.vercel.app',
         // Vercel preview deployments (matches discipline-ai-health-prod-*.vercel.app)
         'https://discipline-ai-health-prod-f7venw1y1-nithinycr7s-projects.vercel.app',

@@ -86,6 +86,9 @@ export class Patient {
 
   @Prop({ enum: ['valid', 'invalid'], default: 'valid' })
   phoneStatus: string;
+
+  @Prop({ type: String, default: null })
+  tag?: string;
 }
 
 export const PatientSchema = SchemaFactory.createForClass(Patient);

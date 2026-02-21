@@ -16,4 +16,8 @@ export class UpdatePatientDto extends PartialType(CreatePatientDto) {
   @Type(() => Date)
   @IsOptional()
   pausedUntil?: Date;
+
+  @IsString()
+  @IsOptional()
+  tag?: string;
 }

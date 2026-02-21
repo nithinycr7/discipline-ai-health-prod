@@ -190,29 +190,40 @@ Return ONLY valid JSON.`;
 
     let rawText = '';
     try {
-      const response = await fetch(
-        `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
-        {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            contents: [{ parts: [{ text: prompt }] }],
-            generationConfig: {
-              temperature: 0.1,
-              maxOutputTokens: 2048,
-              responseMimeType: 'application/json',
-            },
-          }),
-        },
-      );
+      // Retry with exponential backoff for 429 rate limit errors
+      const maxRetries = 3;
+      let response: Response | null = null;
+      for (let attempt = 0; attempt <= maxRetries; attempt++) {
+        response = await fetch(
+          `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
+          {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              contents: [{ parts: [{ text: prompt }] }],
+              generationConfig: {
+                temperature: 0.1,
+                maxOutputTokens: 2048,
+                responseMimeType: 'application/json',
+              },
+            }),
+          },
+        );
 
-      if (!response.ok) {
-        const errText = await response.text();
-        this.logger.error(`Gemini API error: ${response.status} - ${errText}`);
+        if (response.status !== 429 || attempt === maxRetries) break;
+
+        const delayMs = Math.min(1000 * Math.pow(2, attempt), 8000); // 1s, 2s, 4s
+        this.logger.warn(`Gemini 429 rate limit, retrying in ${delayMs}ms (attempt ${attempt + 1}/${maxRetries})`);
+        await new Promise((r) => setTimeout(r, delayMs));
+      }
+
+      if (!response!.ok) {
+        const errText = await response!.text();
+        this.logger.error(`Gemini API error: ${response!.status} - ${errText}`);
         return null;
       }
 
-      const data: any = await response.json();
+      const data: any = await response!.json();
       const finishReason = data.candidates?.[0]?.finishReason || 'unknown';
       rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 

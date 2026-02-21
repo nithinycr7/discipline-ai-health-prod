@@ -18,6 +18,7 @@ import { NotificationsModule } from './notifications/notifications.module';
 import { HealthModule } from './health/health.module';
 import { WebhooksModule } from './webhooks/webhooks.module';
 import { DistributedLockModule } from './distributed-lock/distributed-lock.module';
+import { CloudTasksModule } from './cloud-tasks/cloud-tasks.module';
 import { FirebaseAdminModule } from './firebase/firebase-admin.module';
 import { AdminModule } from './admin/admin.module';
 
@@ -28,12 +29,14 @@ import { AdminModule } from './admin/admin.module';
       imports: [ConfigModule],
       useFactory: (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
+        dbName: configService.get<string>('DB_NAME'),
       }),
       inject: [ConfigService],
     }),
     ThrottlerModule.forRoot([{ ttl: 60000, limit: 100 }]),
     ScheduleModule.forRoot(),
     DistributedLockModule,
+    CloudTasksModule,
     FirebaseAdminModule,
     AuthModule,
     UsersModule,

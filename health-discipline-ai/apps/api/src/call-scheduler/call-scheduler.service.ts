@@ -33,9 +33,8 @@ export class CallSchedulerService {
 
   @Cron(CronExpression.EVERY_MINUTE)
   async processScheduledCalls() {
-    if (this.isKillSwitchActive()) {
-      return;
-    }
+    if (this.isKillSwitchActive()) return;
+    if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') return;
     const ran = await this.lockService.withLock('cron:processScheduledCalls', 120, async () => {
       try {
         const now = DateTime.now();
@@ -106,9 +105,8 @@ export class CallSchedulerService {
 
   @Cron('0 */30 * * * *') // Every 30 minutes
   async processRetries() {
-    if (this.isKillSwitchActive()) {
-      return;
-    }
+    if (this.isKillSwitchActive()) return;
+    if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') return;
     const ran = await this.lockService.withLock('cron:processRetries', 600, async () => {
       try {
         await this.retryHandlerService.processRetries();
@@ -128,9 +126,8 @@ export class CallSchedulerService {
    */
   @Cron('0 */2 * * * *') // Every 2 minutes
   async cleanupStaleCalls() {
-    if (this.isKillSwitchActive()) {
-      return;
-    }
+    if (this.isKillSwitchActive()) return;
+    if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') return;
     const ran = await this.lockService.withLock('cron:cleanupStaleCalls', 240, async () => {
       try {
         const staleCalls = await this.callsService.findStaleCalls(10); // 10 min timeout
@@ -181,6 +178,7 @@ export class CallSchedulerService {
 
   @Cron('0 */30 * * * *') // Every 30 minutes (skip_today pauses expire mid-day, not just midnight)
   async checkPausedPatients() {
+    if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') return;
     const ran = await this.lockService.withLock('cron:checkPausedPatients', 600, async () => {
       try {
         const patients = await this.patientsService.getPausedPatientsWithExpiry();

@@ -12,6 +12,7 @@ import { PromptAssemblerService } from '../dynamic-prompt/prompt-assembler.servi
 import { DynamicPromptResult } from '../dynamic-prompt/types/prompt-context.types';
 import { RetryHandlerService } from './retry-handler.service';
 import { DistributedLockService } from '../distributed-lock/distributed-lock.service';
+import { CloudTasksService } from '../cloud-tasks/cloud-tasks.service';
 
 interface DueCall {
   config: any;
@@ -39,6 +40,7 @@ export class CallOrchestratorService {
     @Inject(forwardRef(() => RetryHandlerService))
     private retryHandler: RetryHandlerService,
     private lockService: DistributedLockService,
+    private cloudTasksService: CloudTasksService,
   ) {
     this.voiceStack = this.configService.get<string>('VOICE_STACK', 'elevenlabs');
     this.dynamicPromptGlobalEnabled =
@@ -80,13 +82,21 @@ export class CallOrchestratorService {
     try {
       // Re-check hasCallToday INSIDE the lock to prevent race condition
       const config = dueCall.config;
-      const alreadyCalled = await this.callsService.hasCallToday(
-        patientId,
-        config.timezone || 'Asia/Kolkata',
-      );
-      if (alreadyCalled) {
-        this.logger.log(`Patient ${patientId} already has a call today (detected inside lock), skipping`);
-        return;
+
+      // Skip daily call limit for test-tagged patients
+      const isTestPatient = patient.tag === 'test';
+
+      if (!isTestPatient) {
+        const alreadyCalled = await this.callsService.hasCallToday(
+          patientId,
+          config.timezone || 'Asia/Kolkata',
+        );
+        if (alreadyCalled) {
+          this.logger.log(`Patient ${patientId} already has a call today (detected inside lock), skipping`);
+          return;
+        }
+      } else {
+        this.logger.log(`Patient ${patientId} is tagged as 'test', bypassing daily call limit`);
       }
 
       // Get ALL medicines for the patient (we call once at night for everything)
@@ -197,6 +207,14 @@ export class CallOrchestratorService {
         callTrackingFields,
       );
 
+      // Enqueue a timeout task to detect stale calls (Cloud Tasks path)
+      if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') {
+        const timeoutAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+        await this.cloudTasksService.enqueueTimeoutTask(callId!, timeoutAt).catch((err) => {
+          this.logger.warn(`Failed to enqueue timeout task for call ${callId}: ${err.message}`);
+        });
+      }
+
       this.logger.log(
         `AI call initiated [${this.voiceStack}] for ${patient.preferredName} (${patient._id}), ` +
         `conversationId: ${result.conversationId}`,
@@ -294,6 +312,14 @@ export class CallOrchestratorService {
         'in_progress',
         callTrackingFields,
       );
+
+      // Enqueue a timeout task to detect stale calls (Cloud Tasks path)
+      if (this.configService.get<string>('USE_CLOUD_TASKS') === 'true') {
+        const timeoutAt = new Date(Date.now() + 10 * 60 * 1000);
+        await this.cloudTasksService.enqueueTimeoutTask(call._id.toString(), timeoutAt).catch((err) => {
+          this.logger.warn(`Failed to enqueue timeout task for retry call ${call._id}: ${err.message}`);
+        });
+      }
 
       this.logger.log(
         `Retry call initiated [${this.voiceStack}] for ${patient.preferredName}, ` +

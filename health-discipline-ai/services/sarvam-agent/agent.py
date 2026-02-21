@@ -83,7 +83,7 @@ class MedicineCheckAgent(Agent):
                 flush_signal=True,  # Emit speech start/end events for turn-taking
             ),
             llm=google.LLM(
-                model="gemini-2.5-flash",
+                model="gemini-2.0-flash",  # 2.0 not 2.5 — avoids _thought token leak into TTS
                 temperature=0.3,
             ),
             tts=sarvam.TTS(

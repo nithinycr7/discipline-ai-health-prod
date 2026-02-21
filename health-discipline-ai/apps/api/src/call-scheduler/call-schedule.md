@@ -1,18 +1,203 @@
-# Call Scheduling System — Detailed Architecture
+# Call Scheduling System — Architecture Documentation
 
 > Last updated: 2026-02-21
 
 ## Overview
 
-The call scheduling system orchestrates daily AI voice calls to patients for medicine adherence tracking. It runs as a set of cron jobs inside the NestJS API server deployed on Google Cloud Run.
+The call scheduling system orchestrates daily AI voice calls to patients for medicine adherence tracking. It supports two execution modes controlled by the `USE_CLOUD_TASKS` env var:
+
+| Mode | `USE_CLOUD_TASKS` | How calls trigger | Status |
+|---|---|---|---|
+| **Cloud Tasks** (primary) | `true` | Event-driven — one Cloud Task per patient per time slot | **Active** |
+| **Cron** (fallback) | `false` | Polling — cron checks all patients every minute | Fallback |
 
 **Key files:**
-- `call-scheduler.service.ts` — Cron job orchestrator (4 cron jobs)
-- `call-orchestrator.service.ts` — Call initiation logic (new calls + retries)
-- `retry-handler.service.ts` — Retry scheduling and execution
-- `calls.service.ts` — Database queries for the `calls` collection
-- `distributed-lock.service.ts` — MongoDB-based distributed locking
-- `elevenlabs-webhook.controller.ts` — Post-call webhook handler
+- `cloud-tasks/cloud-tasks.service.ts` — Cloud Tasks client wrapper
+- `cloud-tasks/internal.controller.ts` — 4 internal HTTP endpoints
+- `common/guards/internal-task.guard.ts` — Shared secret authentication
+- `call-scheduler/call-scheduler.service.ts` — Cron fallback (4 cron jobs, disabled when Cloud Tasks active)
+- `call-scheduler/call-orchestrator.service.ts` — Call initiation logic (shared by both modes)
+- `call-scheduler/retry-handler.service.ts` — Retry scheduling (shared by both modes)
+- `calls/calls.service.ts` — Database queries for the `calls` collection
+- `integrations/elevenlabs/elevenlabs-webhook.controller.ts` — Post-call webhook handler
+
+---
+
+## Cloud Tasks Architecture (Primary)
+
+### How It Works
+
+```
+                  Cloud Scheduler
+                  (5:00 AM IST daily)
+                        │
+                        ▼
+          POST /internal/enqueue-daily-calls
+          (Loads all active call configs)
+                        │
+            ┌───────────┼──────────────┐
+            ▼           ▼              ▼
+    ┌──────────────┐ ┌──────────────┐ ┌──────────────┐
+    │ Cloud Task   │ │ Cloud Task   │ │ Cloud Task   │
+    │ Patient A    │ │ Patient B    │ │ Patient C    │
+    │ at 20:30 IST │ │ at 08:30 IST │ │ at 21:00 IST │
+    └──────┬───────┘ └──────┬───────┘ └──────┬───────┘
+           │                │                │
+           ▼                ▼                ▼
+    POST /internal/trigger-call (at exact patient time)
+           │
+           ▼
+    CallOrchestratorService.initiateCall()
+           │
+           ├──► Voice API (ElevenLabs or Sarvam)
+           │
+           ├──► Timeout task enqueued (T+10min)
+           │
+           ▼
+    Patient's phone rings
+           │
+           ▼
+    Post-call webhook arrives ──► transcript parsed ──► data extracted
+           │
+           ├── If no_answer ──► Retry task enqueued (T+delay)
+           │                           │
+           │                           ▼
+           │                    POST /internal/trigger-call (isRetry=true)
+           │
+           └── If completed ──► Report sent to caregiver
+```
+
+### Components
+
+#### 1. Cloud Scheduler (GCP managed cron)
+
+Two scheduled jobs trigger HTTP endpoints on the API:
+
+| Job | Schedule | Endpoint | Purpose |
+|---|---|---|---|
+| `enqueue-daily-calls` | `30 23 * * *` UTC (5:00 AM IST) | `/internal/enqueue-daily-calls` | Enqueue all patient calls for the day |
+| `check-paused-patients` | `*/30 * * * *` UTC (every 30 min) | `/internal/check-paused-patients` | Resume patients with expired pauses |
+
+Both jobs send `X-CloudTasks-Secret` header for authentication.
+
+#### 2. Cloud Tasks Queue (`daily-calls`)
+
+A single queue holds all tasks. Configuration:
+
+| Setting | Value | Why |
+|---|---|---|
+| Max dispatches/sec | 10 | Prevents overwhelming Twilio/ElevenLabs |
+| Max concurrent dispatches | 50 | Matches the old batch size limit |
+| Max attempts | 3 | Auto-retry on 5xx errors |
+| Min backoff | 10s | Wait between retries |
+| Max backoff | 300s | Cap retry delay at 5 minutes |
+
+#### 3. Task ID Dedup
+
+Every task has a deterministic ID that prevents duplicates:
+
+| Task Type | Task ID Pattern | Example |
+|---|---|---|
+| Daily call | `call-{date}-{patientId}-{timing}` | `call-2026-02-21-67a1b2c3d4-night` |
+| Timeout | `timeout-{callId}` | `timeout-67a1b2c3d4e5f6` |
+| Retry | `retry-{callId}-{retryCount}` | `retry-67a1b2c3d4e5f6-1` |
+
+Cloud Tasks rejects duplicate task IDs with `ALREADY_EXISTS` (gRPC code 6). This replaces distributed locks for dedup.
+
+#### 4. Internal Controller (`/api/v1/internal/*`)
+
+Four endpoints, all protected by `InternalTaskGuard` (shared secret auth):
+
+##### `POST /internal/enqueue-daily-calls`
+
+Triggered once daily by Cloud Scheduler. Enqueues individual tasks for each patient.
+
+```
+Flow:
+  1. Kill switch check → abort if DISABLE_ALL_CALLS=true
+  2. Load all active call configs
+  3. For each config:
+     a. Load patient → skip if isPaused or phoneStatus=invalid
+     b. For each time slot (morning/afternoon/evening/night):
+        - Parse HH:MM → compute exact schedule time in patient's timezone
+        - Skip if time already passed today
+        - Enqueue Cloud Task with date-based task ID (dedup)
+  4. Return { tasksEnqueued, tasksSkipped, configsScanned }
+```
+
+##### `POST /internal/trigger-call`
+
+Triggered by Cloud Task at the patient's exact call time. Handles both new and retry calls.
+
+Body: `{ patientId, timing?, callId?, isRetry? }`
+
+```
+NEW CALL PATH (isRetry=false):
+  1. Kill switch check
+  2. Load patient → check isPaused, phoneStatus
+  3. Load call config → check isActive
+  4. hasCallToday() safety check
+  5. CallOrchestratorService.initiateCall()
+     - Creates call record
+     - Calls voice API
+     - Enqueues timeout task at T+10min
+
+RETRY CALL PATH (isRetry=true, callId set):
+  1. Kill switch check
+  2. Load patient → check isPaused
+  3. claimForProcessing(callId, 'scheduled') → atomic claim
+  4. Load medicines
+  5. CallOrchestratorService.initiateRetryCall()
+```
+
+##### `POST /internal/call-timeout`
+
+Triggered 10 minutes after a call starts. Replaces the `cleanupStaleCalls` cron.
+
+Body: `{ callId }`
+
+```
+Flow:
+  1. Load call → if NOT in_progress, return (webhook already handled)
+  2. markStaleAsNoAnswer() → atomic update
+  3. Check hasCompletedCallToday() → skip retry if patient already had a good call
+  4. retryHandler.handleNoAnswer(callId) → enqueues retry Cloud Task
+```
+
+##### `POST /internal/check-paused-patients`
+
+Triggered every 30 minutes by Cloud Scheduler.
+
+```
+Flow:
+  1. Find patients where isPaused=true AND pausedUntil <= now
+  2. Resume each patient
+  3. Return { resumedCount }
+```
+
+#### 5. CloudTasksService
+
+Injectable NestJS service wrapping `@google-cloud/tasks`. Reads env vars:
+
+| Env Var | Purpose |
+|---|---|
+| `GCP_PROJECT_ID` | GCP project ID |
+| `CLOUD_TASKS_LOCATION` | Queue region (us-central1) |
+| `CLOUD_TASKS_QUEUE` | Queue name (daily-calls) |
+| `CLOUD_TASKS_INTERNAL_SECRET` | Shared secret for endpoint auth |
+| `API_BASE_URL` | Target URL for tasks |
+
+Methods:
+- `enqueueTask({ url, payload, scheduleTime?, taskId? })` — Core method
+- `enqueueCallTask(patientId, timing, scheduleTime, dateKey)` — Patient call
+- `enqueueTimeoutTask(callId, scheduleTime)` — Stale call detection
+- `enqueueRetryTask(patientId, callId, retryCount, scheduleTime)` — Retry call
+
+#### 6. InternalTaskGuard
+
+NestJS guard that verifies the `X-CloudTasks-Secret` header matches `CLOUD_TASKS_INTERNAL_SECRET`. Rejects with 403 if:
+- No secret configured on the server (safe default)
+- Header doesn't match
 
 ---
 
@@ -22,9 +207,9 @@ A call goes through these statuses:
 
 ```
 scheduled → in_progress → completed
-                        → no_answer   → (retry scheduled)
-                        → failed      → (retry scheduled)
-                        → busy        → (retry scheduled)
+                        → no_answer   → (retry task enqueued)
+                        → failed      → (retry task enqueued)
+                        → busy        → (retry task enqueued)
                         → declined
 ```
 
@@ -42,143 +227,29 @@ scheduled → in_progress → completed
 
 ---
 
-## Cron Jobs
-
-Four cron jobs run on the API server. Each is protected by a **distributed lock** to prevent duplicate execution across Cloud Run instances.
-
-### 1. `processScheduledCalls` — Every Minute
-
-**Purpose:** Check all active call configs, find patients whose scheduled call time is NOW (±5 min catch-up window), and initiate calls.
-
-**Flow:**
-```
-Every minute:
-  1. Kill switch check → abort if DISABLE_ALL_CALLS=true
-  2. Acquire lock: cron:processScheduledCalls (TTL: 120s)
-  3. Fetch all active call configs (isActive: true)
-  4. For each config, convert current UTC time → patient's timezone
-  5. Check 4 time slots: morningCallTime, afternoonCallTime, eveningCallTime, nightCallTime
-  6. For each slot, if currentTime is within [slotTime, slotTime + 5min]:
-     a. Fetch patient record
-     b. Skip if patient.isPaused
-     c. Skip if patient.phoneStatus === 'invalid'
-     d. Skip if hasCallToday() returns true (dedup)
-     e. Add to dueCalls batch
-  7. Send dueCalls to CallOrchestratorService.processBatch()
-  8. Release lock
-```
-
-**Catch-up window:** If the cron tick fires 1-5 minutes late (Cloud Run cold start, etc.), the call is still processed. Beyond 5 minutes, it's skipped.
-
-**Dedup check:** `hasCallToday()` looks for ANY non-retry call for this patient today (in patient's timezone). This prevents double-calling if the cron fires twice within the catch-up window.
-
-### 2. `processRetries` — Every 30 Minutes
-
-**Purpose:** Find retry calls that are past their `scheduledAt` time and initiate them.
-
-**Flow:**
-```
-Every 30 minutes (at :00 and :30):
-  1. Kill switch check
-  2. Acquire lock: cron:processRetries (TTL: 600s)
-  3. Fetch all due retries: status=scheduled, isRetry=true, scheduledAt <= now
-  4. Per-patient dedup: only ONE retry per patient per batch (Set<patientId>)
-     - Extra retries for same patient → marked as 'failed' (cancelled)
-  5. For each retry:
-     a. Atomic claim: claimForProcessing(id, 'scheduled') → sets status to 'in_progress'
-     b. Skip if claim fails (another instance already claimed it)
-     c. Skip if patient.isPaused
-     d. Fetch medicines, call config
-     e. Initiate via CallOrchestratorService.initiateRetryCall()
-  6. Release lock
-```
-
-### 3. `cleanupStaleCalls` — Every 2 Minutes
-
-**Purpose:** Find calls stuck in `in_progress` for >10 minutes (webhook never arrived) and mark them as `no_answer`.
-
-**Flow:**
-```
-Every 2 minutes:
-  1. Kill switch check
-  2. Acquire lock: cron:cleanupStaleCalls (TTL: 240s)
-  3. Find calls: status=in_progress, initiatedAt <= 10 minutes ago
-  4. For each stale call:
-     a. Atomically mark as no_answer (only if still in_progress) via markStaleAsNoAnswer()
-     b. If update returns null → webhook arrived between find and update, skip
-     c. Check if patient already has a completed call today via hasCompletedCallToday()
-        - If yes → skip retry (prevents stale test calls from creating retry cascades)
-     d. Schedule retry via retryHandler.handleNoAnswer()
-  5. Release lock
-```
-
-**Atomic update:** `markStaleAsNoAnswer()` uses `findOneAndUpdate({ status: 'in_progress' })` — if the webhook arrived and changed the status to `completed` between the find and update, the update returns null and we skip.
-
-### 4. `checkPausedPatients` — Every 30 Minutes
-
-**Purpose:** Auto-resume patients whose `pausedUntil` timestamp has expired (e.g., skip_today pauses).
-
-**Flow:**
-```
-Every 30 minutes:
-  1. Acquire lock: cron:checkPausedPatients (TTL: 600s)
-  2. Find patients: isPaused=true, pausedUntil <= now
-  3. Resume each patient
-  4. Release lock
-```
-
-**Note:** This cron does NOT check the kill switch — it's safe to run even when calls are disabled, since it only resumes patients without initiating calls.
-
----
-
-## Call Initiation
-
-### New Calls (CallOrchestratorService.initiateCall)
-
-When the scheduler identifies a due call, the orchestrator handles initiation:
-
-```
-initiateCall(dueCall):
-  1. Acquire per-patient lock: call:{patientId} (TTL: 60s)
-     - If locked → another call is being initiated for this patient, skip
-  2. Re-check hasCallToday() INSIDE the lock (double-check pattern)
-     - Prevents race where two cron ticks both pass the scheduler's dedup check
-  3. Fetch patient's medicines
-     - If no medicines → skip
-  4. Create call record (status: 'scheduled')
-     - Records: patientId, userId, scheduledAt, isFirstCall, voiceStack, medicinesChecked[]
-  5. Assemble dynamic prompt (if DYNAMIC_PROMPT_ENABLED=true)
-     - Per-patient opt-out: config.dynamicPromptEnabled !== false
-  6. Route to voice stack:
-     - VOICE_STACK=elevenlabs → ElevenLabsAgentService.makeOutboundCall()
-     - VOICE_STACK=sarvam → SarvamAgentService.makeOutboundCall()
-  7. Update call status → 'in_progress' with conversationId/roomName
-  8. On error:
-     - Mark call as 'failed'
-     - Schedule retry via retryHandler.handleFailed()
-  9. Release per-patient lock (in finally block)
-```
-
-### Retry Calls (CallOrchestratorService.initiateRetryCall)
-
-When processRetries triggers a retry, the orchestrator re-initiates the call using the existing call record:
-
-```
-initiateRetryCall(call, patient, config, medicines):
-  1. Build patientData from patient + medicines
-  2. Assemble dynamic prompt (if enabled)
-  3. Route to voice stack (same as new calls)
-  4. Update call status → 'in_progress' with conversationId
-  5. On error → throw (caller handles failure)
-```
-
-### Batching
-
-Calls are processed in batches of `MAX_CONCURRENT = 50` using `Promise.allSettled()`. This ensures one failing call doesn't block others.
-
----
-
 ## Retry System
+
+### How Retries Work with Cloud Tasks
+
+When a call ends with `no_answer`, `busy`, `failed`, or `re_scheduled`:
+
+```
+Post-call webhook ──► RetryHandlerService.handleNoAnswer/Busy/Failed()
+       │
+       ▼
+scheduleRetry(callId, reason):
+  1. Load call config → check retryEnabled, retryOnlyForStatuses
+  2. Check hasPendingRetry() → skip if one already exists
+  3. Check retryCount >= maxRetries → send missed call alert if exceeded
+  4. Create new call record (status=scheduled, isRetry=true, scheduledAt=T+delay)
+  5. Enqueue Cloud Task: retry-{callId}-{retryCount} at scheduledAt
+       │
+       ▼
+Cloud Task fires at scheduledAt ──► POST /internal/trigger-call (isRetry=true)
+       │
+       ▼
+claimForProcessing() → initiateRetryCall() → patient's phone rings again
+```
 
 ### Retry Delays
 
@@ -190,30 +261,6 @@ Calls are processed in batches of `MAX_CONCURRENT = 50` using `Promise.allSettle
 | `failed` | 10 min | Technical error |
 
 Configurable per-patient via `config.retryIntervalMinutes` (overrides defaults).
-
-### Retry Scheduling Flow
-
-```
-scheduleRetry(callId, reason):
-  1. Fetch call record and call config
-  2. Check config.retryEnabled → skip if false
-  3. Check config.retryOnlyForStatuses → skip if reason not in allowed list
-     - Default allowed: ['no_answer', 'busy']
-  4. Acquire per-patient lock: retry:{patientId} (TTL: 30s)
-  5. Check hasPendingRetry() → skip if patient already has a scheduled/in_progress retry
-  6. Check retryCount >= maxRetries → if exceeded:
-     a. Send missed call alert notification
-     b. Mark all pending medicines as 'missed'
-     c. Return (no more retries)
-  7. Create new call record:
-     - status: 'scheduled'
-     - scheduledAt: now + delayMinutes
-     - isRetry: true
-     - retryCount: originalCall.retryCount + 1
-     - originalCallId: points back to first call
-     - medicinesChecked: reset all responses to 'pending'
-  8. Release per-patient lock
-```
 
 ### Max Retries
 
@@ -231,110 +278,76 @@ When a call completes, ElevenLabs sends a POST webhook to `/webhooks/elevenlabs/
 
 ```
 handlePostCall(body):
-  1. Unwrap envelope if present (body.data vs body)
-  2. Extract conversationId and callId from dynamic variables
-  3. Idempotency check: skip if call.status is already 'completed' or 'no_answer'
-  4. Build transcript text from message array
-  5. Parse transcript via Gemini (TranscriptParserService):
+  1. Extract conversationId and callId from dynamic variables
+  2. Idempotency check: skip if call.status is already 'completed' or 'no_answer'
+  3. Build transcript text from message array
+  4. Parse transcript via Gemini (TranscriptParserService):
      - Medicine responses (taken/missed/pending)
      - Vitals (glucose, BP)
-     - Wellness/mood notes
-     - Complaints
-     - reScheduled flag (patient said "call me later")
-     - skipToday flag (patient doesn't want more calls today)
+     - Wellness/mood notes, complaints
+     - reScheduled / skipToday flags
      - Screening question answers
-  6. Calculate costs:
-     - Twilio: ₹3.56/min (US→India mobile)
-     - ElevenLabs: ₹17.42 per 1000 credits
-  7. Determine no_answer:
+  5. Calculate costs (Twilio + ElevenLabs)
+  6. Determine no_answer:
      - All medicines still 'pending' AND
      - Not reScheduled AND not skipToday AND
-     - (duration < 30s OR terminationReason matches no_answer/voicemail pattern)
-  8. If no_answer:
+     - (duration < 30s OR terminationReason matches no_answer/voicemail)
+  7. If no_answer:
      - Update call status → 'no_answer'
-     - Schedule retry
-     - Return early
-  9. If completed:
-     - Update call with all extracted data, costs, transcript
-     - Track first call + increment patient.callsCompletedCount
-     - Update adherence streak
-     - Send post-call report notification to payer
-     - If skipToday → pause patient until end of today IST
-     - If reScheduled → schedule retry
+     - retryHandler.handleNoAnswer() → enqueues retry Cloud Task
+  8. If completed:
+     - Save extracted data, costs, transcript
+     - Track adherence streak
+     - Send post-call report notification
+     - If skipToday → pause patient until end of day
+     - If reScheduled → retryHandler.handleReScheduled()
 ```
 
 ---
 
 ## Safety Mechanisms
 
-### 1. Kill Switch
+### Cloud Tasks Mode (3 layers)
+
+| Layer | Mechanism | Where | Prevents |
+|---|---|---|---|
+| 1 | Task ID dedup | Cloud Tasks queue | Duplicate tasks for same patient/date/timing |
+| 2 | `hasCallToday()` | trigger-call endpoint | Extra calls if task fires after a call already happened |
+| 3 | Webhook idempotency | Post-call webhook | Double-processing of webhook data |
+
+Plus these additional guards:
+- **Kill switch** (`DISABLE_ALL_CALLS`) — checked in every internal endpoint
+- **`hasPendingRetry()`** — prevents duplicate retry records in DB
+- **`claimForProcessing()`** — atomic claim for retry calls
+- **`hasCompletedCallToday()`** — prevents retry after a successful call
+
+### Kill Switch
 
 **Env var:** `DISABLE_ALL_CALLS=true`
 
-Checked at the top of every cron job (`processScheduledCalls`, `processRetries`, `cleanupStaleCalls`) and the test-call endpoint. When active, no outbound calls are initiated.
+Checked at the top of every internal endpoint and every cron job. When active, no outbound calls are initiated.
 
-**How to toggle:**
 ```bash
-# Disable all calls
-gcloud run services update discipline-ai-api --set-env-vars DISABLE_ALL_CALLS=true --region us-central1
+# Emergency stop
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "DISABLE_ALL_CALLS=true"
 
-# Re-enable calls
-gcloud run services update discipline-ai-api --remove-env-vars DISABLE_ALL_CALLS --region us-central1
+# Resume
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "DISABLE_ALL_CALLS=false"
 ```
 
-### 2. Distributed Locks
-
-MongoDB-based distributed locking prevents duplicate cron execution across Cloud Run instances.
-
-**How it works:**
-- `cronlocks` collection with unique `lockKey` index
-- `findOneAndUpdate` with `upsert: true` — atomic acquire
-- TTL index on `expiresAt` — auto-cleanup of expired locks
-- Each Cloud Run instance has a unique `instanceId` (random 8 bytes)
-- Lock is only acquired if no lock exists OR existing lock has expired
-
-**Lock TTLs:**
-
-| Lock Key | TTL | Purpose |
-|---|---|---|
-| `cron:processScheduledCalls` | 120s | Scheduler processing all patients |
-| `cron:processRetries` | 600s | Retry batch processing |
-| `cron:cleanupStaleCalls` | 240s | Stale call cleanup |
-| `cron:checkPausedPatients` | 600s | Paused patient auto-resume |
-| `call:{patientId}` | 60s | Per-patient call initiation |
-| `retry:{patientId}` | 30s | Per-patient retry creation |
-
-### 3. Multi-Layer Dedup (Prevents Duplicate Calls)
-
-**Layer 1 — Scheduler dedup:** `hasCallToday()` in the scheduler cron skips patients who already have a call record today.
-
-**Layer 2 — Orchestrator double-check:** Inside the per-patient lock, `hasCallToday()` is re-checked before creating the call record. Prevents race condition where two cron ticks both pass Layer 1.
-
-**Layer 3 — Retry dedup (hasPendingRetry):** Before creating a retry call, checks if a `scheduled` or `in_progress` retry already exists for this patient. Prevents duplicate retries from concurrent stale cleanup runs.
-
-**Layer 4 — Retry batch dedup (processedPatients Set):** During `processRetries()`, a Set tracks which patients have already been processed in this batch. Extra retries for the same patient are cancelled as `failed`.
-
-**Layer 5 — Atomic claim (claimForProcessing):** `findOneAndUpdate({ status: 'scheduled' })` atomically transitions the retry to `in_progress`. If two processes try to claim the same retry, only one succeeds.
-
-**Layer 6 — Webhook idempotency:** The post-call webhook checks `call.status` — if already `completed` or `no_answer`, the webhook is acknowledged but not re-processed.
-
-**Layer 7 — Stale cleanup guard:** Before creating a retry from a stale call, `hasCompletedCallToday()` checks if the patient already had a successful call today. Prevents stale test calls from triggering unwanted retry cascades.
-
-### 4. Patient-Level Guards
+### Patient-Level Guards
 
 | Guard | Effect |
 |---|---|
-| `patient.isPaused` | Skipped by scheduler, skipped by retry processing |
-| `patient.phoneStatus === 'invalid'` | Skipped by scheduler |
+| `patient.isPaused` | Skipped by enqueue + trigger-call |
+| `patient.phoneStatus === 'invalid'` | Skipped by enqueue + trigger-call |
 | `config.retryEnabled === false` | No retries scheduled |
 | `config.retryOnlyForStatuses` | Only specified reasons trigger retries |
-| `config.isActive === false` | Config not returned by `getActiveConfigs()` |
-
-### 5. Test-Call Endpoint Safety
-
-The `/api/v1/elevenlabs/test-call` endpoint also enforces:
-- Kill switch check (`DISABLE_ALL_CALLS`)
-- Patient pause check (`patient.isPaused`)
+| `config.isActive === false` | Not returned by `getActiveConfigs()` |
 
 ---
 
@@ -358,22 +371,22 @@ Each patient has a `CallConfig` document with up to 4 time slots:
 }
 ```
 
-**Timezone handling:** All time comparisons happen in the patient's timezone. The scheduler converts UTC → patient timezone using Luxon before comparing against slot times.
+**Timezone handling:** Cloud Scheduler fires at 5:00 AM IST. The `enqueue-daily-calls` handler computes each task's exact fire time in the patient's timezone using Luxon.
 
-**One call per day:** Currently, `hasCallToday()` prevents more than one primary call per day (retries are allowed). The check is based on `scheduledAt` date in the patient's timezone.
+**One call per day:** `hasCallToday()` prevents more than one primary call per day (retries are allowed). Based on `scheduledAt` date in patient's timezone.
 
 ---
 
 ## Voice Stack Routing
 
-The system supports two voice stacks, selected via `VOICE_STACK` env var:
+Two voice stacks, selected via `VOICE_STACK` env var:
 
 | Stack | Components | Default |
 |---|---|---|
 | `elevenlabs` | ElevenLabs Conversational AI → Twilio SIP → Patient phone | Yes |
 | `sarvam` | LiveKit + Sarvam STT/TTS + Gemini → Twilio SIP → Patient phone | No |
 
-Both stacks use the same call record schema and webhook flow. The only difference is how the call is initiated and which `conversationId` field is used.
+Both stacks use the same call record schema, retry system, and webhook flow.
 
 ---
 
@@ -384,83 +397,120 @@ Each completed call records:
 - `elevenlabsCharges`: ₹17.42 per 1000 ElevenLabs credits
 - `totalCharges`: sum of above
 
-Daily cost aggregation available via `CallsService.getDailyCostAggregation()`.
-
 ---
 
-## Data Flow Diagram
+## End-to-End Flow Example
+
+Here's what happens for a patient with `nightCallTime: "20:30"` in `Asia/Kolkata`:
 
 ```
-                    ┌──────────────────────────────────┐
-                    │   CallSchedulerService (Cron)     │
-                    │                                    │
-                    │  processScheduledCalls (1 min)     │
-                    │  processRetries (30 min)           │
-                    │  cleanupStaleCalls (2 min)         │
-                    │  checkPausedPatients (30 min)      │
-                    └────────────┬───────────────────────┘
-                                 │
-                    ┌────────────▼───────────────────────┐
-                    │   CallOrchestratorService           │
-                    │                                     │
-                    │  initiateCall() ─── per-patient lock│
-                    │  initiateRetryCall()                │
-                    │  processBatch() ─── max 50 parallel │
-                    └──────┬────────────────┬─────────────┘
-                           │                │
-              ┌────────────▼──┐    ┌────────▼──────────┐
-              │ ElevenLabs    │    │  Sarvam/LiveKit    │
-              │ Agent Service │    │  Agent Service     │
-              └────────┬──────┘    └────────┬───────────┘
-                       │                    │
-                       │   Twilio SIP       │
-                       │  ◄─────────────────┘
-                       ▼
-              ┌────────────────┐
-              │ Patient Phone  │
-              └────────┬───────┘
-                       │ Call ends
-                       ▼
-              ┌────────────────────────────────────┐
-              │  ElevenLabs Webhook Controller      │
-              │  POST /webhooks/elevenlabs/post-call│
-              │                                     │
-              │  → TranscriptParser (Gemini)        │
-              │  → Medicine extraction              │
-              │  → Vitals / wellness / complaints   │
-              │  → Cost calculation                 │
-              │  → no_answer detection              │
-              │  → Retry scheduling                 │
-              │  → Post-call notification           │
-              └────────────────────────────────────┘
-                       │
-              ┌────────▼───────────────────────────┐
-              │  RetryHandlerService                │
-              │                                     │
-              │  scheduleRetry() ── per-patient lock│
-              │  processRetries() ── batch dedup    │
-              │  hasPendingRetry() ── atomic check  │
-              └─────────────────────────────────────┘
+23:30 UTC (5:00 AM IST):
+  Cloud Scheduler → POST /internal/enqueue-daily-calls
+  → Reads all active call configs
+  → Patient has nightCallTime=20:30, timezone=Asia/Kolkata
+  → Enqueues Cloud Task: ID=call-2026-02-21-{patientId}-night
+    scheduled for 20:30 IST (15:00 UTC)
+
+15:00 UTC (20:30 IST):
+  Cloud Tasks → POST /internal/trigger-call { patientId, timing: "night" }
+  → Checks: isPaused? hasCallToday? isActive?
+  → Creates call record (status=scheduled)
+  → Calls ElevenLabs/Sarvam → patient's phone rings
+  → Updates call to in_progress
+  → Enqueues timeout task: ID=timeout-{callId}, fires at 15:10 UTC
+
+Case A — Patient answers (within 10 min):
+  15:05 UTC: Post-call webhook arrives
+  → Transcript parsed by Gemini
+  → Medicine responses extracted
+  → Call marked as completed
+  → Post-call report sent to caregiver
+  15:10 UTC: Timeout task fires
+  → Finds call status=completed → no-op
+
+Case B — Patient doesn't answer:
+  15:03 UTC: Webhook arrives with no_answer indicators
+  → Call marked as no_answer
+  → retryHandler.handleNoAnswer(callId)
+    → Creates retry record (scheduledAt = 15:33 UTC = T+30min)
+    → Enqueues retry task: ID=retry-{retryCallId}-1
+  15:33 UTC: Retry task fires
+  → POST /internal/trigger-call { patientId, callId, isRetry: true }
+  → claimForProcessing() → success
+  → Patient's phone rings again (retry #1)
+
+Case C — No webhook at all (technical failure):
+  15:10 UTC: Timeout task fires
+  → Call still in_progress
+  → markStaleAsNoAnswer() → atomic update
+  → hasCompletedCallToday() → false
+  → retryHandler.handleNoAnswer(callId)
+  → Retry task enqueued
 ```
 
 ---
 
-## Incident: Retry Cascade (2026-02-21)
+## Cron Fallback (USE_CLOUD_TASKS=false)
+
+When `USE_CLOUD_TASKS=false`, the system falls back to 4 cron jobs in `CallSchedulerService`:
+
+| Cron | Schedule | Purpose |
+|---|---|---|
+| `processScheduledCalls` | Every 1 min | Poll all configs, find due calls, initiate |
+| `processRetries` | Every 30 min | Find due retry records, process them |
+| `cleanupStaleCalls` | Every 2 min | Find calls stuck in_progress >10min |
+| `checkPausedPatients` | Every 30 min | Resume patients with expired pauses |
+
+Each cron is protected by a distributed lock (MongoDB-based) to prevent duplicate execution across Cloud Run instances. This mode requires 6 distributed locks and 7 dedup layers.
+
+**To switch back:**
+```bash
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "USE_CLOUD_TASKS=false"
+```
+
+Cloud Scheduler jobs should also be paused when using cron fallback:
+```bash
+gcloud scheduler jobs pause enqueue-daily-calls --location=us-central1
+gcloud scheduler jobs pause check-paused-patients --location=us-central1
+```
+
+---
+
+## Monitoring & Debugging
+
+```bash
+# View Cloud Tasks queue status
+gcloud tasks queues describe daily-calls --location=us-central1
+
+# List pending tasks in queue
+gcloud tasks list --queue=daily-calls --location=us-central1
+
+# View Cloud Scheduler job status
+gcloud scheduler jobs describe enqueue-daily-calls --location=us-central1
+
+# Manually trigger the daily enqueue (testing)
+gcloud scheduler jobs run enqueue-daily-calls --location=us-central1
+
+# View API logs
+gcloud run services logs read discipline-ai-api --region us-central1 --limit 100
+
+# Check current env var values
+gcloud run services describe discipline-ai-api --region us-central1 --format="yaml(spec.template.spec.containers[0].env)"
+```
+
+---
+
+## Incident History: Retry Cascade (2026-02-21)
 
 ### What happened
-A test call left the call in `in_progress` status. The stale cleanup cron marked it as `no_answer` and created a retry. Multiple stale calls accumulated → each created its own retry → `processRetries` fired ALL retries within seconds → calls went to ALL patients across ALL user accounts.
+Stale test calls created multiple retry records. `processRetries` cron fired ALL retries at once → calls went to patients across multiple accounts.
 
 ### Root cause
-1. No per-patient dedup in `processRetries()` — all retries fired in parallel
-2. No `hasPendingRetry()` check — multiple retries created for same patient
-3. No `hasCompletedCallToday()` check in stale cleanup — retries created even after successful call
+1. No per-patient dedup in `processRetries()` batch
+2. No `hasPendingRetry()` check before creating retries
+3. No `hasCompletedCallToday()` in stale cleanup
 
-### Fixes applied
-1. **Kill switch** (`DISABLE_ALL_CALLS`) — emergency stop for all outbound calls
-2. **`hasPendingRetry()`** — prevents duplicate retry creation
-3. **Per-patient distributed lock** on `scheduleRetry()` — atomic check-and-create
-4. **`processedPatients` Set** — only one retry per patient per batch
-5. **Per-patient lock on `initiateCall()`** — with `hasCallToday()` re-check inside lock
-6. **`hasCompletedCallToday()`** in stale cleanup — skips retry if patient already had a successful call
-7. **Test-call endpoint** — now checks kill switch and patient pause status
-8. **Extended lock TTLs** — prevents lock expiration during long processing runs
+### Resolution
+Migrated from cron-based polling to Cloud Tasks event-driven architecture. Cloud Tasks provides natural dedup through task IDs and eliminates the need for distributed locks and multi-layer dedup.

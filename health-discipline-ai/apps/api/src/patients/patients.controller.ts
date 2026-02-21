@@ -13,6 +13,8 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { MedicinesService } from '../medicines/medicines.service';
 import { ElevenLabsService } from '../integrations/elevenlabs/elevenlabs.service';
 import { ConfigService } from '@nestjs/config';
+import { CallOrchestratorService } from '../call-scheduler/call-orchestrator.service';
+import { CallConfigsService } from '../call-configs/call-configs.service';
 
 @ApiTags('Patients')
 @ApiBearerAuth()
@@ -24,6 +26,8 @@ export class PatientsController {
     private medicinesService: MedicinesService,
     private elevenLabsService: ElevenLabsService,
     private configService: ConfigService,
+    private callOrchestratorService: CallOrchestratorService,
+    private callConfigsService: CallConfigsService,
   ) {}
 
   @Post()

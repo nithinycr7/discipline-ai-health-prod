@@ -16,12 +16,17 @@
 │  us-central1 (request-based)    │     │  worker  (always-on, min=1) │
 └──────────┬───────────────────────┘     └──────────┬──────────────────┘
            │                                        │
-   ┌───────┼──────────┐               ┌─────────────┼─────────────┐
-   ▼       ▼          ▼               ▼             ▼             ▼
-┌───────┐┌─────────┐┌──────┐  ┌──────────┐  ┌───────────┐  ┌─────────┐
-│MongoDB││ElevenLabs││Twilio│  │ LiveKit  │  │ Sarvam AI │  │ Gemini  │
-│Azure  ││Voice AI  ││      │  │ Cloud    │  │ STT + TTS │  │ LLM     │
-└───────┘└─────────┘└──────┘  └──────────┘  └───────────┘  └─────────┘
+   ┌───────┼──────────┬───────────┐    ┌────────────┼─────────────┐
+   ▼       ▼          ▼           ▼    ▼            ▼             ▼
+┌───────┐┌─────────┐┌──────┐┌────────────────┐┌───────────┐┌─────────┐
+│MongoDB││ElevenLabs││Twilio││Cloud Tasks     ││ Sarvam AI ││ Gemini  │
+│Azure  ││Voice AI  ││      ││+ Scheduler     ││ STT + TTS ││ LLM     │
+└───────┘└─────────┘└──────┘│(call scheduling)│└───────────┘└─────────┘
+                             └────────────────┘
+                             ┌──────────┐
+                             │ LiveKit  │
+                             │ Cloud    │
+                             └──────────┘
 ```
 
 - **Monorepo**: Turborepo with npm workspaces
@@ -368,7 +373,199 @@ Additional env vars needed on `discipline-ai-api` when using Sarvam stack:
 
 ---
 
-## 5. Key API Endpoints
+## 5. Cloud Tasks — Event-Driven Call Scheduling
+
+### Overview
+
+The call scheduling system uses **Google Cloud Tasks** (event-driven) instead of polling-based cron jobs. A feature flag `USE_CLOUD_TASKS` controls which system is active — set to `false` to fall back to the old cron-based scheduler.
+
+```
+┌────────────────────────┐
+│  Cloud Scheduler       │  (5:00 AM IST daily)
+│  enqueue-daily-calls   │──────────────────────────────────┐
+└────────────────────────┘                                  │
+                                                            ▼
+                                              ┌─────────────────────────┐
+                                              │  POST /internal/        │
+                                              │  enqueue-daily-calls    │
+                                              │  (NestJS API)           │
+                                              └──────────┬──────────────┘
+                                                         │ Enqueues 1 task
+                                                         │ per patient per slot
+                                                         ▼
+┌─────────────────────────────────────────────────────────────────────┐
+│                     Cloud Tasks Queue: daily-calls                  │
+│  ┌──────────────┐ ┌──────────────┐ ┌──────────────┐                │
+│  │ call-20260221│ │ call-20260221│ │ timeout-     │  ...           │
+│  │ -patientA    │ │ -patientB    │ │ 67abcdef     │                │
+│  │ -night       │ │ -morning     │ │              │                │
+│  └──────┬───────┘ └──────┬───────┘ └──────┬───────┘                │
+└─────────┼────────────────┼────────────────┼────────────────────────┘
+          │ At exact time  │                │ T+10min
+          ▼                ▼                ▼
+    POST /internal/trigger-call       POST /internal/call-timeout
+```
+
+### Infrastructure Setup
+
+#### 5.1 Enable Required APIs
+
+```bash
+gcloud services enable cloudtasks.googleapis.com cloudscheduler.googleapis.com \
+  --project=discipline-ai-health
+```
+
+#### 5.2 Create Cloud Tasks Queue
+
+```bash
+gcloud tasks queues create daily-calls \
+  --location=us-central1 \
+  --max-dispatches-per-second=10 \
+  --max-concurrent-dispatches=50 \
+  --max-attempts=3 \
+  --min-backoff=10s \
+  --max-backoff=300s \
+  --project=discipline-ai-health
+```
+
+#### 5.3 Create Cloud Scheduler Jobs
+
+**Daily call enqueue** — runs at 5:00 AM IST (23:30 UTC previous day):
+
+```bash
+gcloud scheduler jobs create http enqueue-daily-calls \
+  --location=us-central1 \
+  --schedule="30 23 * * *" \
+  --time-zone="UTC" \
+  --uri="https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/internal/enqueue-daily-calls" \
+  --http-method=POST \
+  --headers="Content-Type=application/json,X-CloudTasks-Secret=<SECRET>" \
+  --message-body="{}" \
+  --attempt-deadline=300s \
+  --project=discipline-ai-health
+```
+
+**Paused patients check** — runs every 30 minutes:
+
+```bash
+gcloud scheduler jobs create http check-paused-patients \
+  --location=us-central1 \
+  --schedule="*/30 * * * *" \
+  --time-zone="UTC" \
+  --uri="https://discipline-ai-api-337728476024.us-central1.run.app/api/v1/internal/check-paused-patients" \
+  --http-method=POST \
+  --headers="Content-Type=application/json,X-CloudTasks-Secret=<SECRET>" \
+  --message-body="{}" \
+  --attempt-deadline=120s \
+  --project=discipline-ai-health
+```
+
+> Replace `<SECRET>` with the value of `CLOUD_TASKS_INTERNAL_SECRET` env var on Cloud Run.
+
+#### 5.4 Environment Variables
+
+These env vars must be set on the `discipline-ai-api` Cloud Run service:
+
+| Variable                       | Value                      | Description                              |
+| ------------------------------ | -------------------------- | ---------------------------------------- |
+| `GCP_PROJECT_ID`               | `discipline-ai-health`     | GCP project for Cloud Tasks API          |
+| `CLOUD_TASKS_LOCATION`         | `us-central1`              | Queue region                             |
+| `CLOUD_TASKS_QUEUE`            | `daily-calls`              | Queue name                               |
+| `CLOUD_TASKS_INTERNAL_SECRET`  | `openssl rand -hex 32`     | Shared secret for internal endpoint auth |
+| `USE_CLOUD_TASKS`              | `true` or `false`          | Feature flag — `false` = old cron system |
+
+```bash
+# Set all Cloud Tasks env vars at once
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "\
+GCP_PROJECT_ID=discipline-ai-health,\
+CLOUD_TASKS_LOCATION=us-central1,\
+CLOUD_TASKS_QUEUE=daily-calls,\
+CLOUD_TASKS_INTERNAL_SECRET=<generated-secret>,\
+USE_CLOUD_TASKS=false"
+```
+
+### Internal Endpoints
+
+All endpoints are guarded by `X-CloudTasks-Secret` header. They are NOT in Swagger docs.
+
+| Endpoint                                 | Trigger               | Description                                                  |
+| ---------------------------------------- | --------------------- | ------------------------------------------------------------ |
+| `POST /api/v1/internal/enqueue-daily-calls`  | Cloud Scheduler (daily) | Loads all active call configs, enqueues one Cloud Task per patient per time slot |
+| `POST /api/v1/internal/trigger-call`         | Cloud Task (per patient) | Initiates call for a single patient. Body: `{ patientId, timing?, callId?, isRetry? }` |
+| `POST /api/v1/internal/call-timeout`         | Cloud Task (T+10min)   | Detects stale calls, marks as no_answer, triggers retry      |
+| `POST /api/v1/internal/check-paused-patients`| Cloud Scheduler (30 min) | Resumes patients with expired `pausedUntil`                |
+
+### Activation & Rollback
+
+**Activate Cloud Tasks:**
+
+```bash
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "USE_CLOUD_TASKS=true"
+```
+
+When `USE_CLOUD_TASKS=true`:
+- All 4 cron jobs (`processScheduledCalls`, `processRetries`, `cleanupStaleCalls`, `checkPausedPatients`) return immediately
+- Cloud Scheduler triggers `enqueue-daily-calls` and `check-paused-patients`
+- Cloud Tasks handles per-patient call triggering, timeouts, and retries
+
+**Rollback to cron:**
+
+```bash
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "USE_CLOUD_TASKS=false"
+```
+
+This instantly disables Cloud Tasks code paths and re-enables the cron jobs. Cloud Scheduler jobs can be paused separately:
+
+```bash
+gcloud scheduler jobs pause enqueue-daily-calls --location=us-central1
+gcloud scheduler jobs pause check-paused-patients --location=us-central1
+```
+
+### Kill Switch
+
+`DISABLE_ALL_CALLS=true` stops ALL outbound calls regardless of which scheduling system is active. Every internal endpoint and every cron job checks this flag first.
+
+```bash
+# Emergency stop
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "DISABLE_ALL_CALLS=true"
+
+# Resume
+gcloud run services update discipline-ai-api \
+  --region us-central1 \
+  --update-env-vars "DISABLE_ALL_CALLS=false"
+```
+
+### Monitoring
+
+```bash
+# View Cloud Tasks queue status
+gcloud tasks queues describe daily-calls --location=us-central1
+
+# List pending tasks
+gcloud tasks list --queue=daily-calls --location=us-central1
+
+# View Cloud Scheduler job status
+gcloud scheduler jobs describe enqueue-daily-calls --location=us-central1
+gcloud scheduler jobs describe check-paused-patients --location=us-central1
+
+# Manually trigger the daily enqueue (for testing)
+gcloud scheduler jobs run enqueue-daily-calls --location=us-central1
+
+# View API logs for Cloud Tasks activity
+gcloud run services logs read discipline-ai-api --region us-central1 --limit 100
+```
+
+---
+
+## 6. Key API Endpoints
 
 | Endpoint                                     | Description                                  |
 | -------------------------------------------- | -------------------------------------------- |
@@ -381,7 +578,7 @@ Additional env vars needed on `discipline-ai-api` when using Sarvam stack:
 
 ---
 
-## 6. ElevenLabs Webhook Setup
+## 7. ElevenLabs Webhook Setup
 
 The post-call webhook must be configured in ElevenLabs to send conversation data back to our API.
 
@@ -396,7 +593,7 @@ The post-call webhook must be configured in ElevenLabs to send conversation data
 
 ---
 
-## 7. Local Development
+## 8. Local Development
 
 ```bash
 cd health-discipline-ai
@@ -431,7 +628,7 @@ FRONTEND_URL=http://localhost:3000
 
 ---
 
-## 8. Updating an Existing Deployment
+## 9. Updating an Existing Deployment
 
 ### Backend (Cloud Run)
 
@@ -481,7 +678,7 @@ gcloud run deploy sarvam-agent-worker \
 
 ---
 
-## 9. Troubleshooting
+## 10. Troubleshooting
 
 | Issue                                          | Fix                                                                                                                |
 | ---------------------------------------------- | ------------------------------------------------------------------------------------------------------------------ |
@@ -498,3 +695,8 @@ gcloud run deploy sarvam-agent-worker \
 | Sarvam worker killed by Cloud Run              | Ensure `--min-instances 1` and `--no-cpu-throttling` are set. Worker needs persistent CPU for WebSocket keepalive  |
 | Calls ring but no agent voice                  | Check `VOICE_STACK` env var on API. If `sarvam`, verify the agent worker is running and connected to LiveKit       |
 | Sarvam call in wrong language                  | Check patient's `preferredLanguage` in DB. Worker maps to Sarvam lang codes (e.g., `te` → `te-IN`)                |
+| Cloud Tasks not firing                         | Check `USE_CLOUD_TASKS=true` on Cloud Run. Verify queue exists: `gcloud tasks queues describe daily-calls --location=us-central1` |
+| Cloud Scheduler not triggering                 | Check job status: `gcloud scheduler jobs describe enqueue-daily-calls --location=us-central1`. Verify `X-CloudTasks-Secret` header matches env var |
+| Duplicate calls with Cloud Tasks               | Task ID dedup should prevent this. Check for tasks with same ID pattern in queue. Verify `hasCallToday()` is working |
+| Internal endpoints return 403                  | `X-CloudTasks-Secret` header doesn't match `CLOUD_TASKS_INTERNAL_SECRET` env var on Cloud Run                     |
+| Cloud Tasks `ALREADY_EXISTS` errors in logs    | Normal — this is the dedup mechanism working. Task was already enqueued for that patient/date/timing               |
