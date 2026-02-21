@@ -12,7 +12,7 @@ interface Solution {
 
 const solutions: Solution[] = [
   {
-    problem: 'You're always one crisis away from panic',
+    problem: "You're always one crisis away from panic",
     solution: 'Real-time alerts notify you instantly',
     detail: 'If vitals spike, medicines are missed, or a call goes unanswered, you know within minutes — not hours.',
     icon: (
@@ -22,9 +22,9 @@ const solutions: Solution[] = [
     ),
   },
   {
-    problem: 'They won't tell you the truth',
-    solution: 'We hear what they don't say',
-    detail: 'Our AI detects tone, mood changes, and unspoken concerns. You see the real picture, not just "I'm fine."',
+    problem: "They won't tell you the truth",
+    solution: "We hear what they don't say",
+    detail: "Our AI detects tone, mood changes, and unspoken concerns. You see the real picture, not just 'I'm fine.'",
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
         <path strokeLinecap="round" strokeLinejoin="round" d="M15.182 15.182a4.5 4.5 0 0 1-6.364 0M21 12a9 9 0 1 1-18 0 9 9 0 0 1 18 0ZM9.75 9.75c0 .414-.168.75-.375.75S9 10.164 9 9.75 9.168 9 9.375 9s.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Zm5.625 0c0 .414-.168.75-.375.75s-.375-.336-.375-.75.168-.75.375-.75.375.336.375.75Zm-.375 0h.008v.015h-.008V9.75Z" />
@@ -32,8 +32,8 @@ const solutions: Solution[] = [
     ),
   },
   {
-    problem: 'You can't be there when they need you most',
-    solution: 'We're there every single day',
+    problem: "You can't be there when they need you most",
+    solution: "We're there every single day",
     detail: '365 days a year, an AI companion calls to check in, know their status, and alert you to changes — while you sleep.',
     icon: (
       <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" strokeWidth={1.5} stroke="currentColor">
