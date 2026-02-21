@@ -1,10 +1,10 @@
-# EchoCare AI
+# CoCare AI
 
 > A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report.
 
-## What is EchoCare AI?
+## What is CoCare AI?
 
-EchoCare AI is an AI-powered wellness companion designed for elderly care in India. It makes daily voice calls to elderly parents in 11 Indian languages (Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Gujarati, Malayalam, Punjabi, Odia, and English), checking on their health, medicine adherence, mood, and overall wellbeing. After each call, it sends a structured wellness report to family members via WhatsApp.
+CoCare AI is an AI-powered wellness companion designed for elderly care in India. It makes daily voice calls to elderly parents in 11 Indian languages (Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Gujarati, Malayalam, Punjabi, Odia, and English), checking on their health, medicine adherence, mood, and overall wellbeing. After each call, it sends a structured wellness report to family members via WhatsApp.
 
 ## Who is it for?
 
@@ -43,8 +43,8 @@ EchoCare AI is an AI-powered wellness companion designed for elderly care in Ind
 
 ## Links
 
-- Website: https://echocare.ai
-- Live Demo: https://echocare.ai/demo
-- For Hospitals: https://echocare.ai/hospitals
-- Sign Up: https://echocare.ai/register/payer
-- Contact: hello@echocare.ai
+- Website: https://cocarely.com
+- Live Demo: https://cocarely.com/demo
+- For Hospitals: https://cocarely.com/hospitals
+- Sign Up: https://cocarely.com/register/payer
+- Contact: hello@cocarely.com

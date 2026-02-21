@@ -1,0 +1,34 @@
+{
+  "patientName": "Amma",
+  "preferredLanguage": "hi",
+  "isNewPatient": false,
+  "hasGlucometer": true,
+  "hasBPMonitor": true,
+  "medicines": [
+    {
+      "name": "Aspirin",
+      "timing": "morning"
+    },
+    {
+      "name": "Metformin",
+      "timing": "morning"
+    },
+    {
+      "name": "Lisinopril",
+      "timing": "evening"
+    },
+    {
+      "name": "Atorvastatin",
+      "timing": "night"
+    }
+  ],
+  "callId": "test-call-001",
+  "webhookUrl": "http://localhost:3000/api/calls/webhook",
+  "dynamicPrompt": {
+    "relationshipDirective": "You are like a caring daughter calling to check on her mother.",
+    "toneDirective": "Be warm and affectionate, like family.",
+    "flowDirective": "Keep the conversation natural and flowing.",
+    "contextNotes": "Patient has diabetes and hypertension, takes medicines regularly.",
+    "screeningQuestions": "How is your energy level today? Any dizziness or headaches?"
+  }
+}

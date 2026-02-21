@@ -262,7 +262,7 @@ export default function HospitalsPage() {
                         93% cheaper
                       </div>
                       <p className="text-sm font-semibold uppercase tracking-wide text-primary/80">
-                        EchoCare AI
+                        CoCare AI
                       </p>
                       <p className="mt-4 text-4xl font-extrabold text-primary">
                         ~₹7
@@ -363,7 +363,7 @@ export default function HospitalsPage() {
                     </ul>
 
                     <Link
-                      href={tier.price === 'Custom' ? 'mailto:hello@echocare.ai' : '/register/hospital'}
+                      href={tier.price === 'Custom' ? 'mailto:hello@cocarely.com' : '/register/hospital'}
                       className={`mt-8 block w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 ${
                         tier.popular
                           ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:-translate-y-0.5'
@@ -404,7 +404,7 @@ export default function HospitalsPage() {
                       Request a Pilot
                     </Link>
                     <a
-                      href="mailto:hello@echocare.ai"
+                      href="mailto:hello@cocarely.com"
                       className="inline-flex items-center justify-center gap-2 rounded-xl border border-white/20 px-8 py-4 text-[0.938rem] font-semibold text-white transition-all duration-300 hover:border-white/40 hover:bg-white/10"
                     >
                       Schedule a Demo

@@ -71,6 +71,7 @@ export class SarvamWebhookController {
       let reScheduled = false;
       let skipToday = false;
       let screeningAnswers: Array<{ questionId: string; answer: string; dataType: string }> = [];
+      let llmResult: any = null;
 
       if (transcriptText) {
         try {
@@ -86,7 +87,7 @@ export class SarvamWebhookController {
             })
             .filter(Boolean) as ScreeningQuestionInput[];
 
-          const llmResult = await this.transcriptParser.parseTranscript(
+          llmResult = await this.transcriptParser.parseTranscript(
             transcriptText,
             medicines.map((m: any) => ({
               brandName: m.brandName,
@@ -191,9 +192,20 @@ export class SarvamWebhookController {
         return { received: true, callId, roomName, status: 'no_answer' };
       }
 
-      // Update vitals if patient reported checking them
-      if (vitalsChecked === 'yes') {
-        await this.callsService.addVitals(callId, { capturedAt: new Date() });
+      // Update vitals if patient reported checking them or reported values
+      if (vitalsChecked === 'yes' || llmResult?.vitals) {
+        const vitalsData: any = { capturedAt: new Date() };
+        if (llmResult?.vitals?.glucose) {
+          vitalsData.glucose = llmResult.vitals.glucose;
+        }
+        if (llmResult?.vitals?.bloodPressure) {
+          vitalsData.bloodPressure = llmResult.vitals.bloodPressure;
+        }
+        await this.callsService.addVitals(callId, vitalsData);
+        this.logger.log(
+          `Vitals stored for call ${callId}: glucose=${vitalsData.glucose || 'not reported'}, ` +
+          `bp=${vitalsData.bloodPressure ? `${vitalsData.bloodPressure.systolic}/${vitalsData.bloodPressure.diastolic}` : 'not reported'}`,
+        );
       }
 
       // Track first call and increment count

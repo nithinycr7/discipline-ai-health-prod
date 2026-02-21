@@ -10,6 +10,10 @@ export interface ScreeningQuestionInput {
 export interface ParsedCallData {
   medicineResponses: Array<{ medicineName: string; response: string }>;
   vitalsChecked: string | null;
+  vitals?: {
+    glucose?: number;
+    bloodPressure?: { systolic: number; diastolic: number };
+  };
   wellness: string | null;
   complaints: string[];
   reScheduled: boolean;
@@ -95,6 +99,10 @@ OUTPUT FORMAT — return ONLY this JSON, no explanation:
     { "name": "<EXACT brand name from list>", "response": "taken" | "not_taken" | "unclear" }
   ],
   "vitals_checked": "yes" | "no" | "not_applicable",
+  "vitals": {
+    "glucose": <number or null>,
+    "blood_pressure": { "systolic": <number or null>, "diastolic": <number or null> }
+  },
   "wellness": "good" | "okay" | "not_well",
   "complaints": ["<complaint in English>"] or [],
   "re_scheduled": true | false,
@@ -149,9 +157,12 @@ EXTRACTION RULES:
    - One medicine, one response. Include ALL medicines from the list, even if not discussed (mark those "unclear")
 
 2. VITALS:
-   - "yes" if patient said they checked BP/sugar/glucose today
-   - "no" if they have the device but didn't check
-   - "not_applicable" if no glucometer and no BP monitor, or vitals not discussed
+   - vitals_checked: "yes" if patient said they checked BP/sugar/glucose today, "no" if they have the device but didn't check, "not_applicable" if no glucometer and no BP monitor, or vitals not discussed
+   - Extract actual values:
+     * glucose: numeric value in mg/dL (e.g. 145, 98) if patient reported it; otherwise null
+     * blood_pressure: { "systolic": <number>, "diastolic": <number> } if patient reported it; otherwise both null
+     * Examples: "sugar is 120" → glucose: 120; "BP is 130 over 80" → { "systolic": 130, "diastolic": 80 }
+     * If only one value mentioned, set the other to null
 
 3. WELLNESS — patient's overall mood/state during the call:
    - "good" — cheerful, happy, normal, fine, feeling well
@@ -264,12 +275,23 @@ Return ONLY valid JSON.`;
         }
       }
 
+      // Extract vitals values if present
+      const vitals: any = {};
+      if (parsed.vitals?.glucose) vitals.glucose = parsed.vitals.glucose;
+      if (parsed.vitals?.blood_pressure?.systolic) {
+        vitals.bloodPressure = {
+          systolic: parsed.vitals.blood_pressure.systolic,
+          diastolic: parsed.vitals.blood_pressure.diastolic || 0,
+        };
+      }
+
       return {
         medicineResponses: (parsed.medicine_responses || []).map((m: any) => ({
           medicineName: m.name,
           response: this.normalizeResponse(m.response),
         })),
         vitalsChecked: parsed.vitals_checked || null,
+        vitals: Object.keys(vitals).length > 0 ? vitals : undefined,
         wellness: parsed.wellness || null,
         complaints: Array.isArray(parsed.complaints)
           ? parsed.complaints.filter((c: string) => c && c !== 'none')

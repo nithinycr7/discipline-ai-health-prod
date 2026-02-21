@@ -6,7 +6,7 @@ import { ScrollReveal } from './ui/scroll-reveal';
 
 const plans = [
   {
-    name: 'Echo Basic',
+    name: 'Co Starter',
     nameHindi: 'सुरक्षा',
     subtitle: 'Essential Monitoring',
     monthly: { priceUSD: 17, priceINR: 1499 },
@@ -23,7 +23,7 @@ const plans = [
     ],
   },
   {
-    name: 'Echo Care',
+    name: 'CoCare',
     nameHindi: 'सम्पूर्ण',
     subtitle: 'Complete Care',
     monthly: { priceUSD: 30, priceINR: 2699 },
@@ -41,7 +41,7 @@ const plans = [
     ],
   },
   {
-    name: 'Echo Guardian',
+    name: 'Co Family',
     nameHindi: 'रक्षक',
     subtitle: 'Premium Care',
     monthly: { priceUSD: 50, priceINR: 4499 },
@@ -75,7 +75,7 @@ export function Pricing() {
               Less than what you'd spend on one flight home
             </h2>
             <p className="mt-4 text-body-lg text-muted-foreground">
-              <strong className="text-foreground/90">Echo Care:</strong> $349/year = $29/month = $0.95 per day
+              <strong className="text-foreground/90">CoCare:</strong> $349/year = $29/month = $0.95 per day
             </p>
             <p className="mt-2 text-sm text-muted-foreground">
               Start with a free 7-day trial. No credit card required. Cancel anytime with a WhatsApp message.

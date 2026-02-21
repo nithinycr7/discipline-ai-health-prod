@@ -8,7 +8,10 @@
       "Bash(for i in {1..12})",
       "Bash(if curl -s http://localhost:3001/api/v1/health)",
       "Bash(then)",
-      "Bash(break)"
+      "Bash(break)",
+      "Bash(/c/Users/nithi/AppData/Local/Google/Cloud SDK/google-cloud-sdk/bin/gcloud run deploy discipline-ai-api --source . --region us-central1 --allow-unauthenticated)",
+      "Read(//c/Users/nithi/AppData/Local/Temp/claude/c--Users-nithi-repos-discipline-health-health-discipline-ai/tasks//**)",
+      "Bash(/tmp/update_patient.js:*)"
     ],
     "additionalDirectories": [
       "\\tmp"

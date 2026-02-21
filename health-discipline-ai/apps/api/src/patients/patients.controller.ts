@@ -1,6 +1,7 @@
 import {
   Controller, Get, Post, Put, Body, Param, UseGuards, Query, Res, Header,
 } from '@nestjs/common';
+import { ModuleRef } from '@nestjs/core';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { Response } from 'express';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
@@ -13,7 +14,6 @@ import { UpdatePatientDto } from './dto/update-patient.dto';
 import { MedicinesService } from '../medicines/medicines.service';
 import { ElevenLabsService } from '../integrations/elevenlabs/elevenlabs.service';
 import { ConfigService } from '@nestjs/config';
-import { CallOrchestratorService } from '../call-scheduler/call-orchestrator.service';
 import { CallConfigsService } from '../call-configs/call-configs.service';
 
 @ApiTags('Patients')
@@ -26,8 +26,8 @@ export class PatientsController {
     private medicinesService: MedicinesService,
     private elevenLabsService: ElevenLabsService,
     private configService: ConfigService,
-    private callOrchestratorService: CallOrchestratorService,
     private callConfigsService: CallConfigsService,
+    private moduleRef: ModuleRef,
   ) {}
 
   @Post()
@@ -144,5 +144,47 @@ export class PatientsController {
       'Content-Disposition': `inline; filename="preview-${patient.preferredName}.mp3"`,
     });
     res.send(audioBuffer);
+  }
+
+  @Post(':id/test-call')
+  @ApiOperation({ summary: 'Trigger an immediate test call for a patient' })
+  async testCall(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+    @Body() body: { timing?: string } = {},
+  ) {
+    // Verify user owns this patient
+    const patient = await this.patientsService.findByIdForUser(id, userId);
+
+    const config = await this.callConfigsService.findByPatient(id);
+    if (!config || !config.isActive) {
+      return { status: 'error', reason: 'No active call configuration for this patient' };
+    }
+
+    const medicines = await this.medicinesService.findByPatient(id);
+    if (!medicines.length) {
+      return { status: 'error', reason: 'No medicines configured for this patient' };
+    }
+
+    const timing = body.timing || 'test';
+
+    try {
+      // Resolve CallOrchestratorService at runtime to handle circular dependency
+      const { CallOrchestratorService } = await import('../call-scheduler/call-orchestrator.service');
+      const orchestrator = this.moduleRef.get(CallOrchestratorService, { strict: false });
+
+      if (!orchestrator) {
+        return { status: 'error', reason: 'Call orchestrator service not available' };
+      }
+
+      await orchestrator.initiateCall({
+        config,
+        patient,
+        timing,
+      });
+      return { status: 'ok', message: 'Test call initiated', patientId: id, timing };
+    } catch (error: any) {
+      return { status: 'error', reason: error.message };
+    }
   }
 }

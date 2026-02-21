@@ -1,4 +1,4 @@
-export function EchoCareLogo({ className = 'h-8 w-8' }: { className?: string }) {
+export function CoCareLogo({ className = 'h-8 w-8' }: { className?: string }) {
   return (
     <svg
       viewBox="0 0 40 40"
@@ -7,7 +7,7 @@ export function EchoCareLogo({ className = 'h-8 w-8' }: { className?: string }) 
       className={className}
     >
       <defs>
-        <linearGradient id="echoGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+        <linearGradient id="cocareGrad" x1="0%" y1="0%" x2="100%" y2="100%">
           <stop offset="0%" stopColor="#3B82F6" />
           <stop offset="100%" stopColor="#EC4899" />
         </linearGradient>
@@ -15,7 +15,7 @@ export function EchoCareLogo({ className = 'h-8 w-8' }: { className?: string }) 
       {/* Heart shape */}
       <path
         d="M20 35C10 28 2 22 2 14C2 8 6.5 3.5 11.5 3.5C14.5 3.5 17.5 5.5 20 9C22.5 5.5 25.5 3.5 28.5 3.5C33.5 3.5 38 8 38 14C38 22 30 28 20 35Z"
-        fill="url(#echoGrad)"
+        fill="url(#cocareGrad)"
       />
       {/* ECG heartbeat line */}
       <path

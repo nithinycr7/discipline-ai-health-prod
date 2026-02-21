@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { Module, forwardRef } from '@nestjs/common';
 import { CallSchedulerService } from './call-scheduler.service';
 import { CallOrchestratorService } from './call-orchestrator.service';
 import { RetryHandlerService } from './retry-handler.service';
@@ -15,7 +15,7 @@ import { DynamicPromptModule } from '../dynamic-prompt/dynamic-prompt.module';
   imports: [
     CallsModule,
     CallConfigsModule,
-    PatientsModule,
+    forwardRef(() => PatientsModule),
     MedicinesModule,
     IntegrationsModule,
     NotificationsModule,

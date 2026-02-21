@@ -1,5 +1,5 @@
 import Link from 'next/link';
-import { EchoCareLogo } from '@/components/echocare-logo';
+import { CoCareLogo } from '@/components/cocare-logo';
 
 export function Footer() {
   return (
@@ -8,9 +8,9 @@ export function Footer() {
         <div className="grid gap-10 sm:grid-cols-2 lg:grid-cols-4">
           <div className="sm:col-span-2 lg:col-span-1">
             <div className="flex items-center gap-2.5">
-              <EchoCareLogo className="h-9 w-9" />
+              <CoCareLogo className="h-9 w-9" />
               <span className="text-lg font-bold text-foreground">
-                EchoCare
+                CoCare
               </span>
             </div>
             <p className="mt-3 max-w-xs text-sm text-muted-foreground leading-relaxed">
@@ -95,7 +95,7 @@ export function Footer() {
 
         <div className="mt-12 flex flex-col items-center justify-between gap-4 border-t border-border/60 pt-8 sm:flex-row">
           <p className="text-sm text-muted-foreground/70">
-            &copy; {new Date().getFullYear()} EchoCare AI. All rights reserved.
+            &copy; {new Date().getFullYear()} CoCare AI. All rights reserved.
           </p>
           <div className="flex items-center gap-4">
             <a href="#" className="text-muted-foreground/70 transition-colors hover:text-primary" aria-label="Twitter">

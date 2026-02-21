@@ -8,6 +8,7 @@ import { CallConfigsModule } from '../call-configs/call-configs.module';
 import { SubscriptionsModule } from '../subscriptions/subscriptions.module';
 import { MedicinesModule } from '../medicines/medicines.module';
 import { IntegrationsModule } from '../integrations/integrations.module';
+import { CallSchedulerModule } from '../call-scheduler/call-scheduler.module';
 
 @Module({
   imports: [

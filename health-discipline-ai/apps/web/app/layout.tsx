@@ -7,10 +7,10 @@ const inter = Inter({ subsets: ['latin'], variable: '--font-inter' });
 const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfair' });
 
 export const metadata: Metadata = {
-  metadataBase: new URL('https://echocare.ai'),
+  metadataBase: new URL('https://cocarely.com'),
   title: {
-    default: 'EchoCare AI — Know How Your Parents Are Really Doing',
-    template: '%s | EchoCare AI',
+    default: 'CoCare AI — Know How Your Parents Are Really Doing',
+    template: '%s | CoCare AI',
   },
   description:
     'A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report. No app needed. 11 Indian languages.',
@@ -23,30 +23,30 @@ export const metadata: Metadata = {
     'parent wellness tracker',
     'mood and health monitoring',
     'senior care technology',
-    'echocare',
+    'cocare',
     'medicine reminder for parents',
     'elderly care app India',
     'AI health companion',
     'voice call health check',
   ],
-  authors: [{ name: 'EchoCare AI', url: 'https://echocare.ai' }],
-  creator: 'EchoCare AI',
-  publisher: 'EchoCare AI',
+  authors: [{ name: 'CoCare AI', url: 'https://cocarely.com' }],
+  creator: 'CoCare AI',
+  publisher: 'CoCare AI',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'EchoCare AI — Know How Your Parents Are Really Doing',
+    title: 'CoCare AI — Know How Your Parents Are Really Doing',
     description:
       'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth. No app needed.',
     type: 'website',
     locale: 'en_IN',
-    siteName: 'EchoCare AI',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'EchoCare AI — Daily wellness calls for your parents' }],
+    siteName: 'CoCare AI',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'CoCare AI — Daily wellness calls for your parents' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'EchoCare AI — Know How Your Parents Are Really Doing',
+    title: 'CoCare AI — Know How Your Parents Are Really Doing',
     description:
       'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth.',
     images: ['/og-image.png'],

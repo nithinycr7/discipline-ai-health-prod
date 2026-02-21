@@ -1,7 +1,7 @@
 import type { MetadataRoute } from 'next';
 
 export default function sitemap(): MetadataRoute.Sitemap {
-  const baseUrl = 'https://echocare.ai';
+  const baseUrl = 'https://cocarely.com';
 
   return [
     {

@@ -14,15 +14,15 @@ import { Footer } from '@/components/marketing/footer';
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'EchoCare AI',
+  name: 'CoCare AI',
   alternateName: 'Health Discipline AI',
-  url: 'https://echocare.ai',
-  logo: 'https://echocare.ai/og-image.png',
+  url: 'https://cocarely.com',
+  logo: 'https://cocarely.com/og-image.png',
   description:
     'A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report.',
   contactPoint: {
     '@type': 'ContactPoint',
-    email: 'hello@echocare.ai',
+    email: 'hello@cocarely.com',
     contactType: 'customer service',
     availableLanguage: [
       'English', 'Hindi', 'Telugu', 'Tamil', 'Kannada',
@@ -35,8 +35,8 @@ const organizationJsonLd = {
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'EchoCare AI',
-  url: 'https://echocare.ai',
+  name: 'CoCare AI',
+  url: 'https://cocarely.com',
   description:
     'AI-powered daily wellness calls for elderly parents in 11 Indian languages.',
 };
@@ -44,10 +44,10 @@ const websiteJsonLd = {
 const serviceJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
-  name: 'EchoCare AI Wellness Calls',
+  name: 'CoCare AI Wellness Calls',
   provider: {
     '@type': 'Organization',
-    name: 'EchoCare AI',
+    name: 'CoCare AI',
   },
   description:
     'Daily AI voice calls to elderly parents checking on health, medicine adherence, mood, and wellbeing. Reports sent via WhatsApp.',
@@ -126,7 +126,7 @@ const faqJsonLd = {
       name: 'Can the AI give medical advice?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'No. EchoCare AI is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
+        text: 'No. CoCare AI is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
       },
     },
     {

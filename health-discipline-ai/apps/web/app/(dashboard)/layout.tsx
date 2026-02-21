@@ -5,7 +5,7 @@ import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { useAuth } from '@/lib/hooks/use-auth';
 import { cn } from '@/lib/utils';
-import { EchoCareLogo } from '@/components/echocare-logo';
+import { CoCareLogo } from '@/components/cocare-logo';
 import { Button } from '@/components/ui/button';
 
 const navigation = [
@@ -63,8 +63,8 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
             </button>
 
             <Link href="/dashboard" className="flex items-center gap-2">
-              <EchoCareLogo className="w-7 h-7" />
-              <span className="font-semibold tracking-tight hidden sm:block">EchoCare</span>
+              <CoCareLogo className="w-7 h-7" />
+              <span className="font-semibold tracking-tight hidden sm:block">CoCare</span>
             </Link>
             <nav className="hidden md:flex items-center gap-1">
               {navigation.map((item) => (

@@ -9,6 +9,6 @@ export default function robots(): MetadataRoute.Robots {
         disallow: ['/dashboard/', '/api/', '/onboarding/'],
       },
     ],
-    sitemap: 'https://echocare.ai/sitemap.xml',
+    sitemap: 'https://cocarely.com/sitemap.xml',
   };
 }
