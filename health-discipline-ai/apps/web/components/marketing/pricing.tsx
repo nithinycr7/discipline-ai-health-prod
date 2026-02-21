@@ -13,12 +13,12 @@ const plans = [
     yearly: { priceUSD: 199, priceINR: 16900, saveUSD: 5, saveINR: 900 },
     popular: false,
     features: [
-      '1 monthly AI wellness call',
+      'Daily AI wellness calls',
       'Medication reminder alerts',
       'Family dashboard access',
       'Quarterly health report',
       '24/7 emergency contact chain',
-      'Up to 5 family members',
+      'Share reports with up to 5 family members',
       'All 11 Indian languages',
     ],
   },
@@ -30,7 +30,7 @@ const plans = [
     yearly: { priceUSD: 349, priceINR: 29900, saveUSD: 11, saveINR: 1300 },
     popular: true,
     features: [
-      '1 weekly AI wellness call',
+      'Daily AI wellness calls',
       'Daily medication reminders',
       'Vitals tracking (BP, glucose)',
       'Bi-weekly health summary',
