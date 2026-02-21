@@ -385,6 +385,36 @@ export class CallsService {
   }
 
   /**
+   * Check if the patient already has a completed call today.
+   * Used by stale cleanup to skip retries when a successful call already happened.
+   */
+  async hasCompletedCallToday(patientId: string, timezone: string): Promise<boolean> {
+    const now = DateTime.now().setZone(timezone || 'Asia/Kolkata');
+    const startOfDay = now.startOf('day').toJSDate();
+    const endOfDay = now.endOf('day').toJSDate();
+
+    const count = await this.callModel.countDocuments({
+      patientId: new Types.ObjectId(patientId),
+      scheduledAt: { $gte: startOfDay, $lte: endOfDay },
+      status: 'completed',
+    });
+    return count > 0;
+  }
+
+  /**
+   * Check if a pending retry already exists for this patient (scheduled or in_progress).
+   * Prevents creating duplicate retries that would cascade into multiple calls.
+   */
+  async hasPendingRetry(patientId: string): Promise<boolean> {
+    const count = await this.callModel.countDocuments({
+      patientId: new Types.ObjectId(patientId),
+      isRetry: true,
+      status: { $in: ['scheduled', 'in_progress'] },
+    });
+    return count > 0;
+  }
+
+  /**
    * Atomically claim a call for processing — only succeeds if still in expected status.
    * Prevents race conditions where two processes try to handle the same call.
    */

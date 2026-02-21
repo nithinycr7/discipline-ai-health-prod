@@ -116,7 +116,8 @@ export class AuthService {
       decodedToken = await this.firebaseApp
         .auth()
         .verifyIdToken(dto.firebaseIdToken);
-    } catch {
+    } catch (error) {
+      console.error('Firebase token verification failed:', error);
       throw new UnauthorizedException('Invalid or expired Firebase token');
     }
 
@@ -128,8 +129,17 @@ export class AuthService {
       );
     }
 
-    // Check if user exists
-    let user = await this.usersService.findByPhone(phone);
+    // Normalize phone number (remove + prefix for consistency)
+    const normalizedPhone = phone.startsWith('+')
+      ? phone.substring(1)
+      : phone;
+
+    // Check if user exists (try both formats)
+    let user = await this.usersService.findByPhone(normalizedPhone);
+
+    if (!user && normalizedPhone !== phone) {
+      user = await this.usersService.findByPhone(phone);
+    }
 
     if (user) {
       // LOGIN flow — existing user
@@ -147,11 +157,11 @@ export class AuthService {
     // REGISTRATION flow — new user
     // If no name provided, signal the frontend to redirect to registration
     if (!dto.name) {
-      return { needsRegistration: true, phone, isNewUser: true };
+      return { needsRegistration: true, phone: normalizedPhone, isNewUser: true };
     }
 
     user = await this.usersService.create({
-      phone,
+      phone: normalizedPhone,
       name: dto.name,
       role: 'payer',
       location: dto.location,

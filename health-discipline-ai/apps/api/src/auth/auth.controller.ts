@@ -53,7 +53,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Verify Firebase Phone OTP and login/register payer' })
   async verifyOtp(@Body() dto: VerifyOtpDto) {
-    return this.authService.verifyFirebaseOtp(dto);
+    try {
+      this.logger.log(`Verify OTP attempt for phone from Firebase token`);
+      return await this.authService.verifyFirebaseOtp(dto);
+    } catch (error) {
+      this.logger.error(
+        `Verify OTP failed`,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
   }
 
   @Public()

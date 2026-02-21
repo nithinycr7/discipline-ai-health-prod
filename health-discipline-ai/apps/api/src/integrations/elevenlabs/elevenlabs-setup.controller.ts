@@ -106,7 +106,18 @@ export class ElevenLabsSetupController {
   @ApiOperation({ summary: 'Trigger a test AI call to a patient' })
   async testCall(@Body() body: { patientId: string }) {
     try {
+      // Global kill switch
+      if (this.configService.get<string>('DISABLE_ALL_CALLS') === 'true') {
+        return { success: false, error: 'All calls are disabled (DISABLE_ALL_CALLS=true)' };
+      }
+
       const patient = await this.patientsService.findById(body.patientId);
+
+      // Safety: don't call paused patients
+      if (patient.isPaused) {
+        return { success: false, error: `Patient ${patient.preferredName} is paused: ${patient.pauseReason || 'no reason'}` };
+      }
+
       const medicines = await this.medicinesService.findByPatient(body.patientId);
 
       if (!medicines.length) {

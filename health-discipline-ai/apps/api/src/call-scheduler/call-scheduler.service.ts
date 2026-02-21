@@ -1,4 +1,5 @@
 import { Injectable, Logger } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
 import { Cron, CronExpression } from '@nestjs/schedule';
 import { CallConfigsService } from '../call-configs/call-configs.service';
 import { CallsService } from '../calls/calls.service';
@@ -22,11 +23,20 @@ export class CallSchedulerService {
     private callOrchestratorService: CallOrchestratorService,
     private retryHandlerService: RetryHandlerService,
     private lockService: DistributedLockService,
+    private configService: ConfigService,
   ) {}
+
+  /** Global kill switch — set DISABLE_ALL_CALLS=true to stop all outbound calls */
+  private isKillSwitchActive(): boolean {
+    return this.configService.get<string>('DISABLE_ALL_CALLS') === 'true';
+  }
 
   @Cron(CronExpression.EVERY_MINUTE)
   async processScheduledCalls() {
-    const ran = await this.lockService.withLock('cron:processScheduledCalls', 55, async () => {
+    if (this.isKillSwitchActive()) {
+      return;
+    }
+    const ran = await this.lockService.withLock('cron:processScheduledCalls', 120, async () => {
       try {
         const now = DateTime.now();
         const configs = await this.callConfigsService.getActiveConfigs();
@@ -96,7 +106,10 @@ export class CallSchedulerService {
 
   @Cron('0 */30 * * * *') // Every 30 minutes
   async processRetries() {
-    const ran = await this.lockService.withLock('cron:processRetries', 300, async () => {
+    if (this.isKillSwitchActive()) {
+      return;
+    }
+    const ran = await this.lockService.withLock('cron:processRetries', 600, async () => {
       try {
         await this.retryHandlerService.processRetries();
       } catch (error) {
@@ -115,7 +128,10 @@ export class CallSchedulerService {
    */
   @Cron('0 */2 * * * *') // Every 2 minutes
   async cleanupStaleCalls() {
-    const ran = await this.lockService.withLock('cron:cleanupStaleCalls', 110, async () => {
+    if (this.isKillSwitchActive()) {
+      return;
+    }
+    const ran = await this.lockService.withLock('cron:cleanupStaleCalls', 240, async () => {
       try {
         const staleCalls = await this.callsService.findStaleCalls(10); // 10 min timeout
 
@@ -129,8 +145,21 @@ export class CallSchedulerService {
               `patient=${call.patientId}, voiceStack=${call.voiceStack}`,
           );
 
-          // Trigger retry via existing retry system
+          // Only trigger retry if patient doesn't already have a completed call today.
+          // This prevents stale test calls from creating retry cascades.
           try {
+            const config = await this.callConfigsService.findByPatient(call.patientId.toString());
+            const hasCompletedToday = await this.callsService.hasCompletedCallToday(
+              call.patientId.toString(),
+              config?.timezone || 'Asia/Kolkata',
+            );
+            if (hasCompletedToday) {
+              this.logger.log(
+                `Patient ${call.patientId} already has a completed call today, skipping retry for stale call ${call._id}`,
+              );
+              continue;
+            }
+
             await this.retryHandlerService.handleNoAnswer(call._id.toString());
           } catch (retryErr) {
             this.logger.error(`Failed to schedule retry for stale call ${call._id}: ${retryErr.message}`);

@@ -11,6 +11,7 @@ import { CallConfigsService } from '../call-configs/call-configs.service';
 import { PromptAssemblerService } from '../dynamic-prompt/prompt-assembler.service';
 import { DynamicPromptResult } from '../dynamic-prompt/types/prompt-context.types';
 import { RetryHandlerService } from './retry-handler.service';
+import { DistributedLockService } from '../distributed-lock/distributed-lock.service';
 
 interface DueCall {
   config: any;
@@ -37,6 +38,7 @@ export class CallOrchestratorService {
     private promptAssembler: PromptAssemblerService,
     @Inject(forwardRef(() => RetryHandlerService))
     private retryHandler: RetryHandlerService,
+    private lockService: DistributedLockService,
   ) {
     this.voiceStack = this.configService.get<string>('VOICE_STACK', 'elevenlabs');
     this.dynamicPromptGlobalEnabled =
@@ -65,16 +67,33 @@ export class CallOrchestratorService {
    */
   async initiateCall(dueCall: DueCall) {
     const { patient, timing } = dueCall;
+    const patientId = patient._id.toString();
     let callId: string | null = null;
 
+    // Per-patient lock prevents two cron instances from creating duplicate calls
+    const lockAcquired = await this.lockService.acquireLock(`call:${patientId}`, 60);
+    if (!lockAcquired) {
+      this.logger.log(`Could not acquire call lock for patient ${patientId}, another call is being initiated`);
+      return;
+    }
+
     try {
-      // Get ALL medicines for the patient (we call once at night for everything)
-      const medicines = await this.medicinesService.findByPatient(
-        patient._id.toString(),
+      // Re-check hasCallToday INSIDE the lock to prevent race condition
+      const config = dueCall.config;
+      const alreadyCalled = await this.callsService.hasCallToday(
+        patientId,
+        config.timezone || 'Asia/Kolkata',
       );
+      if (alreadyCalled) {
+        this.logger.log(`Patient ${patientId} already has a call today (detected inside lock), skipping`);
+        return;
+      }
+
+      // Get ALL medicines for the patient (we call once at night for everything)
+      const medicines = await this.medicinesService.findByPatient(patientId);
 
       if (medicines.length === 0) {
-        this.logger.log(`No medicines for patient ${patient._id}, skipping`);
+        this.logger.log(`No medicines for patient ${patientId}, skipping`);
         return;
       }
 
@@ -196,6 +215,8 @@ export class CallOrchestratorService {
           this.logger.warn(`Failed to schedule retry for call ${callId}: ${retryErr.message}`);
         }
       }
+    } finally {
+      await this.lockService.releaseLock(`call:${patientId}`);
     }
   }
 
