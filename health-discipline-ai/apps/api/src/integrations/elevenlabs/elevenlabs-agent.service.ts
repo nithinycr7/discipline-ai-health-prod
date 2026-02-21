@@ -401,7 +401,10 @@ Ask about each relevant medicine one at a time. Name it clearly.
 After each answer, acknowledge briefly ("acchha", "theek hai") and move to the next. Don't parrot their answer back.
 
 Step 3 — VITALS & SCREENING:
-If they have a glucometer or BP monitor, ask if they checked today. If the reading is mentioned, acknowledge it.
+If they have a glucometer or BP monitor, ask if they checked today. If YES, ask for the specific values:
+- For glucose: "Kya value aaya?" (What reading did you get?)
+- For BP: "Kya reading ayi? Top aur bottom number bataiye" (What were the top and bottom numbers?)
+Accept readings in any format (e.g., "130" or "130 by 80" for BP).
 {{screening_questions}}
 Ask screening questions naturally, one at a time. If the patient sounds tired or rushed, skip gracefully.
 

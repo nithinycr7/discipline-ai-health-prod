@@ -63,11 +63,17 @@ Extract the following structured data:
 
 2. vitals_checked: Whether patient checked vitals today — "yes", "no", or "not_applicable"
 
-3. wellness: Patient's overall state — "good" (happy, healthy, normal), "okay" (fine but not great), "not_well" (complaints, pain, low energy, sad)
+3. vitals: Actual vitals readings if reported, in format: {"glucose": <number>, "blood_pressure": {"systolic": <number>, "diastolic": <number>}}
+   - Extract glucose in mg/dL (e.g., 145, 98)
+   - Extract BP in systolic/diastolic format (e.g., "130 over 80" → {"systolic": 130, "diastolic": 80})
+   - If a value wasn't mentioned, use null for that field
+   - Example: {"glucose": 120, "blood_pressure": {"systolic": 130, "diastolic": 80}}
 
-4. complaints: Comma-separated list of any health complaints mentioned in English, or "none"
+4. wellness: Patient's overall state — "good" (happy, healthy, normal), "okay" (fine but not great), "not_well" (complaints, pain, low energy, sad)
 
-5. re_scheduled: "true" if patient asked to call back later or said they are busy:
+5. complaints: Comma-separated list of any health complaints mentioned in English, or "none"
+
+6. re_scheduled: "true" if patient asked to call back later or said they are busy:
    - Hindi: baad mein call karo, abhi busy hoon, phone rakhti hoon
    - Telugu: tarvata call cheyandi, ippudu busy
    - Tamil: appuram call pannunga, ippodhu busy
@@ -81,13 +87,14 @@ Transcript:
 {transcript}
 
 Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
-{{"medicine_responses": "...", "vitals_checked": "...", "wellness": "...", "complaints": "...", "re_scheduled": "..."}}"""
+{{"medicine_responses": "...", "vitals_checked": "...", "vitals": {{"glucose": null, "blood_pressure": {{"systolic": null, "diastolic": null}}}}, "wellness": "...", "complaints": "...", "re_scheduled": "..."}}"""
 
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
 
 FALLBACK = {
     "medicine_responses": "",
     "vitals_checked": "unclear",
+    "vitals": {"glucose": None, "blood_pressure": {"systolic": None, "diastolic": None}},
     "wellness": "unclear",
     "complaints": "none",
     "re_scheduled": "false",
@@ -106,7 +113,7 @@ async def extract_call_data(
         api_key: Google AI API key for Gemini
 
     Returns:
-        Dict with medicine_responses, vitals_checked, wellness, complaints, re_scheduled
+        Dict with medicine_responses, vitals_checked, vitals (glucose & BP), wellness, complaints, re_scheduled
     """
     if not transcript:
         logger.warning("Empty transcript, skipping extraction")
