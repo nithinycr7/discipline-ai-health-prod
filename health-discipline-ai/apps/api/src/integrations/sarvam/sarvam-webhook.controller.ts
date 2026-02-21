@@ -141,11 +141,13 @@ export class SarvamWebhookController {
       // Determine if call was effectively unanswered
       // skipToday must be excluded — patient explicitly answered and refused calls today
       const allPending = call.medicinesChecked?.every((m) => m.response === 'pending') ?? true;
+      const userSpoke = Array.isArray(transcript) && transcript.some((e: any) => e.role === 'user');
       const isNoAnswer =
         !reScheduled &&
         !skipToday &&
         allPending &&
         (duration < 30 ||
+          !userSpoke ||
           /no.?answer|voicemail|unanswered/i.test(terminationReason));
 
       const finalStatus = isNoAnswer ? 'no_answer' : 'completed';
@@ -178,7 +180,7 @@ export class SarvamWebhookController {
       if (isNoAnswer) {
         this.logger.log(
           `Call ${callId} detected as no_answer (duration=${duration}s, ` +
-            `allPending=${allPending}, termination=${terminationReason})`,
+            `allPending=${allPending}, userSpoke=${userSpoke}, termination=${terminationReason})`,
         );
         try {
           await this.retryHandler.handleNoAnswer(callId);

@@ -1,4 +1,4 @@
-import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus } from '@nestjs/common';
+import { Controller, Post, Body, Get, UseGuards, HttpCode, HttpStatus, Logger } from '@nestjs/common';
 import { ApiTags, ApiBearerAuth, ApiOperation } from '@nestjs/swagger';
 import { AuthService } from './auth.service';
 import { RegisterPayerDto } from './dto/register-payer.dto';
@@ -13,6 +13,8 @@ import { Public } from '../common/decorators/public.decorator';
 @ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
+  private logger = new Logger('AuthController');
+
   constructor(private authService: AuthService) {}
 
   @Public()
@@ -34,7 +36,16 @@ export class AuthController {
   @HttpCode(HttpStatus.OK)
   @ApiOperation({ summary: 'Login with phone or email' })
   async login(@Body() dto: LoginDto) {
-    return this.authService.login(dto);
+    try {
+      this.logger.log(`Login attempt for identifier: ${dto.identifier}`);
+      return await this.authService.login(dto);
+    } catch (error) {
+      this.logger.error(
+        `Login failed for identifier: ${dto.identifier}`,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
   }
 
   @Public()

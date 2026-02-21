@@ -350,6 +350,30 @@ export class CallsService {
   }
 
   /**
+   * Find calls stuck in 'in_progress' for longer than the given timeout.
+   * Used by stale call cleanup cron to recover orphaned calls.
+   */
+  async findStaleCalls(timeoutMinutes: number): Promise<CallDocument[]> {
+    const cutoff = new Date(Date.now() - timeoutMinutes * 60 * 1000);
+    return this.callModel.find({
+      status: 'in_progress',
+      initiatedAt: { $lte: cutoff },
+    });
+  }
+
+  /**
+   * Atomically mark a stale call as no_answer — only if still in_progress.
+   * Returns null if the call was already updated by a webhook (race prevention).
+   */
+  async markStaleAsNoAnswer(callId: string): Promise<CallDocument | null> {
+    return this.callModel.findOneAndUpdate(
+      { _id: callId, status: 'in_progress' },
+      { $set: { status: 'no_answer', endedAt: new Date(), terminationReason: 'stale_cleanup' } },
+      { new: true },
+    );
+  }
+
+  /**
    * Find retry calls that are due for processing (scheduled + past due).
    */
   async findDueRetries(): Promise<CallDocument[]> {

@@ -68,8 +68,18 @@ export class AuthService {
   async login(dto: LoginDto) {
     const { identifier, password } = dto;
 
+    // Normalize phone number (remove + prefix for consistency)
+    const normalizedIdentifier = identifier.startsWith('+')
+      ? identifier.substring(1)
+      : identifier;
+
     // Try phone login first (B2C payer)
-    let user = await this.usersService.findByPhone(identifier);
+    let user = await this.usersService.findByPhone(normalizedIdentifier);
+
+    // If not found with normalized, try original format
+    if (!user && normalizedIdentifier !== identifier) {
+      user = await this.usersService.findByPhone(identifier);
+    }
 
     if (!user) {
       // Try email login (B2B hospital)
@@ -80,12 +90,12 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    // If hospital_admin, verify password
-    if (user.role === 'hospital_admin') {
+    // If hospital_admin or super_admin with email, verify password
+    if ((user.role === 'hospital_admin' || user.role === 'super_admin') && user.email) {
       if (!password) {
-        throw new BadRequestException('Password required for hospital accounts');
+        throw new BadRequestException('Password required for admin accounts');
       }
-      const userWithPassword = await this.usersService.findByEmailWithPassword(identifier);
+      const userWithPassword = await this.usersService.findByEmailWithPassword(user.email);
       if (!userWithPassword?.password) {
         throw new UnauthorizedException('Invalid credentials');
       }

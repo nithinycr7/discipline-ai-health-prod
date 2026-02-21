@@ -80,6 +80,7 @@ class MedicineCheckAgent(Agent):
                 language=stt_lang,
                 model="saaras:v3",
                 mode="transcribe",
+                flush_signal=True,  # Emit speech start/end events for turn-taking
             ),
             llm=google.LLM(
                 model="gemini-2.5-flash",
@@ -89,6 +90,7 @@ class MedicineCheckAgent(Agent):
                 target_language_code=tts_lang,
                 model="bulbul:v3",
                 speaker="simran",  # Energetic, cheery female voice
+                pace=0.95,  # Slightly slower for elderly patients on phone
             ),
         )
 
@@ -100,16 +102,6 @@ class MedicineCheckAgent(Agent):
 async def entrypoint(ctx: JobContext):
     """LiveKit agent entrypoint — called when a new room is dispatched."""
     await ctx.connect(auto_subscribe=AutoSubscribe.AUDIO_ONLY)
-
-    # Wait for the SIP participant (patient) to connect
-    logger.info(f"Room {ctx.room.name}: waiting for SIP participant to join...")
-    remote_participants = list(ctx.room.remote_participants.values())
-    if remote_participants:
-        participant = remote_participants[0]
-        logger.info(f"Participant already in room: {participant.identity}")
-    else:
-        participant = await ctx.wait_for_participant()
-        logger.info(f"Participant joined: {participant.identity}")
 
     # Read patient metadata from room (set by NestJS SarvamAgentService)
     metadata_str = ctx.room.metadata or "{}"
@@ -127,6 +119,39 @@ async def entrypoint(ctx: JobContext):
         logger.error("Room metadata missing callId, cannot proceed")
         return
 
+    # Wait for the SIP participant (patient) to connect (60s timeout)
+    logger.info(f"Room {room_name}: waiting for SIP participant to join...")
+    remote_participants = list(ctx.room.remote_participants.values())
+    if remote_participants:
+        participant = remote_participants[0]
+        logger.info(f"Participant already in room: {participant.identity}")
+    else:
+        try:
+            participant = await asyncio.wait_for(
+                ctx.wait_for_participant(), timeout=60
+            )
+            logger.info(f"Participant joined: {participant.identity}")
+        except asyncio.TimeoutError:
+            logger.warning(
+                f"No participant joined room {room_name} within 60s — patient didn't answer. "
+                f"callId={call_id}"
+            )
+            # POST no_answer webhook so backend can trigger retry
+            if webhook_url:
+                try:
+                    async with httpx.AsyncClient(timeout=15) as client:
+                        await client.post(webhook_url, json={
+                            "callId": call_id,
+                            "roomName": room_name,
+                            "transcript": [],
+                            "duration": 0,
+                            "terminationReason": "no_answer",
+                        })
+                    logger.info(f"No-answer webhook sent for callId={call_id}")
+                except Exception as e:
+                    logger.error(f"Failed to send no-answer webhook: {e}")
+            return
+
     logger.info(
         f"Starting call for patient {patient_data.get('patientName', '?')}, "
         f"callId={call_id}, room={room_name}"
@@ -138,7 +163,19 @@ async def entrypoint(ctx: JobContext):
 
     # Create agent and session
     agent = MedicineCheckAgent(patient_data)
-    session = AgentSession()
+    session = AgentSession(
+        # Use Sarvam STT-based turn detection (recommended by Sarvam docs)
+        # Sarvam STT emits speech start/end events via flush_signal=True
+        turn_detection="stt",
+        # Tuned for elderly patients on phone calls:
+        # - Higher interruption threshold to avoid false barge-ins from "hmm"/"haan"
+        # - Longer endpointing delay since elderly patients pause more between words
+        # - Resume speech if it was a false interruption (background noise, brief ack)
+        min_interruption_duration=0.8,
+        min_endpointing_delay=0.7,
+        max_endpointing_delay=4.0,
+        resume_false_interruption=True,
+    )
 
     # Event to signal session closure
     session_closed = asyncio.Event()
@@ -177,16 +214,94 @@ async def entrypoint(ctx: JobContext):
             logger.error(f"conversation_item_added handler error: {e}")
 
     # Fallback: also capture user speech via user_input_transcribed
+    last_user_speech_end = [0.0]  # Track when user stops speaking (for latency)
+
     @session.on("user_input_transcribed")
     def on_user_input(event):
         text = getattr(event, "transcript", "") or getattr(event, "text", "")
         is_final = getattr(event, "is_final", True)
         if text.strip() and is_final:
+            last_user_speech_end[0] = time.time()
             logger.info(f"[STT] Patient said: {text}")
+
+    # Latency instrumentation — log time from user speech end to agent speech start
+    @session.on("agent_speech_started")
+    def on_agent_speech_started(event):
+        if last_user_speech_end[0] > 0:
+            latency_ms = int((time.time() - last_user_speech_end[0]) * 1000)
+            logger.info(f"[latency] STT→LLM→TTS: {latency_ms}ms")
 
     @session.on("close")
     def on_close():
-        logger.info("AgentSession closed")
+        """Session closed — POST webhook synchronously before process exits.
+
+        The LiveKit agent framework kills the process immediately after
+        the entrypoint coroutine completes, so async POSTs never finish.
+        Using sync httpx here ensures the webhook is sent before shutdown.
+        """
+        call_duration = int(time.time() - call_start_time)
+
+        # Quick chat_ctx fallback for transcript (sync-safe)
+        if not transcript:
+            for _, source in [("agent", agent), ("session", session)]:
+                chat_ctx = getattr(source, "chat_ctx", None) or getattr(
+                    source, "_chat_ctx", None
+                )
+                if not chat_ctx:
+                    continue
+                try:
+                    items = getattr(
+                        chat_ctx, "items", getattr(chat_ctx, "messages", [])
+                    )
+                    for item in items:
+                        role = getattr(item, "role", "")
+                        if role == "system":
+                            continue
+                        text = ""
+                        content = getattr(item, "content", None)
+                        if isinstance(content, list):
+                            text = " ".join(
+                                str(getattr(c, "text", ""))
+                                for c in content
+                                if hasattr(c, "text") and getattr(c, "text", None)
+                            ).strip()
+                        elif isinstance(content, str):
+                            text = content.strip()
+                        if not text and hasattr(item, "text"):
+                            text = str(item.text).strip()
+                        if text:
+                            mapped = "user" if role == "user" else "agent"
+                            transcript.append({"role": mapped, "message": text})
+                    if transcript:
+                        break
+                except Exception:
+                    pass
+
+        logger.info(
+            f"AgentSession closed — callId={call_id}, duration={call_duration}s, "
+            f"transcript_entries={len(transcript)}"
+        )
+
+        # Sync webhook POST — runs before process exits
+        if webhook_url:
+            try:
+                with httpx.Client(timeout=15) as client:
+                    resp = client.post(
+                        webhook_url,
+                        json={
+                            "callId": call_id,
+                            "roomName": room_name,
+                            "transcript": transcript,
+                            "duration": call_duration,
+                            "terminationReason": "call_ended",
+                        },
+                    )
+                logger.info(f"Webhook POST: status={resp.status_code}")
+            except Exception as e:
+                logger.error(f"Failed to POST webhook: {e}")
+        else:
+            logger.warning("No webhookUrl, skipping post-call report")
+
         session_closed.set()
 
     # Start the session — on_enter() will trigger generate_reply() for greeting
@@ -196,78 +311,8 @@ async def entrypoint(ctx: JobContext):
     )
     logger.info("AgentSession started, agent will generate greeting via on_enter()")
 
-    # Wait for the call to end (session closes when patient hangs up or timeout)
+    # Wait for the call to end (on_close posts webhook and sets this event)
     await session_closed.wait()
-
-    call_duration = int(time.time() - call_start_time)
-
-    # If conversation_item_added didn't capture anything, try chat_ctx fallback
-    if not transcript:
-        logger.info("No transcript from events, trying chat_ctx fallback...")
-        for source_name, source in [("agent", agent), ("session", session)]:
-            chat_ctx = getattr(source, "chat_ctx", None) or getattr(source, "_chat_ctx", None)
-            if not chat_ctx:
-                logger.info(f"{source_name} has no chat_ctx")
-                continue
-            try:
-                items = getattr(chat_ctx, "items", getattr(chat_ctx, "messages", []))
-                logger.info(f"{source_name}.chat_ctx has {len(items)} items")
-                for item in items:
-                    role = getattr(item, "role", "")
-                    if role == "system":
-                        continue
-                    text = ""
-                    content = getattr(item, "content", None)
-                    if isinstance(content, list):
-                        text = " ".join(
-                            str(getattr(c, "text", ""))
-                            for c in content
-                            if hasattr(c, "text") and getattr(c, "text", None)
-                        ).strip()
-                    elif isinstance(content, str):
-                        text = content.strip()
-                    if not text and hasattr(item, "text"):
-                        text = str(item.text).strip()
-                    if not text and hasattr(item, "text_content"):
-                        tc = item.text_content
-                        text = (tc() if callable(tc) else str(tc)).strip()
-                    if text:
-                        mapped = "user" if role == "user" else "agent"
-                        transcript.append({"role": mapped, "message": text})
-                        logger.info(f"[fallback:{mapped}] {text[:80]}")
-                if transcript:
-                    logger.info(f"Built {len(transcript)} entries from {source_name}.chat_ctx")
-                    break
-            except Exception as e:
-                logger.error(f"chat_ctx extraction failed on {source_name}: {e}")
-
-    logger.info(
-        f"Call ended for callId={call_id}, duration={call_duration}s, "
-        f"transcript_entries={len(transcript)}"
-    )
-
-    # POST transcript to NestJS webhook — all data extraction happens server-side
-    # via TranscriptParserService (Gemini)
-    if webhook_url:
-        try:
-            async with httpx.AsyncClient(timeout=30) as client:
-                response = await client.post(
-                    webhook_url,
-                    json={
-                        "callId": call_id,
-                        "roomName": room_name,
-                        "transcript": transcript,
-                        "duration": call_duration,
-                        "terminationReason": "call_ended",
-                    },
-                )
-                logger.info(
-                    f"Webhook POST to {webhook_url}: status={response.status_code}"
-                )
-        except Exception as e:
-            logger.error(f"Failed to POST webhook: {e}")
-    else:
-        logger.warning("No webhookUrl in metadata, skipping post-call report")
 
 
 # --- Cloud Run health check server ---

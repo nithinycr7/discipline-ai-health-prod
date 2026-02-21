@@ -28,7 +28,7 @@ export interface ParsedCallData {
 export class TranscriptParserService {
   private readonly logger = new Logger(TranscriptParserService.name);
   private readonly apiKey: string;
-  private readonly model = 'gemini-2.5-flash';
+  private readonly model = 'gemini-2.0-flash';
 
   constructor(private configService: ConfigService) {
     this.apiKey = this.configService.get<string>('GOOGLE_AI_API_KEY', '');
@@ -188,6 +188,7 @@ EXTRACTION RULES:
 
 Return ONLY valid JSON.`;
 
+    let rawText = '';
     try {
       const response = await fetch(
         `https://generativelanguage.googleapis.com/v1beta/models/${this.model}:generateContent?key=${this.apiKey}`,
@@ -198,7 +199,7 @@ Return ONLY valid JSON.`;
             contents: [{ parts: [{ text: prompt }] }],
             generationConfig: {
               temperature: 0.1,
-              maxOutputTokens: 1000,
+              maxOutputTokens: 2048,
               responseMimeType: 'application/json',
             },
           }),
@@ -212,14 +213,30 @@ Return ONLY valid JSON.`;
       }
 
       const data: any = await response.json();
-      const text = data.candidates?.[0]?.content?.parts?.[0]?.text;
+      const finishReason = data.candidates?.[0]?.finishReason || 'unknown';
+      rawText = data.candidates?.[0]?.content?.parts?.[0]?.text || '';
 
-      if (!text) {
+      this.logger.log(`Gemini finishReason=${finishReason}, responseLength=${rawText.length}`);
+
+      if (!rawText) {
         this.logger.warn('Gemini returned empty response');
+        this.logger.debug(`Full Gemini response: ${JSON.stringify(data).slice(0, 500)}`);
         return null;
       }
 
-      const parsed = JSON.parse(text);
+      this.logger.log(`Gemini raw response (${rawText.length} chars): ${rawText.slice(0, 300)}`);
+
+      // Strip markdown code fences if present (```json ... ```)
+      let cleanText = rawText.trim();
+      if (cleanText.startsWith('```')) {
+        cleanText = cleanText.split('\n').slice(1).join('\n');
+        if (cleanText.endsWith('```')) {
+          cleanText = cleanText.slice(0, cleanText.lastIndexOf('```'));
+        }
+        cleanText = cleanText.trim();
+      }
+
+      const parsed = JSON.parse(cleanText);
 
       // Map screening answers back with their dataType
       const screeningAnswers: Array<{ questionId: string; answer: string; dataType: string }> = [];
@@ -252,6 +269,9 @@ Return ONLY valid JSON.`;
       };
     } catch (error: any) {
       this.logger.error(`Transcript parse error: ${error.message}`);
+      if (error instanceof SyntaxError && rawText) {
+        this.logger.error(`Raw Gemini text that failed to parse: ${rawText.slice(0, 500)}`);
+      }
       return null;
     }
   }

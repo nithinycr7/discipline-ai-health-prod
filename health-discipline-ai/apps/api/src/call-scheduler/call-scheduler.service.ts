@@ -109,6 +109,47 @@ export class CallSchedulerService {
     }
   }
 
+  /**
+   * Clean up calls stuck in 'in_progress' — webhook never arrived.
+   * Marks them as 'no_answer' and triggers retry logic.
+   */
+  @Cron('0 */2 * * * *') // Every 2 minutes
+  async cleanupStaleCalls() {
+    const ran = await this.lockService.withLock('cron:cleanupStaleCalls', 110, async () => {
+      try {
+        const staleCalls = await this.callsService.findStaleCalls(10); // 10 min timeout
+
+        for (const call of staleCalls) {
+          // Atomically mark as no_answer — prevents race with late webhook
+          const updated = await this.callsService.markStaleAsNoAnswer(call._id.toString());
+          if (!updated) continue; // Webhook arrived between find and update
+
+          this.logger.warn(
+            `Stale call ${call._id} cleaned up (was in_progress for >10min), ` +
+              `patient=${call.patientId}, voiceStack=${call.voiceStack}`,
+          );
+
+          // Trigger retry via existing retry system
+          try {
+            await this.retryHandlerService.handleNoAnswer(call._id.toString());
+          } catch (retryErr) {
+            this.logger.error(`Failed to schedule retry for stale call ${call._id}: ${retryErr.message}`);
+          }
+        }
+
+        if (staleCalls.length > 0) {
+          this.logger.log(`Cleaned up ${staleCalls.length} stale call(s)`);
+        }
+      } catch (error) {
+        this.logger.error('Error in stale call cleanup', error.stack);
+      }
+    });
+
+    if (!ran) {
+      this.logger.debug('cleanupStaleCalls: skipped (another instance holds the lock)');
+    }
+  }
+
   @Cron('0 */30 * * * *') // Every 30 minutes (skip_today pauses expire mid-day, not just midnight)
   async checkPausedPatients() {
     const ran = await this.lockService.withLock('cron:checkPausedPatients', 600, async () => {
