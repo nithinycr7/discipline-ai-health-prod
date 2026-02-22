@@ -14,7 +14,7 @@ export default function PatientsScreen({ navigation }) {
   const load = useCallback(async () => {
     try {
       const res = await patientsApi.list();
-      setPatients(res.data.data || []);
+      setPatients(Array.isArray(res.data) ? res.data : (res.data.data || []));
     } catch (e) { console.error(e); }
     finally { setLoading(false); setRefreshing(false); }
   }, []);

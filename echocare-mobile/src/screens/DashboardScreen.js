@@ -15,12 +15,12 @@ export default function DashboardScreen({ navigation }) {
   const loadData = useCallback(async () => {
     try {
       const res = await patientsApi.list();
-      const list = res.data.data || [];
+      const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
       const withAdh = await Promise.all(
         list.map(async (p) => {
           try {
             const a = await patientsApi.adherenceToday(p._id);
-            return { ...p, adherence: a.data.data };
+            return { ...p, adherence: a.data };
           } catch { return p; }
         })
       );
