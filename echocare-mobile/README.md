@@ -44,7 +44,7 @@ Download these fonts and place them in `assets/fonts/`:
 Edit `src/services/api.js` and set `API_URL` to your NestJS backend:
 
 ```js
-const API_URL = 'https://your-nestjs-backend.com';
+const API_URL = 'https://discipline-ai-api-337728476024.us-central1.run.app';
 ```
 
 The app expects these endpoints (matching the existing NestJS API):
