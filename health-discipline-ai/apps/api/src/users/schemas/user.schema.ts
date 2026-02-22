@@ -58,6 +58,9 @@ export class User {
   @Prop({ default: false })
   phoneVerified: boolean;
 
+  @Prop({ enum: ['phone', 'email', 'google', 'apple'], default: 'phone' })
+  authProvider: string;
+
   @Prop({ enum: ['test', 'normal'], default: 'test' })
   tag: string;
 }

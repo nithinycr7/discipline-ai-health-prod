@@ -14,6 +14,7 @@ import { RegisterPayerDto } from './dto/register-payer.dto';
 import { RegisterHospitalDto } from './dto/register-hospital.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import { FIREBASE_ADMIN } from '../firebase/firebase-admin.module';
 
 @Injectable()
@@ -168,6 +169,69 @@ export class AuthService {
       timezone: dto.timezone || 'Asia/Kolkata',
       firebaseUid: decodedToken.uid,
       phoneVerified: true,
+    });
+
+    const tokens = await this.generateTokens(user);
+    return { user: this.sanitizeUser(user), ...tokens, isNewUser: true };
+  }
+
+  async verifySocialLogin(dto: SocialLoginDto) {
+    // Verify the Firebase ID token
+    let decodedToken: admin.auth.DecodedIdToken;
+    try {
+      decodedToken = await this.firebaseApp
+        .auth()
+        .verifyIdToken(dto.firebaseIdToken);
+    } catch (error) {
+      console.error('Firebase social login token verification failed:', error);
+      throw new UnauthorizedException('Invalid or expired Firebase token');
+    }
+
+    const email = decodedToken.email;
+    if (!email) {
+      throw new BadRequestException(
+        'Firebase token does not contain an email address',
+      );
+    }
+
+    const firebaseUid = decodedToken.uid;
+    const displayName =
+      dto.name || decodedToken.name || email.split('@')[0];
+
+    // Check if user exists by Firebase UID first, then by email
+    let user = await this.usersService.findByFirebaseUid(firebaseUid);
+
+    if (!user) {
+      user = await this.usersService.findByEmail(email);
+    }
+
+    if (user) {
+      // LOGIN flow — existing user
+      // Update Firebase UID if not set, and mark email as verified
+      const updates: Record<string, any> = {};
+      if (!user.firebaseUid || user.firebaseUid !== firebaseUid) {
+        updates.firebaseUid = firebaseUid;
+      }
+      if (!user.emailVerified) {
+        updates.emailVerified = true;
+      }
+      if (Object.keys(updates).length > 0) {
+        user = await this.usersService.update(user._id.toString(), updates);
+      }
+      const tokens = await this.generateTokens(user);
+      return { user: this.sanitizeUser(user), ...tokens, isNewUser: false };
+    }
+
+    // REGISTRATION flow — new user via social login
+    user = await this.usersService.create({
+      email,
+      name: displayName,
+      role: 'payer',
+      location: dto.location,
+      timezone: dto.timezone || 'Asia/Kolkata',
+      firebaseUid,
+      emailVerified: true,
+      authProvider: dto.provider,
     });
 
     const tokens = await this.generateTokens(user);

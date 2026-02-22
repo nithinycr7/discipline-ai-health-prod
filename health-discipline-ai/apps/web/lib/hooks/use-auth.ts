@@ -1,7 +1,7 @@
 'use client';
 
 import { useState, useEffect, useCallback } from 'react';
-import { authApi, VerifyOtpRequest } from '../api/auth';
+import { authApi, VerifyOtpRequest, SocialLoginRequest } from '../api/auth';
 
 interface User {
   _id: string;
@@ -60,6 +60,23 @@ export function useAuth() {
     return { user: response.user, isNewUser: response.isNewUser, needsRegistration: false };
   }, []);
 
+  const loginWithSocial = useCallback(async (
+    firebaseIdToken: string,
+    provider: 'google' | 'apple',
+  ) => {
+    const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+    const response = await authApi.socialLogin({
+      firebaseIdToken,
+      provider,
+      timezone: timezone || 'Asia/Kolkata',
+    });
+    localStorage.setItem('token', response.token);
+    localStorage.setItem('refreshToken', response.refreshToken);
+    setToken(response.token);
+    setUser(response.user);
+    return { user: response.user, isNewUser: response.isNewUser };
+  }, []);
+
   const refreshUser = useCallback(async () => {
     const savedToken = token || localStorage.getItem('token');
     if (!savedToken) return;
@@ -75,5 +92,5 @@ export function useAuth() {
     window.location.href = '/login';
   }, []);
 
-  return { user, token, loading, login, loginWithOtp, logout, refreshUser };
+  return { user, token, loading, login, loginWithOtp, loginWithSocial, logout, refreshUser };
 }

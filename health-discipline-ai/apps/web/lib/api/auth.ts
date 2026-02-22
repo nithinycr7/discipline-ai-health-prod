@@ -32,6 +32,18 @@ export interface VerifyOtpRequest {
   timezone?: string;
 }
 
+export interface SocialLoginRequest {
+  firebaseIdToken: string;
+  provider: 'google' | 'apple';
+  name?: string;
+  location?: string;
+  timezone?: string;
+}
+
+export interface SocialLoginResponse extends AuthResponse {
+  isNewUser: boolean;
+}
+
 export interface VerifyOtpResponse extends AuthResponse {
   isNewUser: boolean;
   needsRegistration?: boolean;
@@ -43,6 +55,7 @@ export const authApi = {
   verifyOtp: (data: VerifyOtpRequest) => api.post<VerifyOtpResponse>('/auth/verify-otp', data),
   registerPayer: (data: RegisterPayerRequest) => api.post<AuthResponse>('/auth/register/payer', data),
   registerHospital: (data: RegisterHospitalRequest) => api.post<AuthResponse>('/auth/register/hospital', data),
+  socialLogin: (data: SocialLoginRequest) => api.post<SocialLoginResponse>('/auth/social-login', data),
   refresh: (refreshToken: string) => api.post<AuthResponse>('/auth/refresh', { refreshToken }),
   me: (token: string) => api.get<any>('/auth/me', { token }),
 };

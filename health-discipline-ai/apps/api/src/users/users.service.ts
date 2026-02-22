@@ -23,6 +23,10 @@ export class UsersService {
     return this.userModel.findOne({ email });
   }
 
+  async findByFirebaseUid(firebaseUid: string): Promise<UserDocument | null> {
+    return this.userModel.findOne({ firebaseUid });
+  }
+
   async findByEmailWithPassword(email: string): Promise<UserDocument | null> {
     return this.userModel.findOne({ email }).select('+password');
   }

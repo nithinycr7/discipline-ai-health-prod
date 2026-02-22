@@ -5,6 +5,7 @@ import { RegisterPayerDto } from './dto/register-payer.dto';
 import { RegisterHospitalDto } from './dto/register-hospital.dto';
 import { LoginDto } from './dto/login.dto';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { SocialLoginDto } from './dto/social-login.dto';
 import { RefreshTokenDto } from './dto/refresh-token.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
@@ -59,6 +60,23 @@ export class AuthController {
     } catch (error) {
       this.logger.error(
         `Verify OTP failed`,
+        error instanceof Error ? error.message : String(error),
+      );
+      throw error;
+    }
+  }
+
+  @Public()
+  @Post('social-login')
+  @HttpCode(HttpStatus.OK)
+  @ApiOperation({ summary: 'Login or register with Google/Apple via Firebase' })
+  async socialLogin(@Body() dto: SocialLoginDto) {
+    try {
+      this.logger.log(`Social login attempt with provider: ${dto.provider}`);
+      return await this.authService.verifySocialLogin(dto);
+    } catch (error) {
+      this.logger.error(
+        `Social login failed for provider: ${dto.provider}`,
         error instanceof Error ? error.message : String(error),
       );
       throw error;
