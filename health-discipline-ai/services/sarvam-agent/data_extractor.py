@@ -1,11 +1,11 @@
 """
-Post-call data extraction using Gemini LLM (REST API).
+Post-call data extraction using Sarvam 105B LLM (REST API).
 
 After the voice call ends, this module takes the conversation transcript
 and extracts structured data (medicine responses, vitals, wellness, complaints)
-using a Gemini 2.5 Flash call via the REST API.
+using Sarvam 105B via the REST API.
 
-Uses httpx directly to avoid SDK dependency conflicts with livekit-plugins-sarvam.
+Uses httpx directly to call Sarvam's OpenAI-compatible endpoint.
 
 Keep in sync with: apps/api/src/integrations/elevenlabs/elevenlabs-agent.service.ts (DATA EXTRACTION section)
 """
@@ -89,7 +89,8 @@ Transcript:
 Respond ONLY with valid JSON in this exact format (no markdown, no explanation):
 {{"medicine_responses": "...", "vitals_checked": "...", "vitals": {{"glucose": null, "blood_pressure": {{"systolic": null, "diastolic": null}}}}, "wellness": "...", "complaints": "...", "re_scheduled": "..."}}"""
 
-GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent"
+SARVAM_API_URL = "https://api.sarvam.ai/chat/completions"
+SARVAM_MODEL = "sarvam-105b-instruct-v2"
 
 FALLBACK = {
     "medicine_responses": "",
@@ -106,11 +107,11 @@ async def extract_call_data(
     api_key: str,
 ) -> dict:
     """
-    Extract structured data from a call transcript using Gemini 2.5 Flash REST API.
+    Extract structured data from a call transcript using Sarvam 105B REST API.
 
     Args:
         transcript: List of {role: 'agent'|'user', message: str}
-        api_key: Google AI API key for Gemini
+        api_key: Sarvam API key
 
     Returns:
         Dict with medicine_responses, vitals_checked, vitals (glucose & BP), wellness, complaints, re_scheduled
@@ -127,30 +128,31 @@ async def extract_call_data(
     try:
         async with httpx.AsyncClient(timeout=30) as client:
             response = await client.post(
-                f"{GEMINI_API_URL}?key={api_key}",
+                SARVAM_API_URL,
+                headers={
+                    "Authorization": f"Bearer {api_key}",
+                    "Content-Type": "application/json"
+                },
                 json={
-                    "contents": [
+                    "model": SARVAM_MODEL,
+                    "messages": [
                         {
-                            "parts": [
-                                {"text": EXTRACTION_PROMPT.format(transcript=transcript_text)}
-                            ]
+                            "role": "user",
+                            "content": EXTRACTION_PROMPT.format(transcript=transcript_text)
                         }
                     ],
-                    "generationConfig": {
-                        "temperature": 0.1,
-                        "maxOutputTokens": 500,
-                        "responseMimeType": "application/json",
-                    },
+                    "temperature": 0.1,
+                    "max_tokens": 500,
                 },
             )
 
         if response.status_code != 200:
-            logger.error(f"Gemini API error {response.status_code}: {response.text[:300]}")
+            logger.error(f"Sarvam API error {response.status_code}: {response.text[:300]}")
             return FALLBACK.copy()
 
         data = response.json()
-        result_text = data["candidates"][0]["content"]["parts"][0]["text"].strip()
-        logger.info(f"Gemini raw response: {result_text[:200]}")
+        result_text = data["choices"][0]["message"]["content"].strip()
+        logger.info(f"Sarvam extraction response: {result_text[:200]}")
 
         # Strip markdown fences if present
         if result_text.startswith("```"):

@@ -4,8 +4,9 @@ Sarvam AI Voice Agent Worker (LiveKit)
 This is a long-running Python process that connects to LiveKit and handles
 voice conversations using:
   - Sarvam STT (saaras:v3) for speech recognition
-  - Gemini 2.5 Flash for LLM responses
+  - Google Gemini 2.0 Flash for LLM responses (real-time conversation)
   - Sarvam TTS (bulbul:v3) for speech synthesis
+  - Sarvam 105B for POST-CALL data extraction (via data_extractor.py)
 
 When the NestJS API creates a LiveKit room with patient metadata,
 this worker picks it up, conducts the medicine-check conversation,
@@ -67,7 +68,14 @@ SARVAM_STT_LANG_MAP = {
 
 
 class MedicineCheckAgent(Agent):
-    """Voice agent that checks medicine intake for elderly patients."""
+    """Voice agent that checks medicine intake for elderly patients.
+
+    Uses:
+    - Sarvam STT (saaras:v3) for speech recognition
+    - Google Gemini 2.0 Flash for LLM responses (conversation)
+    - Sarvam TTS (bulbul:v3) for speech synthesis
+    - Sarvam 105B for POST-CALL data extraction (via data_extractor.py)
+    """
 
     def __init__(self, patient_data: dict) -> None:
         lang_code = patient_data.get("preferredLanguage", "hi")
@@ -83,7 +91,7 @@ class MedicineCheckAgent(Agent):
                 flush_signal=True,  # Emit speech start/end events for turn-taking
             ),
             llm=google.LLM(
-                model="gemini-2.0-flash",  # 2.0 not 2.5 — avoids _thought token leak into TTS
+                model="gemini-2.0-flash",
                 temperature=0.3,
             ),
             tts=sarvam.TTS(
