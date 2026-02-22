@@ -129,7 +129,7 @@ eas build:configure
 
 ```bash
 # 1. Navigate to the project
-cd echocare-mobile
+cd echocare-mobile   # CoCarely mobile app folder
 
 # 2. Install dependencies
 npm install
@@ -227,7 +227,7 @@ Steps:
 ## Project Structure
 
 ```
-echocare-mobile/
+echocare-mobile/                        # CoCarely app root
 ├── App.js                          # Entry + font loading + navigation container
 ├── app.json                        # Expo config
 ├── package.json                    # Dependencies

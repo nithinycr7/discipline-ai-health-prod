@@ -73,7 +73,7 @@ eas build --platform android
 ## Project Structure
 
 ```
-echocare-mobile/
+echocare-mobile/              # CoCarely mobile app root
 ├── App.js                    # Entry point
 ├── app.json                  # Expo config
 ├── assets/fonts/             # Custom fonts
