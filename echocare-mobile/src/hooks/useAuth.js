@@ -14,13 +14,13 @@ export function AuthProvider({ children }) {
 
   const checkAuth = async () => {
     try {
-      const token = await AsyncStorage.getItem('echocare_token');
+      const token = await AsyncStorage.getItem('cocarely_token');
       if (token) {
         const res = await authApi.me();
         setUser(res.data);
       }
     } catch {
-      await AsyncStorage.removeItem('echocare_token');
+      await AsyncStorage.removeItem('cocarely_token');
     } finally {
       setLoading(false);
     }
@@ -28,13 +28,13 @@ export function AuthProvider({ children }) {
 
   const login = useCallback(async (phone) => {
     const res = await authApi.login(phone);
-    await AsyncStorage.setItem('echocare_token', res.data.token);
+    await AsyncStorage.setItem('cocarely_token', res.data.token);
     setUser(res.data.user);
     return res.data.user;
   }, []);
 
   const logout = useCallback(async () => {
-    await AsyncStorage.removeItem('echocare_token');
+    await AsyncStorage.removeItem('cocarely_token');
     setUser(null);
   }, []);
 
