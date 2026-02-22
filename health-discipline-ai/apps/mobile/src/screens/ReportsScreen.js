@@ -1,25 +1,34 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { patientsApi } from '../services/api';
 import { colors, fonts, spacing } from '../theme';
 import { FlameIcon } from '../components/Icons';
 
-const W = Dimensions.get('window').width - 72;
-
 export default function ReportsScreen() {
+  const { width: windowWidth } = useWindowDimensions();
+  const chartWidth = windowWidth - 72;
+
   const [patients, setPatients] = useState([]);
   const [selected, setSelected] = useState(null);
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(true);
   const [statsLoading, setStatsLoading] = useState(false);
+  const [error, setError] = useState(null);
   const [days, setDays] = useState(7);
 
   useEffect(() => {
     patientsApi.list()
-      .then(res => { const l = Array.isArray(res.data) ? res.data : (res.data.data || []); setPatients(l); if (l.length > 0) setSelected(l[0]._id); })
-      .catch(console.error)
+      .then(res => {
+        const l = Array.isArray(res.data) ? res.data : (res.data.data || []);
+        setPatients(l);
+        if (l.length > 0) setSelected(l[0]._id);
+      })
+      .catch((e) => {
+        setError('Unable to load patients.');
+        if (__DEV__) console.error(e);
+      })
       .finally(() => setLoading(false));
   }, []);
 
@@ -28,7 +37,7 @@ export default function ReportsScreen() {
     setStatsLoading(true);
     patientsApi.stats(selected, days)
       .then(r => setStats(r.data))
-      .catch(console.error)
+      .catch((e) => { if (__DEV__) console.error(e); })
       .finally(() => setStatsLoading(false));
   }, [selected, days]);
 
@@ -39,24 +48,55 @@ export default function ReportsScreen() {
   const trendLabels = trendData.map(d => { const dt = new Date(d.date); return `${dt.getDate()}/${dt.getMonth() + 1}`; });
   const trendValues = trendData.map(d => d.adherencePercentage);
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color={colors.moss500} />
+          <Text style={styles.loaderText}>Loading reports...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Reports</Text>
+        <Text style={styles.title} accessibilityRole="header">Reports</Text>
+
+        {error && (
+          <View style={styles.errorBanner} accessibilityRole="alert">
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         {/* Patient Selector */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={{ marginBottom: 12 }} contentContainerStyle={{ gap: 8 }}>
           {patients.map(p => (
-            <TouchableOpacity key={p._id} style={[styles.selBtn, selected === p._id && styles.selBtnActive]} onPress={() => setSelected(p._id)}>
-              <Text style={[styles.selText, selected === p._id && styles.selTextActive]}>{p.preferredName}</Text>
+            <TouchableOpacity
+              key={p._id}
+              style={[styles.selBtn, selected === p._id && styles.selBtnActive]}
+              onPress={() => setSelected(p._id)}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: selected === p._id }}
+              accessibilityLabel={p.preferredName || 'Patient'}
+            >
+              <Text style={[styles.selText, selected === p._id && styles.selTextActive]}>{p.preferredName || 'Unknown'}</Text>
             </TouchableOpacity>
           ))}
         </ScrollView>
 
         {/* Period */}
-        <View style={styles.periodRow}>
+        <View style={styles.periodRow} accessibilityRole="radiogroup" accessibilityLabel="Report period">
           {[{ d: 7, l: 'Week' }, { d: 14, l: '2 Weeks' }, { d: 30, l: '30 Days' }].map(({ d, l }) => (
-            <TouchableOpacity key={d} style={[styles.periodBtn, days === d && styles.periodBtnActive]} onPress={() => setDays(d)}>
+            <TouchableOpacity
+              key={d}
+              style={[styles.periodBtn, days === d && styles.periodBtnActive]}
+              onPress={() => setDays(d)}
+              accessibilityRole="radio"
+              accessibilityState={{ checked: days === d }}
+              accessibilityLabel={l}
+            >
               <Text style={[styles.periodText, days === d && styles.periodTextActive]}>{l}</Text>
             </TouchableOpacity>
           ))}
@@ -65,7 +105,7 @@ export default function ReportsScreen() {
         {stats && !statsLoading ? (
           <View>
             {/* Summary */}
-            <View style={styles.grid}>
+            <View style={styles.grid} accessibilityRole="summary">
               <RStat label="Calls Done" value={stats.callStats?.completed || 0} sub={`of ${stats.callStats?.total || 0}`} color={colors.moss700} />
               <RStat label="No-Answer" value={stats.callStats?.noAnswer || 0} sub="unanswered" color={(stats.callStats?.noAnswer || 0) > 3 ? colors.red500 : colors.moss700} />
               <RStat label="Streak" value={sp?.currentStreak || 0} sub={`best: ${sp?.longestStreak || 0}`} color={colors.terra500} icon={<FlameIcon size={12} color={colors.sand400} />} />
@@ -77,7 +117,7 @@ export default function ReportsScreen() {
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Per-Medicine Compliance</Text>
                 {stats.perMedicineAdherence.map((m, i) => (
-                  <View key={i} style={styles.medBar}>
+                  <View key={i} style={styles.medBar} accessibilityLabel={`${m.name}: ${m.percentage} percent`}>
                     <Text style={styles.medBarName} numberOfLines={1}>{m.name}</Text>
                     <View style={styles.medBarTrack}><View style={[styles.medBarFill, { width: `${m.percentage}%`, backgroundColor: pctColor(m.percentage) }]} /></View>
                     <Text style={[styles.medBarPct, { color: pctColor(m.percentage) }]}>{m.percentage}%</Text>
@@ -88,11 +128,11 @@ export default function ReportsScreen() {
 
             {/* Trend */}
             {trendValues.length > 1 && (
-              <View style={styles.card}>
+              <View style={styles.card} accessibilityLabel={`Daily adherence trend chart`}>
                 <Text style={styles.cardTitle}>Daily Trend</Text>
                 <LineChart
                   data={{ labels: trendLabels.filter((_, i) => i % Math.max(1, Math.floor(trendLabels.length / 6)) === 0), datasets: [{ data: trendValues.length > 0 ? trendValues : [0] }] }}
-                  width={W}
+                  width={chartWidth}
                   height={180}
                   yAxisSuffix="%"
                   chartConfig={{ backgroundColor: '#fff', backgroundGradientFrom: '#fff', backgroundGradientTo: '#fff', decimalPlaces: 0, color: (o) => `rgba(61,139,94,${o})`, labelColor: () => colors.sand400, propsForDots: { r: '3', strokeWidth: '1', stroke: colors.green500 }, propsForBackgroundLines: { stroke: colors.sand200 } }}
@@ -108,7 +148,7 @@ export default function ReportsScreen() {
               <View style={styles.card}>
                 <Text style={styles.cardTitle}>Mood & Wellness</Text>
                 {stats.moodHistory.slice().reverse().slice(0, 10).map((e, i) => (
-                  <View key={i} style={[styles.moodRow, i < 9 && { borderBottomWidth: 1, borderBottomColor: colors.sand200 }]}>
+                  <View key={i} style={[styles.moodRow, i < 9 && { borderBottomWidth: 1, borderBottomColor: colors.sand200 }]} accessibilityLabel={`${e.mood} on ${new Date(e.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}`}>
                     <View style={[styles.moodDot, { backgroundColor: /good/i.test(e.mood) ? colors.green500 : /okay/i.test(e.mood) ? colors.amber500 : colors.red500 }]} />
                     <View style={{ flex: 1 }}>
                       <View style={{ flexDirection: 'row', justifyContent: 'space-between' }}>
@@ -127,7 +167,10 @@ export default function ReportsScreen() {
             )}
           </View>
         ) : statsLoading ? (
-          <Text style={styles.loadText}>Loading stats...</Text>
+          <View style={styles.loaderInline}>
+            <ActivityIndicator size="small" color={colors.moss500} />
+            <Text style={styles.loadText}>Loading stats...</Text>
+          </View>
         ) : null}
       </ScrollView>
     </SafeAreaView>
@@ -136,7 +179,7 @@ export default function ReportsScreen() {
 
 function RStat({ label, value, sub, color, icon }) {
   return (
-    <View style={rs.card}>
+    <View style={rs.card} accessibilityLabel={`${label}: ${value} ${sub}`}>
       <View style={{ flexDirection: 'row', alignItems: 'center', gap: 4 }}>
         {icon}
         <Text style={rs.label}>{label.toUpperCase()}</Text>
@@ -157,6 +200,11 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand50 },
   scroll: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: 40 },
+  loaderWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loaderText: { fontFamily: fonts.body, color: colors.sand400, fontSize: 14 },
+  loaderInline: { flexDirection: 'row', justifyContent: 'center', alignItems: 'center', gap: 10, padding: 60 },
+  errorBanner: { backgroundColor: colors.terra200, borderRadius: 14, padding: 14, marginBottom: spacing.xl, borderWidth: 1, borderColor: colors.terra300 },
+  errorText: { fontFamily: fonts.body, fontSize: 13, color: colors.terra600, textAlign: 'center' },
   title: { fontFamily: fonts.heading, fontSize: 26, color: colors.moss900, marginBottom: spacing.xl, letterSpacing: -0.5 },
   selBtn: { paddingHorizontal: 16, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.sand200 },
   selBtnActive: { backgroundColor: colors.moss800 },
@@ -181,5 +229,5 @@ const styles = StyleSheet.create({
   moodDate: { fontSize: 11, fontFamily: fonts.body, color: colors.sand400 },
   cTag: { backgroundColor: colors.terra200, borderRadius: 5, paddingHorizontal: 6, paddingVertical: 2 },
   cTagText: { fontSize: 10, fontFamily: fonts.body, color: colors.terra600 },
-  loadText: { textAlign: 'center', padding: 60, fontFamily: fonts.body, color: colors.sand400 },
+  loadText: { fontFamily: fonts.body, color: colors.sand400, fontSize: 14 },
 });

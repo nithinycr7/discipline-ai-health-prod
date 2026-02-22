@@ -1,39 +1,83 @@
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import Constants from 'expo-constants';
 
 // ──────────────────────────────────────────────────────
-// Point this to your deployed NestJS backend
-// Production: https://your-api-domain.com
-// Local dev:  http://localhost:3001
+// Resolved from app.json extra → env → fallback
 // ──────────────────────────────────────────────────────
-const API_URL = 'https://discipline-ai-api-337728476024.us-central1.run.app';
+const API_URL =
+  Constants.expoConfig?.extra?.apiUrl ||
+  process.env.EXPO_PUBLIC_API_URL ||
+  'https://discipline-ai-api-337728476024.us-central1.run.app';
 
-// NestJS global prefix from main.ts
 const PREFIX = '/api/v1';
+
+const STORAGE_KEYS = {
+  TOKEN: 'cocarely_token',
+  REFRESH_TOKEN: 'cocarely_refresh_token',
+};
 
 const api = axios.create({ baseURL: API_URL, timeout: 15000 });
 
+// ─── Attach access token ───
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('cocarely_token');
+  const token = await AsyncStorage.getItem(STORAGE_KEYS.TOKEN);
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
 
+// ─── Token refresh on 401 ───
+let refreshPromise = null;
+
 api.interceptors.response.use(
   (res) => res,
   async (err) => {
-    if (err.response?.status === 401) {
-      await AsyncStorage.removeItem('cocarely_token');
+    const originalRequest = err.config;
+
+    // Skip refresh for auth endpoints and already-retried requests
+    if (
+      err.response?.status !== 401 ||
+      originalRequest._retry ||
+      originalRequest.url?.includes('/auth/')
+    ) {
+      return Promise.reject(err);
     }
-    return Promise.reject(err);
+
+    originalRequest._retry = true;
+
+    try {
+      // Deduplicate concurrent refresh attempts
+      if (!refreshPromise) {
+        refreshPromise = (async () => {
+          const refreshToken = await AsyncStorage.getItem(STORAGE_KEYS.REFRESH_TOKEN);
+          if (!refreshToken) throw new Error('No refresh token');
+
+          const res = await axios.post(`${API_URL}${PREFIX}/auth/refresh`, { refreshToken });
+          const { token, refreshToken: newRefresh } = res.data;
+
+          await AsyncStorage.multiSet([
+            [STORAGE_KEYS.TOKEN, token],
+            ...(newRefresh ? [[STORAGE_KEYS.REFRESH_TOKEN, newRefresh]] : []),
+          ]);
+
+          return token;
+        })();
+      }
+
+      const newToken = await refreshPromise;
+      originalRequest.headers.Authorization = `Bearer ${newToken}`;
+      return api(originalRequest);
+    } catch {
+      // Refresh failed — clear tokens, force re-login
+      await AsyncStorage.multiRemove([STORAGE_KEYS.TOKEN, STORAGE_KEYS.REFRESH_TOKEN]);
+      return Promise.reject(err);
+    } finally {
+      refreshPromise = null;
+    }
   }
 );
 
 // ─── Auth ───
-// POST /api/v1/auth/login         { identifier, password? }
-// POST /api/v1/auth/verify-otp    { firebaseToken }
-// POST /api/v1/auth/refresh       { refreshToken }
-// GET  /api/v1/auth/me
 export const authApi = {
   login: (identifier, password) =>
     api.post(`${PREFIX}/auth/login`, { identifier, password }),
@@ -45,12 +89,6 @@ export const authApi = {
 };
 
 // ─── Patients ───
-// GET  /api/v1/patients
-// GET  /api/v1/patients/:id
-// POST /api/v1/patients             (create)
-// PUT  /api/v1/patients/:id         (update)
-// POST /api/v1/patients/:id/pause
-// POST /api/v1/patients/:id/resume
 export const patientsApi = {
   list: () => api.get(`${PREFIX}/patients`),
   get: (id) => api.get(`${PREFIX}/patients/${id}`),
@@ -59,7 +97,6 @@ export const patientsApi = {
   pause: (id, reason, pausedUntil) =>
     api.post(`${PREFIX}/patients/${id}/pause`, { reason, pausedUntil }),
   resume: (id) => api.post(`${PREFIX}/patients/${id}/resume`),
-  // Adherence & Stats (routed via CallsController)
   adherenceToday: (id) =>
     api.get(`${PREFIX}/patients/${id}/adherence/today`),
   adherenceCalendar: (id, month) =>
@@ -69,11 +106,6 @@ export const patientsApi = {
 };
 
 // ─── Medicines ───
-// GET    /api/v1/patients/:pid/medicines
-// POST   /api/v1/patients/:pid/medicines
-// PUT    /api/v1/patients/:pid/medicines/:mid
-// DELETE /api/v1/patients/:pid/medicines/:mid
-// GET    /api/v1/patients/:pid/medicines/schedule
 export const medicinesApi = {
   list: (patientId) =>
     api.get(`${PREFIX}/patients/${patientId}/medicines`),
@@ -88,8 +120,6 @@ export const medicinesApi = {
 };
 
 // ─── Calls ───
-// GET /api/v1/patients/:pid/calls    ?page=&limit=&startDate=&endDate=
-// GET /api/v1/calls/:callId
 export const callsApi = {
   list: (patientId, page, limit) =>
     api.get(`${PREFIX}/patients/${patientId}/calls`, { params: { page, limit } }),
@@ -97,12 +127,10 @@ export const callsApi = {
 };
 
 // ─── Users ───
-// GET /api/v1/users/me
-// PUT /api/v1/users/me
 export const usersApi = {
   me: () => api.get(`${PREFIX}/users/me`),
   update: (data) => api.put(`${PREFIX}/users/me`, data),
 };
 
-export { API_URL };
+export { API_URL, STORAGE_KEYS };
 export default api;

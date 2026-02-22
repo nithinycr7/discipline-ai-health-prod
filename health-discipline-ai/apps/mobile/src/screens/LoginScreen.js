@@ -6,18 +6,23 @@ import { useAuth } from '../hooks/useAuth';
 import { colors, fonts, spacing, radius } from '../theme';
 import { HeartIcon, PhoneIcon, ShieldIcon } from '../components/Icons';
 
+const PHONE_REGEX = /^\+?[1-9]\d{6,14}$/;
+
 export default function LoginScreen() {
   const { login } = useAuth();
-  const [phone, setPhone] = useState('+919876543210');
+  const [phone, setPhone] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
   const handleLogin = async () => {
-    if (!phone.trim()) return setError('Please enter your phone number');
+    const trimmed = phone.trim().replace(/[\s\-()]/g, '');
+    if (!trimmed) return setError('Please enter your phone number');
+    if (!PHONE_REGEX.test(trimmed)) return setError('Please enter a valid phone number (e.g. +919876543210)');
+
     setLoading(true);
     setError('');
     try {
-      await login(phone.trim());
+      await login(trimmed);
     } catch (err) {
       setError(err.response?.data?.detail || 'Login failed. Please check your number.');
     } finally {
@@ -31,13 +36,13 @@ export default function LoginScreen() {
         <KeyboardAvoidingView style={styles.inner} behavior={Platform.OS === 'ios' ? 'padding' : 'height'}>
           {/* Logo & Tagline */}
           <View style={styles.header}>
-            <View style={styles.logoRow}>
+            <View style={styles.logoRow} accessibilityRole="header">
               <View style={styles.logoIcon}>
                 <HeartIcon size={22} color={colors.terra300} fill={colors.terra300} />
               </View>
               <Text style={styles.logoText}>CoCarely</Text>
             </View>
-            <Text style={styles.headline}>Care for your{'\n'}parents, from{'\n'}anywhere</Text>
+            <Text style={styles.headline} accessibilityRole="header">Care for your{'\n'}parents, from{'\n'}anywhere</Text>
             <Text style={styles.subtitle}>AI-powered daily calls to ensure your loved ones never miss their medicines.</Text>
           </View>
 
@@ -51,17 +56,30 @@ export default function LoginScreen() {
               <TextInput
                 style={styles.input}
                 value={phone}
-                onChangeText={setPhone}
+                onChangeText={(t) => { setPhone(t); if (error) setError(''); }}
                 placeholder="+91 98765 43210"
                 placeholderTextColor={colors.sand400}
                 keyboardType="phone-pad"
                 autoComplete="tel"
+                textContentType="telephoneNumber"
+                accessibilityLabel="Phone number"
+                accessibilityHint="Enter your registered phone number to sign in"
+                returnKeyType="done"
+                onSubmitEditing={handleLogin}
               />
             </View>
 
-            {error ? <Text style={styles.error}>{error}</Text> : null}
+            {error ? <Text style={styles.error} accessibilityRole="alert">{error}</Text> : null}
 
-            <TouchableOpacity style={[styles.btn, loading && styles.btnDisabled]} onPress={handleLogin} disabled={loading} activeOpacity={0.8}>
+            <TouchableOpacity
+              style={[styles.btn, loading && styles.btnDisabled]}
+              onPress={handleLogin}
+              disabled={loading}
+              activeOpacity={0.8}
+              accessibilityRole="button"
+              accessibilityLabel={loading ? 'Signing in' : 'Sign in'}
+              accessibilityState={{ disabled: loading }}
+            >
               <Text style={styles.btnText}>{loading ? 'Signing in...' : 'Sign In'}</Text>
             </TouchableOpacity>
 

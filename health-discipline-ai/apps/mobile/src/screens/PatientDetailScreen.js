@@ -1,16 +1,18 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, Dimensions, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, useWindowDimensions, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { LineChart } from 'react-native-chart-kit';
 import { patientsApi, medicinesApi, callsApi } from '../services/api';
 import { colors, fonts, spacing } from '../theme';
-import { ArrowLeftIcon, FlameIcon, ChevronRightIcon } from '../components/Icons';
+import { ArrowLeftIcon, FlameIcon } from '../components/Icons';
 
-const W = Dimensions.get('window').width - 72;
 const tabs = ['Overview', 'Today', 'Calendar', 'Calls', 'Meds'];
 
 export default function PatientDetailScreen({ route, navigation }) {
   const { patientId } = route.params;
+  const { width: windowWidth } = useWindowDimensions();
+  const chartWidth = windowWidth - 72;
+
   const [patient, setPatient] = useState(null);
   const [adherence, setAdherence] = useState(null);
   const [stats, setStats] = useState(null);
@@ -20,11 +22,14 @@ export default function PatientDetailScreen({ route, navigation }) {
   const [callsPage, setCallsPage] = useState(1);
   const [calendar, setCalendar] = useState(null);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
   const [tab, setTab] = useState('Overview');
   const [days, setDays] = useState(30);
 
   const loadAll = useCallback(async () => {
     try {
+      setError(null);
       const [pR, mR, aR, cR, calR, sR] = await Promise.all([
         patientsApi.get(patientId),
         medicinesApi.list(patientId),
@@ -41,15 +46,18 @@ export default function PatientDetailScreen({ route, navigation }) {
       setCallsTotal(cd?.total || cd?.data?.total || 0);
       setCalendar(calR?.data);
       setStats(sR?.data);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); }
+    } catch (e) {
+      setError('Unable to load patient details.');
+      if (__DEV__) console.error(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, [patientId, days]);
 
   useEffect(() => { loadAll(); }, [loadAll]);
 
-  useEffect(() => {
-    patientsApi.stats(patientId, days).then(r => setStats(r.data)).catch(() => {});
-  }, [patientId, days]);
+  const onRefresh = () => { setRefreshing(true); loadAll(); };
 
   const loadCallsPage = async (pg) => {
     try {
@@ -58,48 +66,78 @@ export default function PatientDetailScreen({ route, navigation }) {
       setCalls(d?.calls || d?.data?.calls || []);
       setCallsTotal(d?.total || d?.data?.total || 0);
       setCallsPage(pg);
-    } catch (e) { console.error(e); }
+    } catch (e) {
+      if (__DEV__) console.error(e);
+    }
   };
 
-  if (loading || !patient) return <View style={styles.loaderWrap}><Text style={styles.loaderText}>Loading...</Text></View>;
+  if (loading || !patient) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color={colors.moss500} />
+          <Text style={styles.loaderText}>Loading...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
 
   const pctColor = (v) => v >= 80 ? colors.green500 : v >= 50 ? colors.amber500 : colors.red500;
   const totalPages = Math.ceil(callsTotal / 8);
 
-  // Chart data
   const trendData = stats?.adherenceTrend?.slice(-14) || [];
   const trendLabels = trendData.map(d => { const dt = new Date(d.date); return `${dt.getDate()}/${dt.getMonth() + 1}`; });
   const trendValues = trendData.map(d => d.adherencePercentage);
 
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
-      <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
+      <ScrollView
+        style={styles.scroll}
+        contentContainerStyle={styles.content}
+        refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.moss500} />}
+      >
         {/* Header */}
-        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => navigation.goBack()} accessibilityRole="button" accessibilityLabel="Go back">
           <ArrowLeftIcon size={18} color={colors.moss600} />
           <Text style={styles.backText}>Back</Text>
         </TouchableOpacity>
 
         <View style={styles.headerRow}>
           <View style={[styles.avatar, { backgroundColor: patient.isPaused ? colors.sand200 : colors.moss100 }]}>
-            <Text style={[styles.avatarText, { color: patient.isPaused ? colors.sand400 : colors.moss700 }]}>{patient.preferredName?.charAt(0)}</Text>
+            <Text style={[styles.avatarText, { color: patient.isPaused ? colors.sand400 : colors.moss700 }]}>{(patient.preferredName || '?').charAt(0)}</Text>
           </View>
           <View style={{ flex: 1 }}>
             <View style={{ flexDirection: 'row', alignItems: 'center', gap: 8, flexWrap: 'wrap' }}>
-              <Text style={styles.patientName}>{patient.preferredName}</Text>
+              <Text style={styles.patientName} accessibilityRole="header">{patient.preferredName || 'Unknown'}</Text>
               {patient.currentStreak > 0 && (
-                <View style={styles.streakBadge}><FlameIcon size={12} color={colors.terra600} /><Text style={styles.streakVal}>{patient.currentStreak}</Text></View>
+                <View style={styles.streakBadge} accessibilityLabel={`${patient.currentStreak} day streak`}>
+                  <FlameIcon size={12} color={colors.terra600} /><Text style={styles.streakVal}>{patient.currentStreak}</Text>
+                </View>
               )}
               {patient.isPaused && <View style={styles.pauseBadge}><Text style={styles.pauseText}>Paused</Text></View>}
             </View>
-            <Text style={styles.patientSub}>{patient.fullName} · Age {patient.age} · {patient.healthConditions?.join(', ')}</Text>
+            <Text style={styles.patientSub}>{patient.fullName || ''} · Age {patient.age || '--'} · {(patient.healthConditions || []).join(', ')}</Text>
           </View>
         </View>
+
+        {/* Error Banner */}
+        {error && (
+          <View style={styles.errorBanner} accessibilityRole="alert">
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
 
         {/* Tabs */}
         <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.tabScroll} contentContainerStyle={styles.tabRow}>
           {tabs.map(t => (
-            <TouchableOpacity key={t} style={[styles.tabBtn, tab === t && styles.tabBtnActive]} onPress={() => setTab(t)}>
+            <TouchableOpacity
+              key={t}
+              style={[styles.tabBtn, tab === t && styles.tabBtnActive]}
+              onPress={() => setTab(t)}
+              accessibilityRole="tab"
+              accessibilityState={{ selected: tab === t }}
+              accessibilityLabel={t}
+            >
               <Text style={[styles.tabText, tab === t && styles.tabTextActive]}>{t}</Text>
             </TouchableOpacity>
           ))}
@@ -108,28 +146,35 @@ export default function PatientDetailScreen({ route, navigation }) {
         {/* OVERVIEW */}
         {tab === 'Overview' && (
           <View>
-            <View style={styles.miniStatsGrid}>
+            <View style={styles.miniStatsGrid} accessibilityRole="summary">
               <MiniStat label="Today" value={adherence ? `${adherence.adherencePercentage}%` : '--'} sub={adherence ? `${adherence.taken}/${adherence.totalMedicines} meds` : 'No call'} color={adherence?.adherencePercentage >= 80 ? colors.green500 : colors.amber500} />
               <MiniStat label="Streak" value={`${patient.currentStreak || 0}`} sub={`Best: ${patient.longestStreak || 0}d`} color={colors.terra500} />
               <MiniStat label="Calls" value={stats?.callStats?.completed || 0} sub={`${stats?.callStats?.noAnswer || 0} missed`} color={colors.moss700} />
               <MiniStat label="Mood" value={adherence?.moodNotes || '--'} sub="today" color={colors.green500} capitalize />
             </View>
 
-            <View style={styles.periodRow}>
+            <View style={styles.periodRow} accessibilityRole="radiogroup" accessibilityLabel="Time period">
               {[7, 14, 30].map(d => (
-                <TouchableOpacity key={d} style={[styles.periodBtn, days === d && styles.periodBtnActive]} onPress={() => setDays(d)}>
+                <TouchableOpacity
+                  key={d}
+                  style={[styles.periodBtn, days === d && styles.periodBtnActive]}
+                  onPress={() => setDays(d)}
+                  accessibilityRole="radio"
+                  accessibilityState={{ checked: days === d }}
+                  accessibilityLabel={`${d} days`}
+                >
                   <Text style={[styles.periodText, days === d && styles.periodTextActive]}>{d}D</Text>
                 </TouchableOpacity>
               ))}
             </View>
 
             {trendValues.length > 1 && (
-              <View style={styles.chartCard}>
+              <View style={styles.chartCard} accessibilityLabel={`Adherence trend chart over ${days} days`}>
                 <Text style={styles.chartTitle}>Adherence Trend</Text>
                 <Text style={styles.chartSub}>Daily compliance over {days} days</Text>
                 <LineChart
                   data={{ labels: trendLabels.filter((_, i) => i % Math.max(1, Math.floor(trendLabels.length / 6)) === 0), datasets: [{ data: trendValues.length > 0 ? trendValues : [0] }] }}
-                  width={W}
+                  width={chartWidth}
                   height={180}
                   yAxisSuffix="%"
                   chartConfig={{ backgroundColor: '#fff', backgroundGradientFrom: '#fff', backgroundGradientTo: '#fff', decimalPlaces: 0, color: (o) => `rgba(61,139,94,${o})`, labelColor: () => colors.sand400, propsForDots: { r: '3', strokeWidth: '1', stroke: colors.green500 }, propsForBackgroundLines: { stroke: colors.sand200 } }}
@@ -144,7 +189,7 @@ export default function PatientDetailScreen({ route, navigation }) {
               <View style={styles.chartCard}>
                 <Text style={styles.chartTitle}>Per-Medicine Compliance</Text>
                 {stats.perMedicineAdherence.map((m, i) => (
-                  <View key={i} style={styles.medBar}>
+                  <View key={i} style={styles.medBar} accessibilityLabel={`${m.name}: ${m.percentage} percent`}>
                     <Text style={styles.medBarName} numberOfLines={1}>{m.name}</Text>
                     <View style={styles.medBarTrack}>
                       <View style={[styles.medBarFill, { width: `${m.percentage}%`, backgroundColor: pctColor(m.percentage) }]} />
@@ -170,7 +215,7 @@ export default function PatientDetailScreen({ route, navigation }) {
                 <View style={styles.chartCard}>
                   <Text style={styles.chartTitle}>Medicine Checklist</Text>
                   {adherence.medicineDetails?.map((med, i) => (
-                    <View key={i} style={[styles.medRow, i < adherence.medicineDetails.length - 1 && styles.medRowBorder]}>
+                    <View key={med.name || i} style={[styles.medRow, i < adherence.medicineDetails.length - 1 && styles.medRowBorder]} accessibilityLabel={`${med.name}: ${med.status}`}>
                       <View style={{ flex: 1 }}>
                         <Text style={styles.medName}>{med.name}</Text>
                         {med.nickname && med.nickname !== med.name && <Text style={styles.medNick}>"{med.nickname}"</Text>}
@@ -182,7 +227,7 @@ export default function PatientDetailScreen({ route, navigation }) {
                   ))}
                 </View>
                 {adherence.complaints?.length > 0 && (
-                  <View style={styles.complaintsBox}>
+                  <View style={styles.complaintsBox} accessibilityLabel={`${adherence.complaints.length} complaints reported`}>
                     <Text style={styles.complaintsTitle}>Complaints Reported</Text>
                     <View style={{ flexDirection: 'row', flexWrap: 'wrap', gap: 6 }}>
                       {adherence.complaints.map((c, i) => <View key={i} style={styles.complaintTag}><Text style={styles.complaintText}>{c}</Text></View>)}
@@ -203,18 +248,18 @@ export default function PatientDetailScreen({ route, navigation }) {
                 <Text style={styles.chartSub}>Overall: {calendar.monthlyAdherence}%</Text>
                 <View style={styles.calGrid}>
                   {['S', 'M', 'T', 'W', 'T', 'F', 'S'].map((d, i) => (
-                    <View key={i} style={styles.calDayHeader}><Text style={styles.calDayHeaderText}>{d}</Text></View>
+                    <View key={`hdr-${i}`} style={styles.calDayHeader}><Text style={styles.calDayHeaderText}>{d}</Text></View>
                   ))}
-                  {calendar.days?.map((day) => {
+                  {(calendar.days || []).flatMap((day) => {
                     const date = new Date(day.date + 'T00:00:00');
                     const dayOfWeek = date.getDay();
                     const isFirst = date.getDate() === 1;
                     const bg = day.status === 'full' ? colors.green500 : day.status === 'partial' ? colors.amber500 : day.status === 'missed' ? colors.red500 : colors.sand200;
                     const cl = (day.status === 'no_call' || day.status === 'no_data') ? colors.sand400 : '#fff';
-                    const spacers = isFirst ? Array(dayOfWeek).fill(null).map((_, i) => <View key={`s${i}`} style={styles.calCell} />) : [];
+                    const spacers = isFirst ? Array(dayOfWeek).fill(null).map((_, i) => <View key={`s-${day.date}-${i}`} style={styles.calCell} />) : [];
                     return [
                       ...spacers,
-                      <View key={day.date} style={[styles.calCell, { backgroundColor: bg }]}>
+                      <View key={day.date} style={[styles.calCell, { backgroundColor: bg }]} accessibilityLabel={`${date.getDate()}: ${day.status?.replace('_', ' ') || 'no data'}`}>
                         <Text style={[styles.calCellText, { color: cl }]}>{date.getDate()}</Text>
                       </View>
                     ];
@@ -241,7 +286,7 @@ export default function PatientDetailScreen({ route, navigation }) {
               {callsTotal > 0 && <Text style={styles.chartSub}>{callsTotal} total</Text>}
             </View>
             {calls.map((c, i) => (
-              <View key={c._id} style={[styles.callRow, i < calls.length - 1 && styles.callRowBorder]}>
+              <View key={c._id || i} style={[styles.callRow, i < calls.length - 1 && styles.callRowBorder]} accessibilityLabel={`Call on ${new Date(c.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, ${c.status?.replace('_', ' ') || 'unknown'}`}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.callDate}>{new Date(c.scheduledAt).toLocaleDateString('en-IN', { day: 'numeric', month: 'short', year: 'numeric' })}</Text>
                   <Text style={styles.callMeta}>
@@ -250,7 +295,7 @@ export default function PatientDetailScreen({ route, navigation }) {
                   </Text>
                 </View>
                 <View style={[styles.callBadge, { backgroundColor: c.status === 'completed' ? colors.moss100 : colors.amber300 }]}>
-                  <Text style={[styles.callBadgeText, { color: c.status === 'completed' ? colors.green500 : colors.moss900 }]}>{c.status?.replace('_', ' ')}</Text>
+                  <Text style={[styles.callBadgeText, { color: c.status === 'completed' ? colors.green500 : colors.moss900 }]}>{c.status?.replace('_', ' ') || 'unknown'}</Text>
                 </View>
               </View>
             ))}
@@ -259,10 +304,24 @@ export default function PatientDetailScreen({ route, navigation }) {
               <View style={styles.pagRow}>
                 <Text style={styles.pagText}>Page {callsPage}/{totalPages}</Text>
                 <View style={{ flexDirection: 'row', gap: 8 }}>
-                  <TouchableOpacity style={[styles.pagBtn, callsPage <= 1 && { opacity: 0.4 }]} disabled={callsPage <= 1} onPress={() => loadCallsPage(callsPage - 1)}>
+                  <TouchableOpacity
+                    style={[styles.pagBtn, callsPage <= 1 && { opacity: 0.4 }]}
+                    disabled={callsPage <= 1}
+                    onPress={() => loadCallsPage(callsPage - 1)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Previous page"
+                    accessibilityState={{ disabled: callsPage <= 1 }}
+                  >
                     <Text style={styles.pagBtnText}>Prev</Text>
                   </TouchableOpacity>
-                  <TouchableOpacity style={[styles.pagBtn, callsPage >= totalPages && { opacity: 0.4 }]} disabled={callsPage >= totalPages} onPress={() => loadCallsPage(callsPage + 1)}>
+                  <TouchableOpacity
+                    style={[styles.pagBtn, callsPage >= totalPages && { opacity: 0.4 }]}
+                    disabled={callsPage >= totalPages}
+                    onPress={() => loadCallsPage(callsPage + 1)}
+                    accessibilityRole="button"
+                    accessibilityLabel="Next page"
+                    accessibilityState={{ disabled: callsPage >= totalPages }}
+                  >
                     <Text style={styles.pagBtnText}>Next</Text>
                   </TouchableOpacity>
                 </View>
@@ -276,7 +335,7 @@ export default function PatientDetailScreen({ route, navigation }) {
           <View style={styles.chartCard}>
             <Text style={styles.chartTitle}>Medicines ({medicines.length})</Text>
             {medicines.map((med, i) => (
-              <View key={med._id} style={[styles.medDetailRow, i < medicines.length - 1 && styles.medRowBorder]}>
+              <View key={med._id || i} style={[styles.medDetailRow, i < medicines.length - 1 && styles.medRowBorder]} accessibilityLabel={`${med.brandName || 'Medicine'}, ${med.timing || ''}, ${med.isCritical ? 'critical' : ''}`}>
                 <View style={{ flex: 1 }}>
                   <Text style={styles.medName}>{med.brandName}</Text>
                   {med.genericName && <Text style={styles.medGeneric}>{med.genericName}</Text>}
@@ -299,7 +358,7 @@ export default function PatientDetailScreen({ route, navigation }) {
 
 function MiniStat({ label, value, sub, color, capitalize }) {
   return (
-    <View style={ms.card}>
+    <View style={ms.card} accessibilityLabel={`${label}: ${value} ${sub}`}>
       <Text style={ms.label}>{label.toUpperCase()}</Text>
       <Text style={[ms.value, { color, textTransform: capitalize ? 'capitalize' : 'none' }]}>{value}</Text>
       <Text style={ms.sub}>{sub}</Text>
@@ -317,7 +376,7 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand50 },
   scroll: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: 40 },
-  loaderWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', backgroundColor: colors.sand50 },
+  loaderWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
   loaderText: { fontFamily: fonts.body, color: colors.sand400 },
   backBtn: { flexDirection: 'row', alignItems: 'center', gap: 4, marginBottom: 12 },
   backText: { fontSize: 14, fontFamily: fonts.bodyMedium, color: colors.moss600 },
@@ -330,6 +389,8 @@ const styles = StyleSheet.create({
   streakVal: { fontSize: 12, fontFamily: fonts.bodyBold, color: colors.terra600 },
   pauseBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6, backgroundColor: colors.amber300 },
   pauseText: { fontSize: 11, fontFamily: fonts.bodySemiBold, color: colors.moss900 },
+  errorBanner: { backgroundColor: colors.terra200, borderRadius: 14, padding: 14, marginBottom: spacing.xl, borderWidth: 1, borderColor: colors.terra300 },
+  errorText: { fontFamily: fonts.body, fontSize: 13, color: colors.terra600, textAlign: 'center' },
   tabScroll: { marginBottom: spacing.xl },
   tabRow: { flexDirection: 'row', gap: 6 },
   tabBtn: { paddingHorizontal: 14, paddingVertical: 8, borderRadius: 12, backgroundColor: colors.sand200 },

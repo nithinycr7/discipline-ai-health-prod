@@ -22,7 +22,9 @@ export default function SettingsScreen() {
   }, [user]);
 
   useEffect(() => {
-    patientsApi.list().then(r => setPatients(Array.isArray(r.data) ? r.data : (r.data.data || []))).catch(() => {});
+    patientsApi.list()
+      .then(r => setPatients(Array.isArray(r.data) ? r.data : (r.data.data || [])))
+      .catch(() => {});
   }, []);
 
   const handleSave = async () => {
@@ -33,8 +35,12 @@ export default function SettingsScreen() {
       await refreshUser();
       setSaved(true);
       setTimeout(() => setSaved(false), 3000);
-    } catch (e) { console.error(e); }
-    finally { setSaving(false); }
+    } catch (e) {
+      Alert.alert('Error', 'Failed to save settings. Please try again.');
+      if (__DEV__) console.error(e);
+    } finally {
+      setSaving(false);
+    }
   };
 
   const handleLogout = () => {
@@ -47,19 +53,35 @@ export default function SettingsScreen() {
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content}>
-        <Text style={styles.title}>Settings</Text>
+        <Text style={styles.title} accessibilityRole="header">Settings</Text>
 
         {/* Profile */}
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Profile</Text>
           <Text style={styles.label}>Name</Text>
-          <TextInput style={styles.input} value={name} onChangeText={setName} />
+          <TextInput
+            style={styles.input}
+            value={name}
+            onChangeText={setName}
+            accessibilityLabel="Your name"
+            accessibilityHint="Edit your display name"
+          />
 
           <Text style={styles.label}>{user?.phone ? 'Phone' : 'Email'}</Text>
-          <TextInput style={[styles.input, styles.inputDisabled]} value={user?.phone || user?.email || ''} editable={false} />
+          <TextInput
+            style={[styles.input, styles.inputDisabled]}
+            value={user?.phone || user?.email || ''}
+            editable={false}
+            accessibilityLabel={user?.phone ? 'Phone number' : 'Email address'}
+          />
 
           <Text style={styles.label}>Timezone</Text>
-          <TextInput style={[styles.input, styles.inputDisabled]} value={user?.timezone || 'Asia/Kolkata'} editable={false} />
+          <TextInput
+            style={[styles.input, styles.inputDisabled]}
+            value={user?.timezone || 'Asia/Kolkata'}
+            editable={false}
+            accessibilityLabel="Timezone"
+          />
         </View>
 
         {/* Notifications */}
@@ -83,13 +105,24 @@ export default function SettingsScreen() {
                 onValueChange={() => setNotifs(prev => ({ ...prev, [key]: !prev[key] }))}
                 trackColor={{ false: colors.sand300, true: colors.moss500 }}
                 thumbColor="#fff"
+                accessibilityLabel={title}
+                accessibilityHint={desc}
+                accessibilityRole="switch"
               />
             </View>
           ))}
         </View>
 
         {/* Save */}
-        <TouchableOpacity style={[styles.saveBtn, saving && { backgroundColor: colors.moss400 }]} onPress={handleSave} disabled={saving} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={[styles.saveBtn, saving && { backgroundColor: colors.moss400 }]}
+          onPress={handleSave}
+          disabled={saving}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel={saving ? 'Saving changes' : saved ? 'Changes saved' : 'Save changes'}
+          accessibilityState={{ disabled: saving }}
+        >
           <Text style={styles.saveBtnText}>{saving ? 'Saving...' : saved ? 'Saved!' : 'Save Changes'}</Text>
         </TouchableOpacity>
 
@@ -97,10 +130,10 @@ export default function SettingsScreen() {
         <View style={styles.card}>
           <Text style={styles.cardTitle}>Subscription</Text>
           {patients.map(p => (
-            <View key={p._id} style={styles.subRow}>
+            <View key={p._id} style={styles.subRow} accessibilityLabel={`${p.preferredName || 'Patient'}: ${p.subscriptionStatus || 'trial'}`}>
               <View>
-                <Text style={styles.subName}>{p.preferredName}</Text>
-                <Text style={styles.subFull}>{p.fullName}</Text>
+                <Text style={styles.subName}>{p.preferredName || 'Unknown'}</Text>
+                <Text style={styles.subFull}>{p.fullName || ''}</Text>
               </View>
               <View style={{ alignItems: 'flex-end' }}>
                 <View style={[styles.subBadge, { backgroundColor: p.subscriptionStatus === 'active' ? colors.moss100 : colors.amber300 }]}>
@@ -115,7 +148,13 @@ export default function SettingsScreen() {
         </View>
 
         {/* Sign Out */}
-        <TouchableOpacity style={styles.logoutBtn} onPress={handleLogout} activeOpacity={0.8}>
+        <TouchableOpacity
+          style={styles.logoutBtn}
+          onPress={handleLogout}
+          activeOpacity={0.8}
+          accessibilityRole="button"
+          accessibilityLabel="Sign out"
+        >
           <LogOutIcon size={18} color={colors.terra600} />
           <Text style={styles.logoutText}>Sign Out</Text>
         </TouchableOpacity>

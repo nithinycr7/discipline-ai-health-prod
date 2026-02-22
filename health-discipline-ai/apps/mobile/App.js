@@ -8,6 +8,7 @@ import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider, useAuth } from './src/hooks/useAuth';
 import AppNavigator from './src/navigation/AppNavigator';
 import AuthNavigator from './src/navigation/AuthNavigator';
+import ErrorBoundary from './src/components/ErrorBoundary';
 import { View, ActivityIndicator, StyleSheet } from 'react-native';
 import { colors } from './src/theme';
 
@@ -18,7 +19,7 @@ function RootNavigator() {
 
   if (loading) {
     return (
-      <View style={styles.loader}>
+      <View style={styles.loader} accessibilityLabel="Loading app">
         <ActivityIndicator size="large" color={colors.moss500} />
       </View>
     );
@@ -45,14 +46,16 @@ export default function App() {
 
   return (
     <GestureHandlerRootView style={{ flex: 1 }} onLayout={onLayoutReady}>
-      <SafeAreaProvider>
-        <NavigationContainer>
-          <AuthProvider>
-            <StatusBar style="dark" />
-            <RootNavigator />
-          </AuthProvider>
-        </NavigationContainer>
-      </SafeAreaProvider>
+      <ErrorBoundary>
+        <SafeAreaProvider>
+          <NavigationContainer>
+            <AuthProvider>
+              <StatusBar style="dark" />
+              <RootNavigator />
+            </AuthProvider>
+          </NavigationContainer>
+        </SafeAreaProvider>
+      </ErrorBoundary>
     </GestureHandlerRootView>
   );
 }

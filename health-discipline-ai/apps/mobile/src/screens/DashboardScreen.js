@@ -1,9 +1,10 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { View, Text, ScrollView, TouchableOpacity, RefreshControl, StyleSheet } from 'react-native';
+import { View, Text, ScrollView, TouchableOpacity, RefreshControl, ActivityIndicator, StyleSheet } from 'react-native';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { useFocusEffect } from '@react-navigation/native';
 import { useAuth } from '../hooks/useAuth';
 import { patientsApi } from '../services/api';
-import { colors, fonts, spacing, radius } from '../theme';
+import { colors, fonts, spacing } from '../theme';
 import { HeartIcon, TrendUpIcon, FlameIcon, AlertIcon, ChevronRightIcon } from '../components/Icons';
 
 export default function DashboardScreen({ navigation }) {
@@ -11,9 +12,11 @@ export default function DashboardScreen({ navigation }) {
   const [patients, setPatients] = useState([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
+  const [error, setError] = useState(null);
 
   const loadData = useCallback(async () => {
     try {
+      setError(null);
       const res = await patientsApi.list();
       const list = Array.isArray(res.data) ? res.data : (res.data.data || []);
       const withAdh = await Promise.all(
@@ -25,11 +28,23 @@ export default function DashboardScreen({ navigation }) {
         })
       );
       setPatients(withAdh);
-    } catch (e) { console.error(e); }
-    finally { setLoading(false); setRefreshing(false); }
+    } catch (e) {
+      setError('Unable to load dashboard. Pull down to retry.');
+      if (__DEV__) console.error(e);
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
   }, []);
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Refresh stale data when screen regains focus
+  useFocusEffect(
+    useCallback(() => {
+      if (!loading) loadData();
+    }, [loading, loadData])
+  );
 
   const onRefresh = () => { setRefreshing(true); loadData(); };
 
@@ -43,12 +58,12 @@ export default function DashboardScreen({ navigation }) {
     if (p.isPaused) return;
     const pct = p.adherence?.adherencePercentage;
     if (pct !== undefined && pct < 50 && (p.adherence?.totalMedicines || 0) > 0)
-      alerts.push({ patient: p, reason: `Only ${pct}% adherence today` });
+      alerts.push({ patient: p, reason: `Only ${pct}% adherence today`, key: `adh-${p._id}` });
     if (p.subscriptionStatus === 'trial' && p.trialEndsAt) {
       const d = Math.ceil((new Date(p.trialEndsAt).getTime() - Date.now()) / 86400000);
-      if (d >= 0 && d <= 3) alerts.push({ patient: p, reason: `Trial expires in ${d}d` });
+      if (d >= 0 && d <= 3) alerts.push({ patient: p, reason: `Trial expires in ${d}d`, key: `trial-${p._id}` });
     }
-    if (p.adherence?.complaints?.length > 0) alerts.push({ patient: p, reason: p.adherence.complaints.join(', ') });
+    if (p.adherence?.complaints?.length > 0) alerts.push({ patient: p, reason: p.adherence.complaints.join(', '), key: `comp-${p._id}` });
   });
 
   const firstName = user?.name?.split(' ')[0] || 'there';
@@ -57,6 +72,17 @@ export default function DashboardScreen({ navigation }) {
 
   const pctColor = (v) => v >= 80 ? colors.green500 : v >= 50 ? colors.amber500 : colors.red500;
 
+  if (loading) {
+    return (
+      <SafeAreaView style={styles.safe} edges={['top']}>
+        <View style={styles.loaderWrap}>
+          <ActivityIndicator size="large" color={colors.moss500} />
+          <Text style={styles.loaderText}>Loading dashboard...</Text>
+        </View>
+      </SafeAreaView>
+    );
+  }
+
   return (
     <SafeAreaView style={styles.safe} edges={['top']}>
       <ScrollView style={styles.scroll} contentContainerStyle={styles.content} refreshControl={<RefreshControl refreshing={refreshing} onRefresh={onRefresh} tintColor={colors.moss500} />}>
@@ -64,22 +90,29 @@ export default function DashboardScreen({ navigation }) {
         <View style={styles.header}>
           <View>
             <Text style={styles.greeting}>{greeting}</Text>
-            <Text style={styles.name}>{firstName}</Text>
+            <Text style={styles.name} accessibilityRole="header">{firstName}</Text>
             <Text style={styles.date}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
           </View>
-          <View style={styles.heartWrap}>
+          <View style={styles.heartWrap} accessibilityLabel="CoCarely">
             <HeartIcon size={20} color={colors.moss600} fill={colors.moss300} />
           </View>
         </View>
 
+        {/* Error Banner */}
+        {error && (
+          <View style={styles.errorBanner} accessibilityRole="alert">
+            <Text style={styles.errorText}>{error}</Text>
+          </View>
+        )}
+
         {/* Stats */}
         <View style={styles.statsRow}>
-          <View style={styles.statCard}>
+          <View style={styles.statCard} accessibilityLabel={`Average adherence ${activePatients.some(p => p.adherence?.totalMedicines) ? `${avgAdh} percent` : 'no data'}`}>
             <View style={styles.statIconRow}><TrendUpIcon size={14} color={colors.sand400} /><Text style={styles.statLabel}>AVG ADHERENCE</Text></View>
             <Text style={[styles.statValue, { color: activePatients.some(p => p.adherence?.totalMedicines) ? pctColor(avgAdh) : colors.sand400 }]}>{activePatients.some(p => p.adherence?.totalMedicines) ? `${avgAdh}%` : '--'}</Text>
             <Text style={styles.statSub}>across all patients</Text>
           </View>
-          <View style={styles.statCard}>
+          <View style={styles.statCard} accessibilityLabel={`${streaks} active streaks of 7 or more days`}>
             <View style={styles.statIconRow}><FlameIcon size={14} color={colors.sand400} /><Text style={styles.statLabel}>ACTIVE STREAKS</Text></View>
             <Text style={[styles.statValue, { color: colors.terra500 }]}>{streaks}</Text>
             <Text style={styles.statSub}>7+ day streaks</Text>
@@ -88,13 +121,20 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Alerts */}
         {alerts.length > 0 && (
-          <View style={styles.alertBox}>
+          <View style={styles.alertBox} accessibilityRole="alert" accessibilityLabel={`${alerts.length} items need attention`}>
             <View style={styles.alertHeader}><AlertIcon size={14} color={colors.terra600} /><Text style={styles.alertTitle}>NEEDS ATTENTION</Text></View>
-            {alerts.map((a, i) => (
-              <TouchableOpacity key={i} style={styles.alertItem} onPress={() => navigation.navigate('PatientDetailFromHome', { patientId: a.patient._id })} activeOpacity={0.7}>
-                <View style={styles.alertAvatar}><Text style={styles.alertAvatarText}>{a.patient.preferredName?.charAt(0)}</Text></View>
+            {alerts.map((a) => (
+              <TouchableOpacity
+                key={a.key}
+                style={styles.alertItem}
+                onPress={() => navigation.navigate('PatientDetailFromHome', { patientId: a.patient._id })}
+                activeOpacity={0.7}
+                accessibilityRole="button"
+                accessibilityLabel={`${a.patient.preferredName || 'Patient'}: ${a.reason}`}
+              >
+                <View style={styles.alertAvatar}><Text style={styles.alertAvatarText}>{(a.patient.preferredName || '?').charAt(0)}</Text></View>
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.alertName}>{a.patient.preferredName}</Text>
+                  <Text style={styles.alertName}>{a.patient.preferredName || 'Unknown'}</Text>
                   <Text style={styles.alertReason}>{a.reason}</Text>
                 </View>
                 <ChevronRightIcon size={16} color={colors.terra500} />
@@ -105,6 +145,9 @@ export default function DashboardScreen({ navigation }) {
 
         {/* Patient Cards */}
         <Text style={styles.sectionTitle}>Your Family</Text>
+        {patients.length === 0 && !error && (
+          <Text style={styles.emptyText}>No patients added yet.</Text>
+        )}
         {patients.map((p) => {
           const pct = p.adherence?.adherencePercentage || 0;
           const taken = p.adherence?.taken || 0;
@@ -117,25 +160,34 @@ export default function DashboardScreen({ navigation }) {
             : { t: 'No calls', bg: colors.sand200, c: colors.sand400 };
 
           return (
-            <TouchableOpacity key={p._id} style={styles.patientCard} onPress={() => navigation.navigate('PatientDetailFromHome', { patientId: p._id })} activeOpacity={0.7}>
+            <TouchableOpacity
+              key={p._id}
+              style={styles.patientCard}
+              onPress={() => navigation.navigate('PatientDetailFromHome', { patientId: p._id })}
+              activeOpacity={0.7}
+              accessibilityRole="button"
+              accessibilityLabel={`${p.preferredName || 'Patient'}, ${badgeInfo.t}${total > 0 && !p.isPaused ? `, ${taken} of ${total} medicines taken` : ''}`}
+            >
               <View style={styles.patientTop}>
                 <View style={[styles.avatar, { backgroundColor: p.isPaused ? colors.sand200 : colors.moss100 }]}>
-                  <Text style={[styles.avatarText, { color: p.isPaused ? colors.sand400 : colors.moss700 }]}>{p.preferredName?.charAt(0)}</Text>
+                  <Text style={[styles.avatarText, { color: p.isPaused ? colors.sand400 : colors.moss700 }]}>{(p.preferredName || '?').charAt(0)}</Text>
                 </View>
                 <View style={{ flex: 1 }}>
                   <View style={{ flexDirection: 'row', alignItems: 'center', gap: 6 }}>
-                    <Text style={styles.patientName}>{p.preferredName}</Text>
+                    <Text style={styles.patientName}>{p.preferredName || 'Unknown'}</Text>
                     {(p.currentStreak || 0) > 0 && (
-                      <View style={styles.streakBadge}><FlameIcon size={10} color={colors.terra600} /><Text style={styles.streakText}>{p.currentStreak}</Text></View>
+                      <View style={styles.streakBadge} accessibilityLabel={`${p.currentStreak} day streak`}>
+                        <FlameIcon size={10} color={colors.terra600} /><Text style={styles.streakText}>{p.currentStreak}</Text>
+                      </View>
                     )}
                   </View>
-                  <Text style={styles.patientSub}>{p.fullName}</Text>
+                  <Text style={styles.patientSub}>{p.fullName || ''}</Text>
                 </View>
                 <View style={[styles.badge, { backgroundColor: badgeInfo.bg }]}><Text style={[styles.badgeText, { color: badgeInfo.c }]}>{badgeInfo.t}</Text></View>
               </View>
 
               {total > 0 && !p.isPaused && (
-                <View style={styles.progressArea}>
+                <View style={styles.progressArea} accessibilityLabel={`${pct} percent adherence, ${taken} of ${total} medicines taken`}>
                   <View style={styles.progressLabelRow}>
                     <Text style={styles.progressLabel}>{taken}/{total} medicines taken</Text>
                     <Text style={[styles.progressPct, { color: pctColor(pct) }]}>{pct}%</Text>
@@ -164,11 +216,16 @@ const styles = StyleSheet.create({
   safe: { flex: 1, backgroundColor: colors.sand50 },
   scroll: { flex: 1 },
   content: { padding: spacing.xl, paddingBottom: 40 },
+  loaderWrap: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 12 },
+  loaderText: { fontFamily: fonts.body, color: colors.sand400, fontSize: 14 },
   header: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: spacing.xl },
   greeting: { fontSize: 13, color: colors.sand400, fontFamily: fonts.bodyMedium },
   name: { fontFamily: fonts.heading, fontSize: 26, color: colors.moss900, letterSpacing: -0.5 },
   date: { fontSize: 13, color: colors.sand400, fontFamily: fonts.body, marginTop: 2 },
   heartWrap: { width: 42, height: 42, borderRadius: 14, backgroundColor: colors.moss100, justifyContent: 'center', alignItems: 'center' },
+  errorBanner: { backgroundColor: colors.terra200, borderRadius: 14, padding: 14, marginBottom: spacing.xl, borderWidth: 1, borderColor: colors.terra300 },
+  errorText: { fontFamily: fonts.body, fontSize: 13, color: colors.terra600, textAlign: 'center' },
+  emptyText: { fontFamily: fonts.body, fontSize: 14, color: colors.sand400, textAlign: 'center', padding: 40 },
   statsRow: { flexDirection: 'row', gap: 12, marginBottom: spacing.xl },
   statCard: { flex: 1, backgroundColor: '#fff', borderRadius: 18, padding: 16, borderWidth: 1, borderColor: colors.sand200 },
   statIconRow: { flexDirection: 'row', alignItems: 'center', gap: 6, marginBottom: 8 },
