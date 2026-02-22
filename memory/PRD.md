@@ -9,7 +9,8 @@ Build a React Native mobile app for EchoCare (Health Discipline AI) that connect
 - **Charts**: react-native-chart-kit
 - **Icons**: Custom SVG via react-native-svg
 - **Auth**: AsyncStorage + JWT Bearer tokens
-- **Backend**: Existing NestJS API at `https://discipline-ai-api-337728476024.us-central1.run.app`
+- **Backend**: Existing NestJS API at `https://discipline-ai-api-337728476024.us-central1.run.app` (live, verified)
+- **API Response Bugs Fixed**: All screens now correctly parse NestJS direct responses (not wrapped in `{data: ...}`)
 - **Branch**: `react-native-app`
 
 ## User Personas
