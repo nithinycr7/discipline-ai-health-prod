@@ -18,7 +18,7 @@ export default function ReportsScreen() {
 
   useEffect(() => {
     patientsApi.list()
-      .then(res => { const l = res.data.data || []; setPatients(l); if (l.length > 0) setSelected(l[0]._id); })
+      .then(res => { const l = Array.isArray(res.data) ? res.data : (res.data.data || []); setPatients(l); if (l.length > 0) setSelected(l[0]._id); })
       .catch(console.error)
       .finally(() => setLoading(false));
   }, []);
@@ -27,7 +27,7 @@ export default function ReportsScreen() {
     if (!selected) return;
     setStatsLoading(true);
     patientsApi.stats(selected, days)
-      .then(r => setStats(r.data.data))
+      .then(r => setStats(r.data))
       .catch(console.error)
       .finally(() => setStatsLoading(false));
   }, [selected, days]);

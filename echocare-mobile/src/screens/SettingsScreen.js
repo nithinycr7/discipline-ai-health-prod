@@ -22,7 +22,7 @@ export default function SettingsScreen() {
   }, [user]);
 
   useEffect(() => {
-    patientsApi.list().then(r => setPatients(r.data.data || [])).catch(() => {});
+    patientsApi.list().then(r => setPatients(Array.isArray(r.data) ? r.data : (r.data.data || []))).catch(() => {});
   }, []);
 
   const handleSave = async () => {
