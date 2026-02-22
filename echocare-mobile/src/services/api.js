@@ -14,7 +14,7 @@ const PREFIX = '/api/v1';
 const api = axios.create({ baseURL: API_URL, timeout: 15000 });
 
 api.interceptors.request.use(async (config) => {
-  const token = await AsyncStorage.getItem('echocare_token');
+  const token = await AsyncStorage.getItem('cocarely_token');
   if (token) config.headers.Authorization = `Bearer ${token}`;
   return config;
 });
@@ -23,7 +23,7 @@ api.interceptors.response.use(
   (res) => res,
   async (err) => {
     if (err.response?.status === 401) {
-      await AsyncStorage.removeItem('echocare_token');
+      await AsyncStorage.removeItem('cocarely_token');
     }
     return Promise.reject(err);
   }
