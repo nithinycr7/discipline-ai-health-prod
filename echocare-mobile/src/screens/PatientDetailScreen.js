@@ -210,7 +210,7 @@ export default function PatientDetailScreen({ route, navigation }) {
                     const dayOfWeek = date.getDay();
                     const isFirst = date.getDate() === 1;
                     const bg = day.status === 'full' ? colors.green500 : day.status === 'partial' ? colors.amber500 : day.status === 'missed' ? colors.red500 : colors.sand200;
-                    const cl = day.status === 'no_call' ? colors.sand400 : '#fff';
+                    const cl = (day.status === 'no_call' || day.status === 'no_data') ? colors.sand400 : '#fff';
                     const spacers = isFirst ? Array(dayOfWeek).fill(null).map((_, i) => <View key={`s${i}`} style={styles.calCell} />) : [];
                     return [
                       ...spacers,
