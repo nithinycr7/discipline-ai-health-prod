@@ -33,13 +33,14 @@ export default function PatientDetailScreen({ route, navigation }) {
         patientsApi.adherenceCalendar(patientId, new Date().toISOString().slice(0, 7)).catch(() => null),
         patientsApi.stats(patientId, days).catch(() => null),
       ]);
-      setPatient(pR.data.data);
-      setMedicines(mR.data.data || []);
-      setAdherence(aR?.data?.data);
-      setCalls(cR.data.data?.calls || []);
-      setCallsTotal(cR.data.data?.total || 0);
-      setCalendar(calR?.data?.data);
-      setStats(sR?.data?.data);
+      setPatient(pR.data.data || pR.data);
+      setMedicines(Array.isArray(mR.data) ? mR.data : (mR.data.data || []));
+      setAdherence(aR?.data);
+      const cd = cR.data;
+      setCalls(cd?.calls || cd?.data?.calls || []);
+      setCallsTotal(cd?.total || cd?.data?.total || 0);
+      setCalendar(calR?.data);
+      setStats(sR?.data);
     } catch (e) { console.error(e); }
     finally { setLoading(false); }
   }, [patientId, days]);
@@ -47,14 +48,15 @@ export default function PatientDetailScreen({ route, navigation }) {
   useEffect(() => { loadAll(); }, [loadAll]);
 
   useEffect(() => {
-    patientsApi.stats(patientId, days).then(r => setStats(r.data.data)).catch(() => {});
+    patientsApi.stats(patientId, days).then(r => setStats(r.data)).catch(() => {});
   }, [patientId, days]);
 
   const loadCallsPage = async (pg) => {
     try {
       const r = await callsApi.list(patientId, pg, 8);
-      setCalls(r.data.data?.calls || []);
-      setCallsTotal(r.data.data?.total || 0);
+      const d = r.data;
+      setCalls(d?.calls || d?.data?.calls || []);
+      setCallsTotal(d?.total || d?.data?.total || 0);
       setCallsPage(pg);
     } catch (e) { console.error(e); }
   };
