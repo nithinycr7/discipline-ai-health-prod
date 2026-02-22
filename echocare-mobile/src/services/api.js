@@ -6,7 +6,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 // Production: https://your-api-domain.com
 // Local dev:  http://localhost:3001
 // ──────────────────────────────────────────────────────
-const API_URL = 'https://your-nestjs-backend.com';
+const API_URL = 'https://discipline-ai-api-337728476024.us-central1.run.app';
 
 // NestJS global prefix from main.ts
 const PREFIX = '/api/v1';
