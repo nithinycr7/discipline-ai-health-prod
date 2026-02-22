@@ -1,0 +1,30 @@
+{
+  "expo": {
+    "name": "EchoCare",
+    "slug": "echocare-mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "light",
+    "newArchEnabled": true,
+    "scheme": "echocare",
+    "splash": {
+      "backgroundColor": "#2D4A3E",
+      "resizeMode": "contain"
+    },
+    "ios": {
+      "supportsTablet": true,
+      "bundleIdentifier": "com.echocare.mobile"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "backgroundColor": "#2D4A3E"
+      },
+      "package": "com.echocare.mobile"
+    },
+    "plugins": [
+      "expo-font",
+      "expo-splash-screen"
+    ]
+  }
+}
