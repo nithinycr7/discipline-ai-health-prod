@@ -38,6 +38,7 @@ export default function HospitalRegisterPage() {
         adminName: form.adminName,
       });
       localStorage.setItem('token', response.token);
+      localStorage.setItem('refreshToken', response.refreshToken);
       router.push('/dashboard');
     } catch (err: any) {
       setError(err.message || 'Registration failed. Please try again.');

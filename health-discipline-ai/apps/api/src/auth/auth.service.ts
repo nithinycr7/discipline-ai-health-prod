@@ -60,6 +60,7 @@ export class AuthService {
       role: 'hospital_admin',
       hospitalName: dto.hospitalName,
       timezone: 'Asia/Kolkata',
+      authProvider: 'email',
     });
 
     const tokens = await this.generateTokens(user);
@@ -207,6 +208,16 @@ export class AuthService {
 
     if (user) {
       // LOGIN flow — existing user
+      // Block social login from hijacking password-based admin accounts
+      if (
+        (user.role === 'hospital_admin' || user.role === 'super_admin') &&
+        user.authProvider === 'email'
+      ) {
+        throw new BadRequestException(
+          'This email is registered with a password. Please use email/password login.',
+        );
+      }
+
       // Update Firebase UID if not set, and mark email as verified
       const updates: Record<string, any> = {};
       if (!user.firebaseUid || user.firebaseUid !== firebaseUid) {

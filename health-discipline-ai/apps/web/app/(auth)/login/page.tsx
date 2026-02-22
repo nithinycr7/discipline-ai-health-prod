@@ -1,6 +1,6 @@
 'use client';
 
-import { Suspense, useState, useRef, useCallback } from 'react';
+import { Suspense, useState, useRef, useCallback, useEffect } from 'react';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { signInWithPhoneNumber, signInWithPopup, ConfirmationResult } from 'firebase/auth';
@@ -33,12 +33,20 @@ function LoginForm() {
 
   const confirmationRef = useRef<ConfirmationResult | null>(null);
   const recaptchaVerifierRef = useRef<RecaptchaVerifier | null>(null);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
+
+  useEffect(() => {
+    return () => {
+      if (timerRef.current) clearInterval(timerRef.current);
+    };
+  }, []);
 
   const startResendTimer = useCallback(() => {
+    if (timerRef.current) clearInterval(timerRef.current);
     setResendTimer(30);
-    const interval = setInterval(() => {
+    timerRef.current = setInterval(() => {
       setResendTimer((prev) => {
-        if (prev <= 1) { clearInterval(interval); return 0; }
+        if (prev <= 1) { clearInterval(timerRef.current!); timerRef.current = null; return 0; }
         return prev - 1;
       });
     }, 1000);
