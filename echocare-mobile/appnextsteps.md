@@ -1,4 +1,4 @@
-# EchoCare React Native App — Next Steps & Production Readiness
+# CoCarely React Native App — Next Steps & Production Readiness
 
 ## Current Status: Beta-Ready (Not Production-Ready Yet)
 
@@ -107,7 +107,7 @@ eas build:configure
 | 8 | **Biometric auth** | `expo-local-authentication` for Face ID / fingerprint unlock |
 | 9 | **Offline caching** | Cache patient data locally so the app works without network |
 | 10 | **Loading skeletons** | Replace spinner with skeleton shimmer for better perceived performance |
-| 11 | **Deep linking** | Handle `echocare://patient/:id` links from WhatsApp reports |
+| 11 | **Deep linking** | Handle `cocarely://patient/:id` links from WhatsApp reports |
 | 12 | **Analytics** | Add Mixpanel/Amplitude to track screen views, feature usage |
 | 13 | **Crash reporting** | Sentry or Bugsnag for production error tracking |
 | 14 | **Accessibility** | Add `accessibilityLabel` to all interactive elements |
@@ -164,8 +164,8 @@ const IS_PROD = process.env.APP_ENV === 'production';
 
 export default {
   expo: {
-    name: IS_PROD ? 'EchoCare' : 'EchoCare (Dev)',
-    slug: 'echocare-mobile',
+    name: IS_PROD ? 'CoCarely' : 'CoCarely (Dev)',
+    slug: 'cocarely-mobile',
     extra: {
       apiUrl: IS_PROD
         ? 'https://discipline-ai-api-337728476024.us-central1.run.app'
@@ -195,14 +195,14 @@ api.interceptors.response.use(
     if (err.response?.status === 401 && !originalRequest._retry) {
       originalRequest._retry = true;
       try {
-        const refreshToken = await AsyncStorage.getItem('echocare_refresh_token');
+        const refreshToken = await AsyncStorage.getItem('cocarely_refresh_token');
         const res = await axios.post(`${API_URL}${PREFIX}/auth/refresh`, { refreshToken });
-        await AsyncStorage.setItem('echocare_token', res.data.token);
-        await AsyncStorage.setItem('echocare_refresh_token', res.data.refreshToken);
+        await AsyncStorage.setItem('cocarely_token', res.data.token);
+        await AsyncStorage.setItem('cocarely_refresh_token', res.data.refreshToken);
         originalRequest.headers.Authorization = `Bearer ${res.data.token}`;
         return api(originalRequest);
       } catch {
-        await AsyncStorage.multiRemove(['echocare_token', 'echocare_refresh_token']);
+        await AsyncStorage.multiRemove(['cocarely_token', 'cocarely_refresh_token']);
       }
     }
     return Promise.reject(err);

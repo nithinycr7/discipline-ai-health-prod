@@ -1,4 +1,4 @@
-# EchoCare Mobile App (React Native / Expo)
+# CoCarely Mobile App (React Native / Expo)
 
 AI-powered medication adherence monitoring dashboard for caregivers.
 
