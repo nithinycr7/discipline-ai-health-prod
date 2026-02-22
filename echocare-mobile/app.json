@@ -1,26 +1,26 @@
 {
   "expo": {
-    "name": "EchoCare",
-    "slug": "echocare-mobile",
+    "name": "CoCarely",
+    "slug": "cocarely-mobile",
     "version": "1.0.0",
     "orientation": "portrait",
     "icon": "./assets/icon.png",
     "userInterfaceStyle": "light",
     "newArchEnabled": true,
-    "scheme": "echocare",
+    "scheme": "cocarely",
     "splash": {
       "backgroundColor": "#2D4A3E",
       "resizeMode": "contain"
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.echocare.mobile"
+      "bundleIdentifier": "com.cocarely.mobile"
     },
     "android": {
       "adaptiveIcon": {
         "backgroundColor": "#2D4A3E"
       },
-      "package": "com.echocare.mobile"
+      "package": "com.cocarely.mobile"
     },
     "plugins": [
       "expo-font",
