@@ -47,19 +47,19 @@ const steps = [
     number: '01',
     title: 'Doctor or hospital adds the patient',
     description: 'Upload patient details, medicines, preferred language, and call schedule via CSV or our dashboard. Takes under 2 minutes per patient. Bulk uploads supported.',
-    accent: 'bg-primary/5 text-primary',
+    accent: 'bg-amber-50 text-amber-700',
   },
   {
     number: '02',
     title: 'AI calls daily in their language',
     description: 'A warm, natural voice calls the patient — checks each medicine by name ("Aapne aaj sugar ki goli li?"), asks about symptoms, tracks vitals, and assesses mood. Works on any phone.',
-    accent: 'bg-gold-light text-gold-dark',
+    accent: 'bg-amber-100 text-amber-700',
   },
   {
     number: '03',
     title: 'Structured reports to doctor + family',
     description: 'Within 5 minutes: WhatsApp report to family, structured data on the doctor\'s dashboard. Missed-dose alerts, vitals trend detection, and mood anomaly flags — all automated.',
-    accent: 'bg-primary/5 text-primary',
+    accent: 'bg-amber-50 text-amber-700',
   },
 ];
 
@@ -184,15 +184,15 @@ export function ChronicSections() {
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-24 pb-12 sm:pt-32 sm:pb-16">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-          <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[500px] sm:w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-primary/10 blur-3xl" />
-          <div className="absolute left-0 bottom-0 h-[200px] w-[200px] sm:h-[300px] sm:w-[300px] translate-y-1/4 -translate-x-1/4 rounded-full bg-gold-light/40 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-amber-50/80 via-transparent to-transparent" />
+          <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[500px] sm:w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-amber-100/60 blur-3xl" />
+          <div className="absolute left-0 bottom-0 h-[200px] w-[200px] sm:h-[300px] sm:w-[300px] translate-y-1/4 -translate-x-1/4 rounded-full bg-amber-50/60 blur-3xl" />
         </div>
 
         <div className="section-container">
           <div className="mx-auto max-w-4xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary animate-fade-in">
-              <span className="inline-block h-1.5 w-1.5 rounded-full bg-primary/80 animate-pulse-slow" />
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-amber-200 bg-amber-50 px-4 py-1.5 text-sm font-medium text-amber-700 animate-fade-in">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-amber-500 animate-pulse-slow" />
               For Chronic Disease Management
             </div>
 
@@ -243,7 +243,7 @@ export function ChronicSections() {
         <div className="section-container">
           <div className="mx-auto max-w-3xl text-center">
             <ScrollReveal>
-              <p className="text-sm font-semibold uppercase tracking-widest text-gold-dark">
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">
                 The chronic care gap
               </p>
             </ScrollReveal>
@@ -266,7 +266,7 @@ export function ChronicSections() {
             {problemCards.map((card, index) => (
               <ScrollReveal key={card.title} delay={index * 100}>
                 <div className="marketing-card group h-full">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-gold-light text-gold-dark transition-colors group-hover:bg-gold group-hover:text-white">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-colors group-hover:bg-amber-600 group-hover:text-white">
                     {card.icon}
                   </div>
                   <h3 className="mt-4 text-heading-sm text-foreground">{card.title}</h3>
@@ -283,7 +283,7 @@ export function ChronicSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">
                 How it works
               </p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
@@ -321,7 +321,7 @@ export function ChronicSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">
                 Built for chronic care
               </p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
@@ -337,7 +337,7 @@ export function ChronicSections() {
             {features.map((feature, index) => (
               <ScrollReveal key={feature.title} delay={index * 80}>
                 <div className="marketing-card group h-full">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-amber-50 text-amber-600 transition-colors group-hover:bg-amber-600 group-hover:text-white">
                     {feature.icon}
                   </div>
                   <h3 className="mt-4 text-lg font-semibold text-foreground">{feature.title}</h3>
@@ -354,7 +354,7 @@ export function ChronicSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">Pricing</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">Pricing</p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
                 Simple, transparent pricing
               </h2>
@@ -366,9 +366,9 @@ export function ChronicSections() {
 
           <ScrollReveal delay={150}>
             <div className="mx-auto mt-12 max-w-md">
-              <div className="relative overflow-hidden rounded-2xl border border-primary/40 bg-card/80 backdrop-blur-md p-8 shadow-elevated">
+              <div className="relative overflow-hidden rounded-2xl border border-amber-400 bg-card/80 backdrop-blur-md p-8 shadow-elevated">
                 <div className="absolute right-0 top-0">
-                  <div className="rounded-bl-xl bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
+                  <div className="rounded-bl-xl bg-amber-600 px-4 py-1.5 text-xs font-semibold text-white">
                     All-Inclusive
                   </div>
                 </div>
@@ -427,7 +427,7 @@ export function ChronicSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">
                 What doctors and families say
               </p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
@@ -466,7 +466,7 @@ export function ChronicSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">FAQ</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-amber-600">FAQ</p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
                 Common questions about chronic care monitoring
               </h2>

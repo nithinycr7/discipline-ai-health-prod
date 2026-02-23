@@ -153,13 +153,15 @@ export function HospitalSections() {
       {/* ── Hero ── */}
       <section className="relative overflow-hidden pt-24 pb-12 sm:pt-32 sm:pb-16">
         <div className="pointer-events-none absolute inset-0 -z-10">
-          <div className="absolute inset-0 bg-gradient-to-b from-primary/5 via-transparent to-transparent" />
-          <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[500px] sm:w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-primary/10 blur-3xl" />
+          <div className="absolute inset-0 bg-gradient-to-b from-blue-50/80 via-transparent to-transparent" />
+          <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[500px] sm:w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-blue-100/60 blur-3xl" />
+          <div className="absolute left-0 bottom-0 h-[200px] w-[200px] sm:h-[300px] sm:w-[300px] translate-y-1/4 -translate-x-1/4 rounded-full bg-blue-50/60 blur-3xl" />
         </div>
 
         <div className="section-container">
           <div className="mx-auto max-w-3xl text-center">
-            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-primary/20 bg-primary/5 px-4 py-1.5 text-sm font-medium text-primary animate-fade-in">
+            <div className="mb-6 inline-flex items-center gap-2 rounded-full border border-blue-200 bg-blue-50 px-4 py-1.5 text-sm font-medium text-blue-700 animate-fade-in">
+              <span className="inline-block h-1.5 w-1.5 rounded-full bg-blue-500 animate-pulse-slow" />
               For Hospitals &amp; Clinics
             </div>
 
@@ -208,7 +210,7 @@ export function HospitalSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
+              <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">
                 Why hospitals choose us
               </p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
@@ -221,7 +223,7 @@ export function HospitalSections() {
             {benefits.map((benefit, index) => (
               <ScrollReveal key={benefit.title} delay={index * 80}>
                 <div className="marketing-card group h-full">
-                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-primary/5 text-primary transition-colors group-hover:bg-primary group-hover:text-white">
+                  <div className="flex h-11 w-11 items-center justify-center rounded-xl bg-blue-50 text-blue-600 transition-colors group-hover:bg-blue-600 group-hover:text-white">
                     {benefit.icon}
                   </div>
                   <h3 className="mt-4 text-lg font-semibold text-foreground">{benefit.title}</h3>
@@ -240,7 +242,7 @@ export function HospitalSections() {
           <ScrollReveal>
             <div className="mx-auto max-w-3xl">
               <div className="text-center">
-                <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
+                <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">
                   The math
                 </p>
                 <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
@@ -271,13 +273,13 @@ export function HospitalSections() {
 
                   {/* AI */}
                   <div className="relative p-8">
-                    <div className="absolute right-4 top-4 rounded-full bg-primary px-3 py-1 text-[10px] font-bold text-primary-foreground uppercase tracking-wide">
+                    <div className="absolute right-4 top-4 rounded-full bg-blue-600 px-3 py-1 text-[10px] font-bold text-white uppercase tracking-wide">
                       93% cheaper
                     </div>
-                    <p className="text-sm font-semibold uppercase tracking-wide text-primary/80">
+                    <p className="text-sm font-semibold uppercase tracking-wide text-blue-600">
                       Cocarely AI
                     </p>
-                    <p className="mt-4 text-4xl font-extrabold text-primary">~₹7</p>
+                    <p className="mt-4 text-4xl font-extrabold text-blue-600">~₹7</p>
                     <p className="mt-1 text-sm text-muted-foreground/70">per call</p>
                     <ul className="mt-6 space-y-2 text-sm text-muted-foreground">
                       {['Infinitely scalable', 'Structured data', '11 Indian languages'].map((item) => (
@@ -302,7 +304,7 @@ export function HospitalSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">
+              <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">
                 Hospital Pricing
               </p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
@@ -320,13 +322,13 @@ export function HospitalSections() {
                 <div
                   className={`relative flex flex-col rounded-2xl border p-8 transition-all duration-300 ${
                     tier.popular
-                      ? 'border-primary bg-card shadow-elevated'
+                      ? 'border-blue-500 bg-card shadow-elevated'
                       : 'border-border/60 bg-card shadow-soft hover:shadow-card'
                   }`}
                 >
                   {tier.popular && (
                     <div className="absolute right-0 top-0">
-                      <div className="rounded-bl-xl bg-primary px-4 py-1.5 text-xs font-semibold text-primary-foreground">
+                      <div className="rounded-bl-xl bg-blue-600 px-4 py-1.5 text-xs font-semibold text-white">
                         Recommended
                       </div>
                     </div>
@@ -359,7 +361,7 @@ export function HospitalSections() {
                     href={tier.price === 'Custom' ? 'mailto:hello@cocarely.com' : '/register/hospital'}
                     className={`mt-8 block w-full rounded-xl px-6 py-3.5 text-center text-sm font-semibold transition-all duration-300 ${
                       tier.popular
-                        ? 'bg-primary text-primary-foreground hover:bg-primary/90 hover:-translate-y-0.5'
+                        ? 'bg-blue-600 text-white hover:bg-blue-700 hover:-translate-y-0.5'
                         : 'border border-border bg-card text-foreground/90 hover:border-border/80 hover:-translate-y-0.5'
                     }`}
                   >
@@ -377,7 +379,7 @@ export function HospitalSections() {
         <div className="section-container">
           <ScrollReveal>
             <div className="mx-auto max-w-2xl text-center">
-              <p className="text-sm font-semibold uppercase tracking-widest text-primary/80">FAQ</p>
+              <p className="text-sm font-semibold uppercase tracking-widest text-blue-600">FAQ</p>
               <h2 className="mt-4 text-heading sm:text-display-sm text-foreground">
                 Questions from hospital administrators
               </h2>
