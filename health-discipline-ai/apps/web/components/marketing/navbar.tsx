@@ -39,16 +39,17 @@ export function Navbar() {
           : 'bg-transparent'
       }`}
     >
-      <div className="section-container flex h-16 items-center justify-between sm:h-18">
-        {/* Logo */}
+      {/* Desktop: 3-column grid for perfect centering; Mobile: flex for logo + hamburger */}
+      <div className="section-container flex h-16 items-center justify-between sm:h-18 lg:grid lg:grid-cols-[1fr_auto_1fr]">
+        {/* Left: Logo */}
         <Link href="/" className="flex items-center gap-2.5 shrink-0">
           <CocarelyLogo className="h-8 w-8" />
           <span className="text-base font-bold text-foreground">Cocarely</span>
         </Link>
 
-        {/* Desktop center: audience pills OR fallback links */}
+        {/* Center: audience pills OR fallback links (desktop only) */}
         {ctx ? (
-          <div className="hidden lg:flex items-center justify-center flex-1 px-6">
+          <div className="hidden lg:flex items-center justify-center">
             <div className="inline-flex items-center gap-0.5 rounded-full border border-border/60 bg-background/70 backdrop-blur-sm p-1">
               {audienceTabs.map((tab) => (
                 <button
@@ -89,43 +90,45 @@ export function Navbar() {
           </div>
         )}
 
-        {/* Desktop CTA */}
-        <div className="hidden items-center gap-3 lg:flex shrink-0">
-          {ctx && (
+        {/* Right: CTAs (desktop) + hamburger (mobile) */}
+        <div className="flex items-center justify-end gap-3">
+          <div className="hidden lg:flex items-center gap-3">
+            {ctx && (
+              <Link
+                href="/demo"
+                className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
+              >
+                Try Demo
+              </Link>
+            )}
             <Link
-              href="/demo"
+              href="/login"
               className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
             >
-              Try Demo
+              Sign In
             </Link>
-          )}
-          <Link
-            href="/login"
-            className="text-sm font-medium text-muted-foreground transition-colors hover:text-primary"
-          >
-            Sign In
-          </Link>
-          <Link href="/register/payer" className="btn-primary !py-2.5 !px-5 !text-sm">
-            Start Free Trial
-          </Link>
-        </div>
+            <Link href="/register/payer" className="btn-primary !py-2.5 !px-5 !text-sm">
+              Start Free Trial
+            </Link>
+          </div>
 
-        {/* Mobile menu button */}
-        <button
-          onClick={() => setMobileOpen(!mobileOpen)}
-          className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary lg:hidden"
-          aria-label="Toggle menu"
-        >
-          {mobileOpen ? (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
-            </svg>
-          ) : (
-            <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
-            </svg>
-          )}
-        </button>
+          {/* Mobile menu button */}
+          <button
+            onClick={() => setMobileOpen(!mobileOpen)}
+            className="flex h-9 w-9 items-center justify-center rounded-lg text-muted-foreground transition-colors hover:bg-secondary lg:hidden"
+            aria-label="Toggle menu"
+          >
+            {mobileOpen ? (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18 18 6M6 6l12 12" />
+              </svg>
+            ) : (
+              <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" strokeWidth={2} stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" d="M3.75 9h16.5m-16.5 6.75h16.5" />
+              </svg>
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Mobile menu */}

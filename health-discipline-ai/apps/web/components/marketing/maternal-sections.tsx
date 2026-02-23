@@ -221,7 +221,7 @@ export function MaternalSections() {
   return (
     <>
       {/* ── Hero ── */}
-      <section className="relative overflow-hidden pt-8 pb-12 sm:pt-12 sm:pb-16">
+      <section className="relative overflow-hidden pt-24 pb-12 sm:pt-32 sm:pb-16">
         <div className="pointer-events-none absolute inset-0 -z-10">
           <div className="absolute inset-0 bg-gradient-to-b from-pink-50/80 via-transparent to-transparent" />
           <div className="absolute right-0 top-0 h-[300px] w-[300px] sm:h-[500px] sm:w-[500px] -translate-y-1/4 translate-x-1/4 rounded-full bg-pink-100/60 blur-3xl" />
