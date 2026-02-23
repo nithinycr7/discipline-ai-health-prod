@@ -6,6 +6,7 @@ const tabs: { key: Audience; label: string; shortLabel: string }[] = [
   { key: 'nri', label: 'For NRI Families', shortLabel: 'NRI Families' },
   { key: 'hospital', label: 'For Hospitals', shortLabel: 'Hospitals' },
   { key: 'chronic', label: 'For Chronic Care', shortLabel: 'Chronic Care' },
+  { key: 'maternal', label: 'Maternal & Child', shortLabel: 'Maternal' },
 ];
 
 export function AudienceTabs() {

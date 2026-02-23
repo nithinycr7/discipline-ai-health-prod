@@ -17,6 +17,7 @@ import { CTASection } from './cta-section';
 
 import { HospitalSections } from './hospital-sections';
 import { ChronicSections } from './chronic-sections';
+import { MaternalSections } from './maternal-sections';
 
 function AudienceContent() {
   const { audience } = useAudience();
@@ -46,6 +47,12 @@ function AudienceContent() {
       {audience === 'chronic' && (
         <>
           <ChronicSections />
+          <Languages />
+        </>
+      )}
+      {audience === 'maternal' && (
+        <>
+          <MaternalSections />
           <Languages />
         </>
       )}

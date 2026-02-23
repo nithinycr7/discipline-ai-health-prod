@@ -3,7 +3,7 @@
 import { createContext, useContext, useState, useCallback, ReactNode } from 'react';
 import { useSearchParams } from 'next/navigation';
 
-export type Audience = 'nri' | 'hospital' | 'chronic';
+export type Audience = 'nri' | 'hospital' | 'chronic' | 'maternal';
 
 interface AudienceContextValue {
   audience: Audience;
@@ -12,7 +12,7 @@ interface AudienceContextValue {
 
 const AudienceContext = createContext<AudienceContextValue | undefined>(undefined);
 
-const VALID_AUDIENCES: Audience[] = ['nri', 'hospital', 'chronic'];
+const VALID_AUDIENCES: Audience[] = ['nri', 'hospital', 'chronic', 'maternal'];
 
 export function AudienceProvider({ children }: { children: ReactNode }) {
   const searchParams = useSearchParams();
