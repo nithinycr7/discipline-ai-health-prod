@@ -2,7 +2,7 @@
 
 import { Suspense } from 'react';
 import { AudienceProvider, useAudience } from './audience-context';
-import { AudienceTabs } from './audience-tabs';
+import { Navbar } from './navbar';
 
 import { Hero } from './hero';
 import { Problem } from './problem';
@@ -64,8 +64,8 @@ export function AudiencePageContent() {
   return (
     <Suspense fallback={null}>
       <AudienceProvider>
+        <Navbar />
         <main>
-          <AudienceTabs />
           <AudienceContent />
         </main>
       </AudienceProvider>

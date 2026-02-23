@@ -42,3 +42,8 @@ export function useAudience() {
   if (!ctx) throw new Error('useAudience must be used within AudienceProvider');
   return ctx;
 }
+
+/** Safe version — returns null when outside AudienceProvider (e.g. demo page) */
+export function useAudienceOptional() {
+  return useContext(AudienceContext) ?? null;
+}

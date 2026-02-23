@@ -1,4 +1,3 @@
-import { Navbar } from '@/components/marketing/navbar';
 import { Footer } from '@/components/marketing/footer';
 import { AudiencePageContent } from '@/components/marketing/audience-page-content';
 
@@ -157,7 +156,6 @@ export default function HomePage() {
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
-      <Navbar />
       <AudiencePageContent />
       <Footer />
     </>
