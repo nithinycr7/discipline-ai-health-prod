@@ -1,4 +1,4 @@
-# Health Discipline AI
+# Cocarely
 
 AI-powered medication adherence monitoring platform using voice calls.
 

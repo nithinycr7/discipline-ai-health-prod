@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { CoCareLogo } from '@/components/cocare-logo';
+import { CocarelyLogo } from '@/components/cocarely-logo';
 
 const navLinks = [
   { label: 'How It Works', href: '#how-it-works' },
@@ -34,9 +34,9 @@ export function Navbar() {
       <div className="section-container flex h-16 items-center justify-between sm:h-18">
         {/* Logo */}
         <Link href="/" className="flex items-center gap-2.5">
-          <CoCareLogo className="h-8 w-8" />
+          <CocarelyLogo className="h-8 w-8" />
           <span className="text-base font-bold text-foreground">
-            CoCare
+            Cocarely
           </span>
         </Link>
 

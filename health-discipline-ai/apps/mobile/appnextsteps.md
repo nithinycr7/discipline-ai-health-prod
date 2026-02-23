@@ -1,4 +1,4 @@
-# CoCarely React Native App — Next Steps & Production Readiness
+# Cocarely React Native App — Next Steps & Production Readiness
 
 ## Current Status: Beta-Ready (Not Production-Ready Yet)
 
@@ -129,7 +129,7 @@ eas build:configure
 
 ```bash
 # 1. Navigate to the project
-cd echocare-mobile   # CoCarely mobile app folder
+cd cocarely-mobile   # Cocarely mobile app folder
 
 # 2. Install dependencies
 npm install
@@ -164,7 +164,7 @@ const IS_PROD = process.env.APP_ENV === 'production';
 
 export default {
   expo: {
-    name: IS_PROD ? 'CoCarely' : 'CoCarely (Dev)',
+    name: IS_PROD ? 'Cocarely' : 'Cocarely (Dev)',
     slug: 'cocarely-mobile',
     extra: {
       apiUrl: IS_PROD
@@ -227,7 +227,7 @@ Steps:
 ## Project Structure
 
 ```
-echocare-mobile/                        # CoCarely app root
+cocarely-mobile/                        # Cocarely app root
 ├── App.js                          # Entry + font loading + navigation container
 ├── app.json                        # Expo config
 ├── package.json                    # Dependencies

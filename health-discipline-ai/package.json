@@ -1,5 +1,5 @@
 {
-  "name": "health-discipline-ai",
+  "name": "cocarely",
   "version": "1.0.0",
   "private": true,
   "description": "AI-powered medication adherence monitoring platform",
@@ -10,7 +10,7 @@
   "scripts": {
     "dev": "turbo run dev",
     "build": "turbo run build",
-    "gcp-build": "npx turbo run build --filter=@health-discipline/api...",
+    "gcp-build": "npx turbo run build --filter=@cocarely/api...",
     "test": "turbo run test",
     "lint": "turbo run lint",
     "clean": "turbo run clean && rm -rf node_modules",

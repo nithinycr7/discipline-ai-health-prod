@@ -1,4 +1,4 @@
-# Health Discipline AI - System Architecture
+# Cocarely - System Architecture
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@
 
 ## Overview
 
-Health Discipline AI is an AI-powered medication adherence monitoring platform that makes automated voice calls to elderly patients in India to check if they've taken their daily medicines.
+Cocarely is an AI-powered medication adherence monitoring platform that makes automated voice calls to elderly patients in India to check if they've taken their daily medicines.
 
 **Target Users:**
 - **B2C (Payers):** NRI children living abroad who want to monitor their elderly parents' medicine intake
@@ -1402,7 +1402,7 @@ checkPausedPatients()
 ```
 File: onboarding-flow.service.ts
 
-payer_welcome          → "Welcome to Health Discipline AI!"
+payer_welcome          → "Welcome to Cocarely!"
     ↓
 payer_qualification    → "Are you setting this up for a parent?"
     ↓

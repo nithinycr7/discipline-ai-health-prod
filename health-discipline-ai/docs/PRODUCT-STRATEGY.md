@@ -1,4 +1,4 @@
-# Health Discipline AI — Product Strategy
+# Cocarely — Product Strategy
 
 ## Table of Contents
 
@@ -15,7 +15,7 @@
 
 ## Product Overview
 
-Health Discipline AI is a daily wellness companion that checks on elderly parents through warm AI voice calls — tracking their health, medicines, mood, and vitals in their own language.
+Cocarely is a daily wellness companion that checks on elderly parents through warm AI voice calls — tracking their health, medicines, mood, and vitals in their own language.
 
 **Core Insight:** Voice is the most inclusive interface. No app download, no smartphone, no tech skills required — the patient just answers a phone call.
 
@@ -73,7 +73,7 @@ Health Discipline AI is a daily wellness companion that checks on elderly parent
 
 ### For NRI Children (B2C)
 
-> "Stop wondering if your parents are really okay. Health Discipline AI calls them every day in their own language, checks on their wellbeing, medicines, and mood — and sends you the truth, not just 'haan beti, sab theek hai.'"
+> "Stop wondering if your parents are really okay. Cocarely calls them every day in their own language, checks on their wellbeing, medicines, and mood — and sends you the truth, not just 'haan beti, sab theek hai.'"
 
 **Key Benefits:**
 1. **Real wellness data** — medicines, vitals, mood — not self-reported reassurance
@@ -324,7 +324,7 @@ Every call records the variant, tone, relationship stage, and screening question
 
 ## For the Future
 
-Health Discipline AI's core capability — AI voice calls that require zero technology from the recipient — is not limited to elderly medication adherence. The same infrastructure naturally extends into high-impact healthcare verticals where voice is the most inclusive interface.
+Cocarely's core capability — AI voice calls that require zero technology from the recipient — is not limited to elderly medication adherence. The same infrastructure naturally extends into high-impact healthcare verticals where voice is the most inclusive interface.
 
 ### Vertical 1: Vaccination Tracking for Newborns
 
@@ -442,7 +442,7 @@ The long-term positioning — already reflected in the current product — is a 
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                  HEALTH DISCIPLINE AI                        │
+│                       COCARELY                               │
 │              "One Family, One Platform"                      │
 │                                                             │
 │  ┌──────────────┐  ┌──────────────┐  ┌──────────────┐      │
@@ -467,7 +467,7 @@ The long-term positioning — already reflected in the current product — is a 
 - Baby is born → transition to vaccination tracking
 - Another elderly parent needs monitoring → add them too
 
-This transforms Health Discipline AI from a single-use tool into a wellness platform with **3-5 year customer lifetime value** per NRI family, dramatically increasing ARPU, retention, and defensibility.
+This transforms Cocarely from a single-use tool into a wellness platform with **3-5 year customer lifetime value** per NRI family, dramatically increasing ARPU, retention, and defensibility.
 
 ---
 

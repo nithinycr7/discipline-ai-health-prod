@@ -9,8 +9,8 @@ const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfa
 export const metadata: Metadata = {
   metadataBase: new URL('https://cocarely.com'),
   title: {
-    default: 'CoCare AI — Know How Your Parents Are Really Doing',
-    template: '%s | CoCare AI',
+    default: 'Cocarely — Know How Your Parents Are Really Doing',
+    template: '%s | Cocarely',
   },
   description:
     'A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report. No app needed. 11 Indian languages.',
@@ -23,30 +23,30 @@ export const metadata: Metadata = {
     'parent wellness tracker',
     'mood and health monitoring',
     'senior care technology',
-    'cocare',
+    'cocarely',
     'medicine reminder for parents',
     'elderly care app India',
     'AI health companion',
     'voice call health check',
   ],
-  authors: [{ name: 'CoCare AI', url: 'https://cocarely.com' }],
-  creator: 'CoCare AI',
-  publisher: 'CoCare AI',
+  authors: [{ name: 'Cocarely', url: 'https://cocarely.com' }],
+  creator: 'Cocarely',
+  publisher: 'Cocarely',
   alternates: {
     canonical: '/',
   },
   openGraph: {
-    title: 'CoCare AI — Know How Your Parents Are Really Doing',
+    title: 'Cocarely — Know How Your Parents Are Really Doing',
     description:
       'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth. No app needed.',
     type: 'website',
     locale: 'en_IN',
-    siteName: 'CoCare AI',
-    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'CoCare AI — Daily wellness calls for your parents' }],
+    siteName: 'Cocarely',
+    images: [{ url: '/og-image.png', width: 1200, height: 630, alt: 'Cocarely — Daily wellness calls for your parents' }],
   },
   twitter: {
     card: 'summary_large_image',
-    title: 'CoCare AI — Know How Your Parents Are Really Doing',
+    title: 'Cocarely — Know How Your Parents Are Really Doing',
     description:
       'A daily AI wellness companion that calls your parents in their language, checks on their health and mood, and sends you the truth.',
     images: ['/og-image.png'],

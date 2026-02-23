@@ -14,8 +14,7 @@ import { Footer } from '@/components/marketing/footer';
 const organizationJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Organization',
-  name: 'CoCare AI',
-  alternateName: 'Health Discipline AI',
+  name: 'Cocarely',
   url: 'https://cocarely.com',
   logo: 'https://cocarely.com/og-image.png',
   description:
@@ -35,7 +34,7 @@ const organizationJsonLd = {
 const websiteJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'WebSite',
-  name: 'CoCare AI',
+  name: 'Cocarely',
   url: 'https://cocarely.com',
   description:
     'AI-powered daily wellness calls for elderly parents in 11 Indian languages.',
@@ -44,10 +43,10 @@ const websiteJsonLd = {
 const serviceJsonLd = {
   '@context': 'https://schema.org',
   '@type': 'Service',
-  name: 'CoCare AI Wellness Calls',
+  name: 'Cocarely Wellness Calls',
   provider: {
     '@type': 'Organization',
-    name: 'CoCare AI',
+    name: 'Cocarely',
   },
   description:
     'Daily AI voice calls to elderly parents checking on health, medicine adherence, mood, and wellbeing. Reports sent via WhatsApp.',
@@ -126,7 +125,7 @@ const faqJsonLd = {
       name: 'Can the AI give medical advice?',
       acceptedAnswer: {
         '@type': 'Answer',
-        text: 'No. CoCare AI is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
+        text: 'No. Cocarely is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
       },
     },
     {

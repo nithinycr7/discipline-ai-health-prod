@@ -1,7 +1,7 @@
 ---
 stepsCompleted: [1, 2, 3, 4]
 inputDocuments: []
-session_topic: 'Health Discipline AI application with automated medication check-in calls'
+session_topic: 'Cocarely application with automated medication check-in calls'
 session_goals: 'Design an application that onboards users, makes automated calls to check medication adherence, and shares reports with family members abroad or hospitals (B2C and B2B use cases)'
 selected_approach: 'User-Selected Techniques'
 techniques_used: ['Question Storming', 'Five Whys']
@@ -20,7 +20,7 @@ workflow_completed: true
 
 ## Session Overview
 
-**Topic:** Health Discipline AI application with automated medication check-in calls
+**Topic:** Cocarely application with automated medication check-in calls
 
 **Goals:** Design an application that onboards users, makes automated calls to check medication adherence, and shares reports with family members abroad or hospitals (B2C and B2B use cases)
 
@@ -332,7 +332,7 @@ Dell brought a clear product vision from the start - an AI-powered health monito
 ## Session Summary and Insights
 
 **Key Achievements:**
-- Defined complete product vision for Health Discipline AI
+- Defined complete product vision for Cocarely
 - Mapped two clear business models (B2C + B2B)
 - Identified core differentiator: "Voice is the most inclusive interface"
 - Generated 85+ questions and ideas covering 9 domains

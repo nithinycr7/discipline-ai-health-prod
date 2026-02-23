@@ -1,5 +1,5 @@
 {
-  "name": "@health-discipline/shared",
+  "name": "@cocarely/shared",
   "version": "1.0.0",
   "private": true,
   "main": "./src/index.ts",
@@ -9,7 +9,7 @@
     "type-check": "tsc --noEmit"
   },
   "devDependencies": {
-    "@health-discipline/tsconfig": "*",
+    "@cocarely/tsconfig": "*",
     "@types/node": "^20.0.0",
     "typescript": "^5.4.5"
   }

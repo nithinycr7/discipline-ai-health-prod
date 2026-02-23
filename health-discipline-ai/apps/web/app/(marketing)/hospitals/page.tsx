@@ -262,7 +262,7 @@ export default function HospitalsPage() {
                         93% cheaper
                       </div>
                       <p className="text-sm font-semibold uppercase tracking-wide text-primary/80">
-                        CoCare AI
+                        Cocarely
                       </p>
                       <p className="mt-4 text-4xl font-extrabold text-primary">
                         ~₹7

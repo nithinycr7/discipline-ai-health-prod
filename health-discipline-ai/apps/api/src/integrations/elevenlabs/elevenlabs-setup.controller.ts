@@ -71,7 +71,7 @@ export class ElevenLabsSetupController {
     try {
       const phoneNumberId = await this.agentService.importPhoneNumber(
         body.phoneNumber,
-        body.label || 'Health Discipline - Exotel',
+        body.label || 'Cocarely - Exotel',
       );
       return {
         success: true,

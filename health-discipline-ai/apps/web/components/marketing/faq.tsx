@@ -30,7 +30,7 @@ const faqs = [
   },
   {
     question: 'Can the AI give medical advice?',
-    answer: 'No. CoCare AI is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
+    answer: 'No. Cocarely is a wellness companion that checks in and reports — it never provides medical advice, suggests medicines, or changes dosages. For any health concerns, it directs patients to their doctor.',
   },
   {
     question: 'How do I cancel?',

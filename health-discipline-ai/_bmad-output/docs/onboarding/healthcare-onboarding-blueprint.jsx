@@ -257,7 +257,7 @@ const PHASES = [
         { sender: "BUTTONS", text: "\uD83D\uDCDE Place the test call now | \u23F0 Schedule for later today" },
         { sender: "USER", text: "Place the test call now" },
         { sender: "AI", text: "Calling Bauji now... \uD83D\uDCDE\n\n[System places outbound call to patient's number]" },
-        { sender: "CALL", text: "[Phone rings. Bauji picks up.]\n\nAI: 'Namaste Bauji! Main aapki health saathi hun \u2014 Discipline Health se bol rahi hun. Aapke bete Rahul ne aapke liye ye seva shuru ki hai.\n\nRoz subah aur shaam main aapko phone karungi \u2014 aapki dawaiyon ke baare mein poochungi, aur aapki tabiyat ka haal jaanungi. Bilkul ghar ki bahu jaisi! [gentle laugh]\n\nBauji, aapko ye theek lag raha hai? Roz subah 8:30 baje call aaegi \u2014 aap uthayenge?'" },
+        { sender: "CALL", text: "[Phone rings. Bauji picks up.]\n\nAI: 'Namaste Bauji! Main aapki health saathi hun \u2014 Cocarely se bol rahi hun. Aapke bete Rahul ne aapke liye ye seva shuru ki hai.\n\nRoz subah aur shaam main aapko phone karungi \u2014 aapki dawaiyon ke baare mein poochungi, aur aapki tabiyat ka haal jaanungi. Bilkul ghar ki bahu jaisi! [gentle laugh]\n\nBauji, aapko ye theek lag raha hai? Roz subah 8:30 baje call aaegi \u2014 aap uthayenge?'" },
         { sender: "CALL", text: "Bauji: 'Haan haan, theek hai beta.'\n\nAI: 'Bahut achha Bauji! Ek aur baat \u2014 Rahul aur Priya ko aapki health report milegi har hafte. Ye aapko theek hai?\n\nBauji: 'Haan, theek hai.'\n\nAI: 'Shukriya Bauji! Kal subah 8:30 baje se aapki regular calls shuru ho jaengi. Raat ko achhi neend lena! Namaste! \uD83D\uDE4F'" },
       ],
       stateChanges: "health_onboarding_step: 'complete'\nstatus: 'active'\nconsent: {\n  patient_consented: true,\n  patient_consent_date: now,\n  patient_consent_method: 'voice_call',\n  data_sharing_level: 'full'\n}\nfirst_call_scheduled_at: tomorrow_morning",
@@ -277,7 +277,7 @@ const PHASES = [
       summary: "Onboarding isn't done when the form is complete. It's done when the patient has picked up 3 calls and the payer has received their first report. The first 48 hours are make-or-break.",
       script: [
         { sender: "SYSTEM", text: "DAY 1 MORNING (8:30 AM) \u2014 First real call to Bauji" },
-        { sender: "AI", text: "[AI calls Bauji. This is the FIRST real medicine check-in. The script must be extra warm, extra slow, extra patient. If Bauji is confused about the call, the AI should remind: 'Bauji, main Discipline Health se hun \u2014 Rahul beta ne shuru kiya tha, yaad hai?']" },
+        { sender: "AI", text: "[AI calls Bauji. This is the FIRST real medicine check-in. The script must be extra warm, extra slow, extra patient. If Bauji is confused about the call, the AI should remind: 'Bauji, main Cocarely se hun \u2014 Rahul beta ne shuru kiya tha, yaad hai?']" },
         { sender: "SYSTEM", text: "IMMEDIATELY AFTER CALL \u2192 WhatsApp to payer" },
         { sender: "AI_TO_PAYER", text: "Good morning Rahul! \u2600\uFE0F \n\nBauji's first call went well! Here's what we learned:\n\n\u2705 BP medicine (Telma 40) \u2014 Taken\n\u26A0\uFE0F Sugar medicine (Glycomet) \u2014 Missed, reminded to take\n\uD83D\uDCCA Sugar reading: 180 mg/dL (slightly above target)\n\uD83D\uDE0A Mood: Good, mentioned knee pain\n\nWe'll check on the Glycomet again in the evening call.\n\n[Detailed report will come Sunday]" },
         { sender: "SYSTEM", text: "DAY 1 EVENING (6:30 PM) \u2014 Second call" },

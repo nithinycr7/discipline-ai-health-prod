@@ -1,6 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  transpilePackages: ['@health-discipline/shared'],
+  transpilePackages: ['@cocarely/shared'],
   reactStrictMode: true,
 };
 

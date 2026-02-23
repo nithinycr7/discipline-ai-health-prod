@@ -93,7 +93,7 @@ export default function DashboardScreen({ navigation }) {
             <Text style={styles.name} accessibilityRole="header">{firstName}</Text>
             <Text style={styles.date}>{new Date().toLocaleDateString('en-IN', { weekday: 'long', day: 'numeric', month: 'long' })}</Text>
           </View>
-          <View style={styles.heartWrap} accessibilityLabel="CoCarely">
+          <View style={styles.heartWrap} accessibilityLabel="Cocarely">
             <HeartIcon size={20} color={colors.moss600} fill={colors.moss300} />
           </View>
         </View>

@@ -2,7 +2,7 @@
 
 import Link from 'next/link';
 import { DemoConversation } from '@/components/marketing/demo-conversation';
-import { CoCareLogo } from '@/components/cocare-logo';
+import { CocarelyLogo } from '@/components/cocarely-logo';
 
 export default function DemoPage() {
   return (
@@ -17,8 +17,8 @@ export default function DemoPage() {
       {/* Top bar */}
       <header className="relative z-10 flex items-center justify-between px-5 sm:px-8 lg:px-12 py-5">
         <Link href="/" className="flex items-center gap-2.5 group">
-          <CoCareLogo className="h-8 w-8" />
-          <span className="text-base font-bold text-foreground">CoCare</span>
+          <CocarelyLogo className="h-8 w-8" />
+          <span className="text-base font-bold text-foreground">Cocarely</span>
         </Link>
 
         <Link

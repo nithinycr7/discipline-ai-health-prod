@@ -1,4 +1,4 @@
-# CoCarely Mobile App (React Native / Expo)
+# Cocarely Mobile App (React Native / Expo)
 
 AI-powered medication adherence monitoring dashboard for caregivers.
 
@@ -12,7 +12,7 @@ AI-powered medication adherence monitoring dashboard for caregivers.
 ### Setup
 
 ```bash
-cd echocare-mobile
+cd cocarely-mobile
 
 # Install dependencies
 npm install
@@ -73,7 +73,7 @@ eas build --platform android
 ## Project Structure
 
 ```
-echocare-mobile/              # CoCarely mobile app root
+cocarely-mobile/              # Cocarely mobile app root
 ├── App.js                    # Entry point
 ├── app.json                  # Expo config
 ├── assets/fonts/             # Custom fonts

@@ -161,7 +161,7 @@ export default function SettingsScreen() {
 
         <View style={styles.footer}>
           <HeartIcon size={14} color={colors.terra400} fill={colors.terra400} />
-          <Text style={styles.footerText}>CoCarely v1.0</Text>
+          <Text style={styles.footerText}>Cocarely v1.0</Text>
           <ShieldIcon size={12} color={colors.sand300} />
         </View>
       </ScrollView>

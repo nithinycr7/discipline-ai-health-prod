@@ -1,8 +1,8 @@
-# Health Discipline AI — Who We Are
+# Cocarely — Who We Are
 
 ## What Our Product Does
 
-Health Discipline AI is a daily wellness companion that checks on your parents through warm AI voice calls — tracking their health, medicines, mood, and vitals when you can't be there yourself.
+Cocarely is a daily wellness companion that checks on your parents through warm AI voice calls — tracking their health, medicines, mood, and vitals when you can't be there yourself.
 
 **In simple words:** We call your parent every day in their language, check on how they're doing, verify their medicines and vitals, and send you a clear picture of their actual wellbeing.
 

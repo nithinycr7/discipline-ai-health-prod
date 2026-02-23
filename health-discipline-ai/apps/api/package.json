@@ -1,5 +1,5 @@
 {
-  "name": "@health-discipline/api",
+  "name": "@cocarely/api",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -39,8 +39,8 @@
     "twilio": "^5.0.0"
   },
   "devDependencies": {
-    "@health-discipline/shared": "*",
-    "@health-discipline/tsconfig": "*",
+    "@cocarely/shared": "*",
+    "@cocarely/tsconfig": "*",
     "@nestjs/cli": "^10.3.0",
     "@nestjs/schematics": "^10.1.0",
     "@nestjs/testing": "^10.3.0",

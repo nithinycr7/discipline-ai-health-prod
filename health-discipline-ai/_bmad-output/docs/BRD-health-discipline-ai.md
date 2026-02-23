@@ -1,6 +1,6 @@
 # Business Requirements Document (BRD)
 
-## Health Discipline AI
+## Cocarely
 
 **Version:** 1.0
 **Date:** 2026-02-14
@@ -11,7 +11,7 @@
 
 ## 1. Executive Summary
 
-Health Discipline AI is an AI-powered medication adherence monitoring platform that uses automated voice calls to check whether patients have taken their medicines. The system bridges the gap between elderly patients in India and their children living abroad, as well as serving hospitals that need to track outpatient medication compliance at scale.
+Cocarely is an AI-powered medication adherence monitoring platform that uses automated voice calls to check whether patients have taken their medicines. The system bridges the gap between elderly patients in India and their children living abroad, as well as serving hospitals that need to track outpatient medication compliance at scale.
 
 **Core Value Proposition:** "Simple as a phone call" - patients need zero tech skills, no smartphone, and no app. They simply answer a phone call from a natural-sounding AI voice agent that speaks their language.
 

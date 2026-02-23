@@ -46,7 +46,7 @@ async function bootstrap() {
   );
 
   const config = new DocumentBuilder()
-    .setTitle('Health Discipline AI API')
+    .setTitle('Cocarely API')
     .setDescription('AI-powered medication adherence monitoring platform')
     .setVersion('1.0')
     .addBearerAuth()

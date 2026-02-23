@@ -1,6 +1,6 @@
 # Technical Specification
 
-## Health Discipline AI
+## Cocarely
 
 **Version:** 1.0  
 **Date:** 2026-02-14  
@@ -79,7 +79,7 @@
 | UI | React components; consider Tailwind CSS / component library |
 | Data fetching | Server Components where possible; `fetch` to NestJS API for client data |
 | Auth | JWT stored (httpOnly cookie or secure storage); sent to NestJS on each request |
-| API base URL | Configured via `NEXT_PUBLIC_API_URL` (e.g. `https://api.healthdiscipline.ai`) |
+| API base URL | Configured via `NEXT_PUBLIC_API_URL` (e.g. `https://api.cocarely.com`) |
 
 ### 3.3 Suggested Folder Structure
 

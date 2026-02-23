@@ -1,5 +1,5 @@
 {
-  "name": "@health-discipline/eslint-config",
+  "name": "@cocarely/eslint-config",
   "version": "1.0.0",
   "private": true,
   "files": ["next.js", "nest.js"],

@@ -1,6 +1,6 @@
 # Epics & User Stories
 
-## Health Discipline AI - MVP (Phase 1)
+## Cocarely - MVP (Phase 1)
 
 **Scrum Master:** AI-Generated from BRD v1.0
 **Date:** 2026-02-14

@@ -1,5 +1,5 @@
 {
-  "name": "@health-discipline/web",
+  "name": "@cocarely/web",
   "version": "1.0.0",
   "private": true,
   "scripts": {
@@ -24,8 +24,8 @@
     "tailwindcss-animate": "^1.0.7"
   },
   "devDependencies": {
-    "@health-discipline/shared": "*",
-    "@health-discipline/tsconfig": "*",
+    "@cocarely/shared": "*",
+    "@cocarely/tsconfig": "*",
     "@types/node": "^20.11.0",
     "@types/react": "^18.2.0",
     "@types/react-dom": "^18.2.0",

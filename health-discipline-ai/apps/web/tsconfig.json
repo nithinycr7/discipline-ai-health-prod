@@ -1,5 +1,5 @@
 {
-  "extends": "@health-discipline/tsconfig/nextjs.json",
+  "extends": "@cocarely/tsconfig/nextjs.json",
   "compilerOptions": {
     "baseUrl": ".",
     "paths": {

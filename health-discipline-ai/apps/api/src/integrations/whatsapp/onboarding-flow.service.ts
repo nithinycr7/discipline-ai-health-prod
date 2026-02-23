@@ -57,7 +57,7 @@ export class OnboardingFlowService {
     switch (phase) {
       case 'payer_welcome':
         await this.usersService.updateOnboardingStep(user._id, 'payer_qualification');
-        return 'Welcome to Health Discipline AI! Our AI makes daily voice calls to check if your parent has taken their medicines.\n\nAre you setting this up for a parent? (Yes/No)';
+        return 'Welcome to Cocarely! Our AI makes daily voice calls to check if your parent has taken their medicines.\n\nAre you setting this up for a parent? (Yes/No)';
 
       case 'payer_qualification':
         if (message.toLowerCase().includes('yes')) {

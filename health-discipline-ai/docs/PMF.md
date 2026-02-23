@@ -1,4 +1,4 @@
-# EchoCare — Product-Market Fit Analysis
+# Cocarely — Product-Market Fit Analysis
 *Full Market Research + Competitive Intelligence + Implementation Roadmap*
 
 **Created**: February 2026
@@ -28,7 +28,7 @@
 
 ## Executive Summary
 
-The convergence of India's rapidly aging population (138M+ aged 60+), a global Indian diaspora of 35M+ that remitted $129–135B to India in 2024, and an accelerating digital health ecosystem creates a compelling product-market fit window for EchoCare.
+The convergence of India's rapidly aging population (138M+ aged 60+), a global Indian diaspora of 35M+ that remitted $129–135B to India in 2024, and an accelerating digital health ecosystem creates a compelling product-market fit window for Cocarely.
 
 ### Core Findings
 
@@ -36,7 +36,7 @@ The convergence of India's rapidly aging population (138M+ aged 60+), a global I
 |---|---|
 | **Market is viable** | $1.5–1.8B TAM for NRI elderly care; $2–4B for chronic disease monitoring |
 | **NRIs already pay** | Competitors (Samarth, Emoha) command $216–720/year; proven WTP |
-| **Underpriced** | EchoCare currently $149–199/year vs $349 market sweet spot |
+| **Underpriced** | Cocarely currently $149–199/year vs $349 market sweet spot |
 | **Emotional lock-in** | NRI guilt + fear of missing emergencies = strong retention moat |
 | **Clinical credibility gap** | Chronic disease monitoring data missing — needed to justify pricing |
 | **Revenue leak** | No payment checkout UI wired up — zero conversion from trials to paid |
@@ -219,7 +219,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 
 ### 3.2 Direct Competitors — Telemedicine / Chronic Disease
 
-| Company | Revenue (FY24) | Core Offering | Pricing | Strengths | Key Weakness vs EchoCare |
+| Company | Revenue (FY24) | Core Offering | Pricing | Strengths | Key Weakness vs Cocarely |
 |---|---|---|---|---|---|
 | **Apollo 24x7** | ₹78,000 Cr+ | Full stack: consults, pharmacy, diagnostics | ₹149–499/consult | Brand trust, hospital network | Designed for episodic care, not continuous monitoring; no NRI family view |
 | **Practo** | ₹234 Cr (profitable FY25) | Doctor discovery, consults, clinic SaaS | ₹199–499/consult | Profitable, broad network | Not eldercare-focused; no family management layer |
@@ -236,9 +236,9 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 - **Domestic helpers/maids in India** — The default "care" solution — unqualified, unmonitored, high turnover
 - **International SOS / NRI concierge services** — Premium emergency support; $500–2,000/year but not health-monitoring focused
 
-### 3.4 Competitive White Spaces (EchoCare's Moat)
+### 3.4 Competitive White Spaces (Cocarely's Moat)
 
-1. **AI voice-native interface for elders** — No competitor has built a Hindi/Tamil/Telugu-native voice agent that proactively engages elderly patients daily. EchoCare's ElevenLabs voice agent infrastructure is a potential differentiator.
+1. **AI voice-native interface for elders** — No competitor has built a Hindi/Tamil/Telugu-native voice agent that proactively engages elderly patients daily. Cocarely's ElevenLabs voice agent infrastructure is a potential differentiator.
 
 2. **Unified family dashboard for NRIs** — No single platform shows medication adherence + vitals + activity + doctor visit history in one view for NRI family members. All competitors are siloed.
 
@@ -255,7 +255,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 ### 4.1 Recommended Positioning
 
 **For NRI Families:**
-> "Be there without being there. EchoCare gives you a live health picture of your parents in India — daily vitals, medication tracking, doctor visit coordination, and an AI voice companion that actually speaks to them — so you can sleep at night knowing your parents are monitored, not just alive."
+> "Be there without being there. Cocarely gives you a live health picture of your parents in India — daily vitals, medication tracking, doctor visit coordination, and an AI voice companion that actually speaks to them — so you can sleep at night knowing your parents are monitored, not just alive."
 
 **For Elderly Patients:**
 > "A health companion that speaks your language, understands your medications, and connects you to your children and doctors without requiring you to navigate any app."
@@ -265,7 +265,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 
 ### 4.2 Key Differentiators
 
-1. **Voice-first AI agent** (Hindi, Tamil, Telugu, Kannada, Bengali) — EchoCare's ElevenLabs-powered agent proactively calls/WhatsApps elderly patients, not waiting for them to initiate
+1. **Voice-first AI agent** (Hindi, Tamil, Telugu, Kannada, Bengali) — Cocarely's ElevenLabs-powered agent proactively calls/WhatsApps elderly patients, not waiting for them to initiate
 2. **Family control plane** — NRI-facing dashboard showing unified health timeline, alert history, medication compliance, upcoming appointments
 3. **Clinical depth without clinical burden** — Partners with existing diagnostic networks (1mg, Thyrocare) and telehealth providers rather than building them — asset-light model
 4. **Cross-timezone architecture** — Event-driven alerts designed for families in US/UK time zones; critical alerts at 7 AM PST, not 2 AM
@@ -273,7 +273,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 
 ### 4.3 Positioning Statement
 
-**EchoCare is the AI-powered health guardian for Indian families living abroad** — a proactive monitoring and care coordination platform that uses voice AI to engage elderly parents in their own language, gives NRI children real-time health visibility, and ensures chronic conditions are managed rather than discovered in emergency rooms.
+**Cocarely is the AI-powered health guardian for Indian families living abroad** — a proactive monitoring and care coordination platform that uses voice AI to engage elderly parents in their own language, gives NRI children real-time health visibility, and ensures chronic conditions are managed rather than discovered in emergency rooms.
 
 ---
 
@@ -295,7 +295,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 | **Core (HERO)** | Echo Care | **$349/year** | $29.08/mo | **Weekly** | **1 quarterly** | Vitals tracking, daily med reminders, real-time alerts, bi-weekly summary |
 | **Premium** | Echo Guardian | **$599/year** | $49.92/mo | **Daily** | **1 monthly** | Advanced vitals (BP/glucose/SpO2), anomaly alerts, full coordination, care manager, 24/7 support |
 
-**Key principle**: Tiers are differentiated by **call frequency** (monthly → weekly → daily) and **monitoring depth**, not by converting EchoCare into a medical platform. Doctor consults are a **supporting feature**, not the core value proposition. Families use their own doctors; EchoCare is the continuous monitoring layer.
+**Key principle**: Tiers are differentiated by **call frequency** (monthly → weekly → daily) and **monitoring depth**, not by converting Cocarely into a medical platform. Doctor consults are a **supporting feature**, not the core value proposition. Families use their own doctors; Cocarely is the continuous monitoring layer.
 
 ### 5.3 Why $349 is the Hero Tier
 
@@ -304,7 +304,7 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 - **Relative to income**: $349/year ≈ 0.15% of US median NRI income ($200K) — trivial purchasing decision
 - **Competitive positioning**: Premium to generic telehealth (Apollo, Practo at $24–60/year) but justified by NRI-specific UX and voice AI
 - **Upsell ceiling**: Room to upgrade to $599 Guardian tier for highly engaged families
-- **Tier differentiation**: Tiers are segmented by **call frequency** (monthly → weekly → daily) and **monitoring depth** (alerts → tracking → continuous), with doctor consults as a supporting feature. EchoCare remains the monitoring layer, not the clinic. Families manage doctor relationships separately; EchoCare helps coordinate and surface health data.
+- **Tier differentiation**: Tiers are segmented by **call frequency** (monthly → weekly → daily) and **monitoring depth** (alerts → tracking → continuous), with doctor consults as a supporting feature. Cocarely remains the monitoring layer, not the clinic. Families manage doctor relationships separately; Cocarely helps coordinate and surface health data.
 
 ### 5.4 Chronic Disease Monitoring Add-On / Standalone (India B2C)
 
@@ -319,15 +319,15 @@ India has **138 million people aged 60+** and this number is **doubling to 300M 
 
 ### 5.5 Price Benchmarking vs. Competitors
 
-| Competitor | Comparable Plan | Annual Cost | EchoCare Advantage |
+| Competitor | Comparable Plan | Annual Cost | Cocarely Advantage |
 |---|---|---|---|
-| Emoha Standard | Monthly subscription | ~$360–600/year | EchoCare has more tech depth, voice AI, NRI-specific dashboard |
-| Samarth Care | Monthly coordination | ~$216–480/year | EchoCare adds clinical monitoring, not just coordination |
-| Portea (per-visit) | Per visit basis | ~$240–600/year (5–10 visits) | EchoCare enables continuous monitoring between visits |
-| BeatO (diabetes) | ₹299–799/month | $43–115/year | EchoCare integrates full eldercare + family view |
-| Apollo 24x7 | Per consult + subscription | ~$120–200/year | EchoCare is proactive (prevents crises) vs reactive (responds to episodes) |
+| Emoha Standard | Monthly subscription | ~$360–600/year | Cocarely has more tech depth, voice AI, NRI-specific dashboard |
+| Samarth Care | Monthly coordination | ~$216–480/year | Cocarely adds clinical monitoring, not just coordination |
+| Portea (per-visit) | Per visit basis | ~$240–600/year (5–10 visits) | Cocarely enables continuous monitoring between visits |
+| BeatO (diabetes) | ₹299–799/month | $43–115/year | Cocarely integrates full eldercare + family view |
+| Apollo 24x7 | Per consult + subscription | ~$120–200/year | Cocarely is proactive (prevents crises) vs reactive (responds to episodes) |
 
-**Positioning**: EchoCare's $349/year sits at the technology-premium tier — more expensive than pure telehealth (Apollo, Practo) but less expensive than comprehensive home care (Emoha, HCAH). It occupies the underserved "intelligent monitoring" middle ground. **EchoCare's role is proactive health monitoring, not clinical delivery** — doctor consults are a supporting feature for families who want coordination support. Families primarily manage their own doctor relationships; EchoCare provides the continuous visibility layer.
+**Positioning**: Cocarely's $349/year sits at the technology-premium tier — more expensive than pure telehealth (Apollo, Practo) but less expensive than comprehensive home care (Emoha, HCAH). It occupies the underserved "intelligent monitoring" middle ground. **Cocarely's role is proactive health monitoring, not clinical delivery** — doctor consults are a supporting feature for families who want coordination support. Families primarily manage their own doctor relationships; Cocarely provides the continuous visibility layer.
 
 ### 5.6 Revenue Per User Potential
 
@@ -364,7 +364,7 @@ The US contributes 27–28% of India's total remittances. The Indian-American po
 3. **NRI Community Forums**
    - Reddit: r/ABCDesis, r/india, r/IndianParentsInUS
    - IndiaParents.com, NRIConnect forums
-   - Quora: Answer "How to monitor elderly parents in India from USA" questions with EchoCare value prop
+   - Quora: Answer "How to monitor elderly parents in India from USA" questions with Cocarely value prop
    - CAC: $20–40 (organic reach)
 
 4. **Influencer/Physician Partnerships**
@@ -398,13 +398,13 @@ The US contributes 27–28% of India's total remittances. The Indian-American po
 
 1. **Hospital/Clinic Partnerships (B2B Channel)**
    - Apollo Hospitals, Manipal, Fortis, Rainbow — approach "International Patient Services" teams
-   - They already serve NRI families; EchoCare is a natural add-on
-   - Recommend EchoCare at discharge: "Here's how your family in the US can track your recovery"
+   - They already serve NRI families; Cocarely is a natural add-on
+   - Recommend Cocarely at discharge: "Here's how your family in the US can track your recovery"
    - Revenue share: 15–20% of subscription attributed to hospital referral
 
 2. **Insurance Company Partnerships**
    - Niva Bupa, Star Health, Care Health Insurance already sell policies to NRIs for their parents
-   - EchoCare as a value-add benefit: "Get 3 months free EchoCare with Senior First plan"
+   - Cocarely as a value-add benefit: "Get 3 months free Cocarely with Senior First plan"
    - Star Health Insurance has 13M+ customers; NRI portfolio growing rapidly
    - Partnership structure: Revenue share or fixed payment per bundled customer
 
@@ -516,7 +516,7 @@ The US contributes 27–28% of India's total remittances. The Indian-American po
 | **Pricing misaligned** ($149–199 vs $349 market) | $150–200/user/year left on table | Low (1 day) | HIGH |
 | **Marketing copy generic** (not NRI-specific) | Low conversion on paid traffic | Low (1–2 days) | HIGH |
 | **No vitals monitoring** (BP/glucose/SpO2 UI) | Missing clinical credibility layer | High (1–2 weeks) | HIGH |
-| **echocare.ai not in CORS** | API calls from production domain may fail | Low (15 min) | MEDIUM |
+| **cocarely.com not in CORS** | API calls from production domain may fail | Low (15 min) | MEDIUM |
 | **Export Data / Delete Account placeholders** | DPDP compliance risk | Medium (3–5 days) | HIGH |
 | **No DPDP consent architecture** | Up to ₹250 crore fine exposure | High (5–7 days) | CRITICAL |
 | **No call scheduling UI** | Users can't configure when calls happen | Medium (3–5 days) | MEDIUM |
@@ -529,12 +529,12 @@ The US contributes 27–28% of India's total remittances. The Indian-American po
 
 **Telemedicine Practice Guidelines (2020)**
 - India's Ministry of Health issued guidelines legitimizing video, audio, and text consultations
-- EchoCare positioned as **care coordination platform, not medical provider** — reduces direct regulatory exposure
+- Cocarely positioned as **care coordination platform, not medical provider** — reduces direct regulatory exposure
 - Must route consult requests through licensed teleconsultation providers (Apollo, Practo APIs)
-- Action: Ensure platform ToS clearly state EchoCare is a monitoring/coordination tool, not a medical device
+- Action: Ensure platform ToS clearly state Cocarely is a monitoring/coordination tool, not a medical device
 
 **Digital Personal Data Protection Act (DPDP) 2023 — RULES NOW EFFECTIVE (Jan 2025)**
-- EchoCare is a "Significant Data Fiduciary" (collects health data from >10M users across India, or >1M sensitive personal data)
+- Cocarely is a "Significant Data Fiduciary" (collects health data from >10M users across India, or >1M sensitive personal data)
 - **Requirements**:
   - Explicit, granular consent before data collection (purpose-specific, not blanket)
   - Data minimization (don't collect what you don't need)
@@ -579,18 +579,17 @@ The US contributes 27–28% of India's total remittances. The Indian-American po
 
 ## Branding
 
-### 10.1 EchoCare Brand Assessment
+### 10.1 Cocarely Brand Assessment
 
 **Current Brand Strengths**
-- "Echo" connotes resonance, listening, responsiveness — perfect for voice-first platform
-- "Care" is clear and direct — no ambiguity about the domain
-- `echocare.ai` domain is already owned (per commit history)
+- "Cocarely" connotes caring and companionship — perfect for voice-first platform
+- `cocarely.com` domain is owned and active
 - Clean, pronounceable across Indian and English-speaking audiences
 - ECG + heart logo already deployed (commit `1eb2ebc`) — good health signal
 
 **Trademark Risk**
-- EchoCare Technologies (Israeli company) operates radar-based elderly monitoring in US, Japan, Australia
-- No overlap with India, and EchoCare's voice-AI-native approach is differentiated
+- Cocarely Technologies (Israeli company) operates radar-based elderly monitoring in US, Japan, Australia
+- No overlap with India, and Cocarely's voice-AI-native approach is differentiated
 - **Action**: Register trademarks in India, US, and UK proactively; low conflict risk but be prepared
 
 ### 10.2 Visual Identity Direction
@@ -636,9 +635,9 @@ The US contributes 27–28% of India's total remittances. The Indian-American po
 
 **A1. CORS Fix** (15 minutes)
 - **File**: `apps/api/src/main.ts`
-- **Change**: Add `echocare.ai` and `www.echocare.ai` to CORS allowed origins list
+- **Change**: Add `cocarely.com` and `www.cocarely.com` to CORS allowed origins list
 - **Why**: API calls from production domain may currently fail
-- **Done when**: API requests from echocare.ai domain complete without CORS errors
+- **Done when**: API requests from cocarely.com domain complete without CORS errors
 
 **A2. Reprice + Revamp Pricing Page** (1 day)
 - **Files**:
@@ -850,7 +849,7 @@ Use this checklist to track progress toward Series A readiness:
 
 ### Branding & Positioning Indicators
 
-- [ ] **echocare.ai trademark filed** in India, US, UK
+- [ ] **cocarely.com trademark filed** in India, US, UK
 - [ ] **Brand messaging tested** via NRI customer interviews (NPS feedback)
 - [ ] **Website traffic > 5,000/month** from organic + paid
 - [ ] **Email list > 2,000 NRI prospects** (for future campaigns)
@@ -928,5 +927,5 @@ Use this checklist to track progress toward Series A readiness:
 
 **Last Updated**: February 2026
 **Next Review**: May 2026 (post-implementation of Tracks A & B)
-**Owner**: EchoCare Product Team
+**Owner**: Cocarely Product Team
 **Status**: Ready for Implementation

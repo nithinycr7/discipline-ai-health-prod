@@ -1,4 +1,4 @@
-# Health Discipline AI — Marketing Strategy
+# Cocarely — Marketing Strategy
 
 ## Table of Contents
 
@@ -117,7 +117,7 @@ Doctors are the most trusted source for health decisions. A doctor saying "try t
 - Doctor gets a unique referral code
 - Family signs up mentioning doctor → doctor gets INR 200/referral (or free months for their practice)
 - Doctor receives monthly summary of their referred patients' adherence (with consent)
-- Co-branded prescription pad inserts: "Monitor medicine adherence with Health Discipline AI"
+- Co-branded prescription pad inserts: "Monitor medicine adherence with Cocarely"
 - Annual "Top Referring Doctors" recognition
 
 **Targets:**
@@ -171,7 +171,7 @@ Doctors are the most trusted source for health decisions. A doctor saying "try t
 |-------------|---------|
 | **Awareness** | "You call them every day asking 'Dawai li?' — and they always say yes. But did they really?" |
 | **Interest** | "What if someone called your parents daily in their language, checked each medicine by name, and sent you the truth?" |
-| **Consideration** | "Health Discipline AI calls your parents daily, checks each medicine by name, and sends you a real WhatsApp report." |
+| **Consideration** | "Cocarely calls your parents daily, checks each medicine by name, and sends you a real WhatsApp report." |
 | **Conversion** | "Try free for 7 days. If your parent doesn't like the calls, cancel with one WhatsApp message." |
 | **Retention** | "Bauji's weekly report: 92% adherence. Missed Metformin on Wednesday. Wellness: good all week." |
 | **Referral** | "Know someone else who worries about their parents' health? Share your referral link — both families get a free week." |
@@ -217,7 +217,7 @@ Build credibility and trust. Position as thought leaders in elderly care.
 1. **"Why medication non-adherence kills more than the disease"** — Data-driven blog with WHO stats
 2. **"The tech-free revolution in elderly care"** — Thought leadership on voice-first interfaces
 3. **"How we built an AI that speaks like family"** — Behind the scenes for tech-curious audience
-4. **Doctor interviews** — "Why I recommend Health Discipline to my patients' families"
+4. **Doctor interviews** — "Why I recommend Cocarely to my patients' families"
 5. **"8 languages, 1 billion elders"** — The localization story
 
 ### Conversion Content (Bottom of Funnel)
@@ -285,7 +285,7 @@ Hi Dr. [Name],
 Post-discharge medication non-adherence is your hospital's hidden cost
 center. Manual nurse calls work but don't scale.
 
-Health Discipline AI replaces those calls with an AI voice agent that:
+Cocarely replaces those calls with an AI voice agent that:
 - Calls each patient daily in their language
 - Checks every prescribed medicine by name
 - Reports adherence data to your dashboard in real-time
@@ -295,7 +295,7 @@ Want to pilot with 50 patients for 2 weeks — free?
 
 Best,
 [Name]
-[Title], Health Discipline AI
+[Title], Cocarely
 
 P.S. We're DPDP Act compliant. Happy to share our data security documentation.
 ```

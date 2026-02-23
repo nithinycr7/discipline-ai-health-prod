@@ -67,7 +67,7 @@
 Cloud Run uses **Buildpacks** (no Dockerfile needed):
 
 - `Procfile` tells Cloud Run the start command: `web: node apps/api/dist/main.js`
-- `gcp-build` script in root `package.json` builds the API: `npx turbo run build --filter=@health-discipline/api...`
+- `gcp-build` script in root `package.json` builds the API: `npx turbo run build --filter=@cocarely/api...`
 - `.gcloudignore` excludes web app, docs, and dev files from the upload
 
 ### Environment Variables
@@ -177,7 +177,7 @@ The file `apps/web/vercel.json` configures the build:
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "framework": "nextjs",
-  "buildCommand": "cd ../.. && npx turbo run build --filter=@health-discipline/web..."
+  "buildCommand": "cd ../.. && npx turbo run build --filter=@cocarely/web..."
 }
 ```
 
@@ -608,10 +608,10 @@ npm run dev
 # Swagger:  http://localhost:3001/api/docs
 
 # Run only backend
-npx turbo run dev --filter=@health-discipline/api
+npx turbo run dev --filter=@cocarely/api
 
 # Run only frontend
-npx turbo run dev --filter=@health-discipline/web
+npx turbo run dev --filter=@cocarely/web
 
 # Build everything
 npm run build

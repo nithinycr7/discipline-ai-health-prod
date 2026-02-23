@@ -40,7 +40,7 @@ export default function LoginScreen() {
               <View style={styles.logoIcon}>
                 <HeartIcon size={22} color={colors.terra300} fill={colors.terra300} />
               </View>
-              <Text style={styles.logoText}>CoCarely</Text>
+              <Text style={styles.logoText}>Cocarely</Text>
             </View>
             <Text style={styles.headline} accessibilityRole="header">Care for your{'\n'}parents, from{'\n'}anywhere</Text>
             <Text style={styles.subtitle}>AI-powered daily calls to ensure your loved ones never miss their medicines.</Text>

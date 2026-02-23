@@ -1,10 +1,10 @@
-# CoCare AI
+# Cocarely
 
 > A daily AI wellness companion that calls your parents in their language, checks on their health, medicines, and mood, and sends you a clear report.
 
-## What is CoCare AI?
+## What is Cocarely?
 
-CoCare AI is an AI-powered wellness companion designed for elderly care in India. It makes daily voice calls to elderly parents in 11 Indian languages (Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Gujarati, Malayalam, Punjabi, Odia, and English), checking on their health, medicine adherence, mood, and overall wellbeing. After each call, it sends a structured wellness report to family members via WhatsApp.
+Cocarely is an AI-powered wellness companion designed for elderly care in India. It makes daily voice calls to elderly parents in 11 Indian languages (Hindi, Telugu, Tamil, Kannada, Bengali, Marathi, Gujarati, Malayalam, Punjabi, Odia, and English), checking on their health, medicine adherence, mood, and overall wellbeing. After each call, it sends a structured wellness report to family members via WhatsApp.
 
 ## Who is it for?
 

@@ -1,5 +1,5 @@
 {
-  "extends": "@health-discipline/tsconfig/nestjs.json",
+  "extends": "@cocarely/tsconfig/nestjs.json",
   "compilerOptions": {
     "outDir": "./dist",
     "baseUrl": "./"

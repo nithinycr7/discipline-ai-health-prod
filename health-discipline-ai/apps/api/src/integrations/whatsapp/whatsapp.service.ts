@@ -42,7 +42,7 @@ export class WhatsAppService {
 
   private getTemplate(name: string): string {
     const templates: Record<string, string> = {
-      welcome: 'Welcome to Health Discipline AI! I\'m here to help you set up daily medicine monitoring for your parent. Let\'s begin - are you setting this up for a parent?',
+      welcome: 'Welcome to Cocarely! I\'m here to help you set up daily medicine monitoring for your parent. Let\'s begin - are you setting this up for a parent?',
       post_call_report: '{{patientName}}\'s Call Report:\n\n{{medicineReport}}\n\nVitals: {{vitals}}\nMood: {{mood}}',
       missed_call_alert: '{{patientName}} didn\'t pick up the call. Could you remind them? We\'ll try again in 30 minutes.',
       weekly_report: 'Weekly Health Report for {{patientName}}\n\nAdherence: {{adherence}}%\n\n{{details}}',

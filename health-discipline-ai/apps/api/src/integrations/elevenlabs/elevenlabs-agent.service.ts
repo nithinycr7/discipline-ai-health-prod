@@ -42,7 +42,7 @@ export class ElevenLabsAgentService {
     const voiceId = this.configService.get<string>('ELEVENLABS_VOICE_ID_FEMALE', '');
 
     const agentConfig = {
-      name: 'Health Discipline - Medicine Check Agent',
+      name: 'Cocarely - Medicine Check Agent',
       tags: ['health', 'medicine-check', 'hindi'],
       conversation_config: {
         agent: {

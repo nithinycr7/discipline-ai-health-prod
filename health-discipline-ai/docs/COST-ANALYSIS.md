@@ -1,4 +1,4 @@
-# Health Discipline AI — Infrastructure Cost Analysis
+# Cocarely — Infrastructure Cost Analysis
 
 > **Last updated:** February 2026
 > **Currency:** All amounts in INR (₹) unless noted. USD conversions at ₹90 = $1.
@@ -7,7 +7,7 @@
 
 ## Product Overview
 
-**Health Discipline AI** is an AI-powered medication adherence platform that makes automated voice calls to elderly patients in India to check whether they've taken their daily medicines. The core insight is that voice is the most inclusive interface — no app download, no smartphone, and no tech skills are required. The patient simply answers a phone call.
+**Cocarely** is an AI-powered medication adherence platform that makes automated voice calls to elderly patients in India to check whether they've taken their daily medicines. The core insight is that voice is the most inclusive interface — no app download, no smartphone, and no tech skills are required. The patient simply answers a phone call.
 
 **How it works:** A family member (typically an NRI child living abroad) registers on the web portal and adds their parent's details — name, medicines, preferred language, and call schedule. The AI then calls the patient daily at the configured times, greets them by name in their preferred language (Hindi, Telugu, Tamil, Marathi, Bengali, Kannada, Gujarati, or English), asks about each medicine individually, checks vitals and general wellness, and notes any complaints. After each call, a structured report with medicine-by-medicine adherence data is sent to the family via WhatsApp. The family can also view detailed trends, transcripts, and health insights on a web dashboard.
 

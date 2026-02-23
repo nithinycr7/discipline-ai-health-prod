@@ -1,4 +1,4 @@
-# Health Discipline AI — Anti-Call-Fatigue Strategy
+# Cocarely — Anti-Call-Fatigue Strategy
 
 ## Table of Contents
 
@@ -23,7 +23,7 @@
 
 ## The Problem
 
-Health Discipline AI calls elderly patients **every single day**. Today, every call follows the exact same script:
+Cocarely calls elderly patients **every single day**. Today, every call follows the exact same script:
 
 ```
 "Namaste [Name]!"
@@ -542,7 +542,7 @@ The `callsCompletedCount` (already on the patient schema) maps to a relationship
 ### Scenario 1: Day 1, New Patient, Hindi
 
 ```
-First Message: "Namaste Bauji! Main Health Discipline se bol rahi hoon."
+First Message: "Namaste Bauji! Main Cocarely se bol rahi hoon."
 
 Prompt Context:
 - New patient, first call ever
