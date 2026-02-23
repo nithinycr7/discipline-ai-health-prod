@@ -227,7 +227,7 @@ export function Pricing() {
               Pay via Stripe (USD/GBP) or Razorpay (UPI/cards).
               For hospitals and bulk pricing,{' '}
               <Link
-                href="/hospitals"
+                href="/?audience=hospital"
                 className="font-medium text-primary underline decoration-primary/20 underline-offset-2 hover:decoration-primary/80"
               >
                 see our B2B plans

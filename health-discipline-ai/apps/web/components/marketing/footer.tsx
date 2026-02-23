@@ -26,7 +26,7 @@ export function Footer() {
                 { label: 'How It Works', href: '#how-it-works' },
                 { label: 'Features', href: '#features' },
                 { label: 'Pricing', href: '#pricing' },
-                { label: 'For Hospitals', href: '/hospitals' },
+                { label: 'For Hospitals', href: '/?audience=hospital' },
                 { label: 'FAQ', href: '#faq' },
                 { label: 'Sign In', href: '/login' },
               ].map((link) => (

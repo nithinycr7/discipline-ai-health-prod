@@ -1,15 +1,6 @@
 import { Navbar } from '@/components/marketing/navbar';
-import { Hero } from '@/components/marketing/hero';
-import { Problem } from '@/components/marketing/problem';
-import { SolutionBridge } from '@/components/marketing/solution-bridge';
-import { HowItWorks } from '@/components/marketing/how-it-works';
-import { Features } from '@/components/marketing/features';
-import { Languages } from '@/components/marketing/languages';
-import { Pricing } from '@/components/marketing/pricing';
-import { Testimonials } from '@/components/marketing/testimonials';
-import { FAQ } from '@/components/marketing/faq';
-import { CTASection } from '@/components/marketing/cta-section';
 import { Footer } from '@/components/marketing/footer';
+import { AudiencePageContent } from '@/components/marketing/audience-page-content';
 
 const organizationJsonLd = {
   '@context': 'https://schema.org',
@@ -167,18 +158,7 @@ export default function HomePage() {
         dangerouslySetInnerHTML={{ __html: JSON.stringify(faqJsonLd) }}
       />
       <Navbar />
-      <main>
-        <Hero />
-        <Problem />
-        <SolutionBridge />
-        <Pricing />
-        <Testimonials />
-        <HowItWorks />
-        <Features />
-        <Languages />
-        <FAQ />
-        <CTASection />
-      </main>
+      <AudiencePageContent />
       <Footer />
     </>
   );

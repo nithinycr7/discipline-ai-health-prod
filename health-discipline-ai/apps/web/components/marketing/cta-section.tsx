@@ -34,7 +34,7 @@ export function CTASection() {
                   </svg>
                 </Link>
                 <Link
-                  href="/hospitals"
+                  href="/?audience=hospital"
                   className="inline-flex items-center justify-center gap-2 rounded-xl glass-dark px-8 py-4 text-[0.938rem] font-semibold text-white transition-all duration-300 hover:border-white/30 hover:bg-white/15"
                 >
                   For Hospitals
