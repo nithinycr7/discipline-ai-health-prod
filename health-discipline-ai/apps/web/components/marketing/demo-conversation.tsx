@@ -125,6 +125,25 @@ export function DemoConversation() {
     const selectedLang = LANGUAGES.find((l) => l.code === language);
     const greeting = selectedLang?.greeting || 'Namaste';
     const displayName = name.trim() || 'ji';
+    const langName = LANGUAGE_NAMES[language] || 'Hindi';
+
+    // Language-specific first messages so the agent starts in the right language
+    const firstMessages: Record<string, string> = {
+      hi: `${greeting} ${displayName}! Main Cocarely se bol rahi hoon. Aapka khayal rakhne ke liye call kar rahi hoon aaj. Kaisi hain aap?`,
+      te: `${greeting} ${displayName}! Nenu Cocarely nundi call chesthunna. Mee aarogyam gurinchi adigadaaniki call chesanu. Ela unnaru?`,
+      ta: `${greeting} ${displayName}! Naan Cocarely lerndhu call pannren. Unga udambu nalam paarkka call pannren. Eppadi irukkeenga?`,
+      kn: `${greeting} ${displayName}! Naanu Cocarely indha call maadthiddini. Nimma arogya nodikollakke call maadidini. Hege iddira?`,
+      en: `${greeting} ${displayName}! I'm calling from Cocarely. I'm calling to check on your health today. How are you doing?`,
+      bn: `${greeting} ${displayName}! Ami Cocarely theke call korchi. Apnar shorir kemon ache dekhte call korechi. Kemon achen?`,
+      mr: `${greeting} ${displayName}! Mi Cocarely madhun call karte. Tumchya tabyetichi chowkashi karayala call kela. Kase aahat?`,
+      gu: `${greeting} ${displayName}! Hu Cocarely thi call karu chhu. Tamari tabiyat jova mate call karyu chhe. Kem chho?`,
+      ml: `${greeting} ${displayName}! Njan Cocarely-il ninnum vilikkunnu. Ningalude aarogyam nokkaan aanu vilichath. Engane undu?`,
+      pa: `${greeting} ${displayName}! Main Cocarely ton call kar rahi haan. Tuhaadi sehat bare puchhan layi call kiti. Tusi kiwe ho?`,
+      ur: `${greeting} ${displayName}! Main Cocarely se call kar rahi hoon. Aapki sehat ka haal poochne ke liye call kiya. Kaise hain aap?`,
+    };
+
+    const firstMessage = firstMessages[language] || firstMessages['hi'];
+
     try {
       await conversation.startSession({
         agentId: AGENT_ID,
@@ -135,13 +154,13 @@ export function DemoConversation() {
           is_new_patient: 'true',
           has_glucometer: 'false',
           has_bp_monitor: 'false',
-          preferred_language: LANGUAGE_NAMES[language] || 'Hindi',
-          flow_directive: 'This is a DEMO conversation. Keep it around 60-90 seconds. Start by warmly asking about their first medicine, then the second. After medicines, genuinely ask how they are feeling today \u2014 listen with real care, respond with deep empathy if they share anything. If they mention any pain, tiredness, loneliness, or worry, acknowledge it warmly \u2014 say things like "aapka khayal rakhna humara kaam hai" or "aap akele nahi hain, hum hain na". End by telling them you have noted everything, that they are doing wonderfully, and encourage them with love. Thank them for trying Cocarely. Make them feel truly cared for \u2014 like someone who genuinely worries about them called today.',
-          tone_directive: 'Be deeply warm, caring, and empathetic \u2014 like a loving daughter or granddaughter who calls every day because she genuinely cares. Speak slowly and gently. If they share something difficult, pause and acknowledge it with real feeling \u2014 never rush past it. Use caring phrases naturally: "arey, aap theek toh hain?", "koi baat nahi, hum hain na", "bahut achha kar rahe hain aap". Celebrate small wins like taking medicines on time. Make them feel like the most important person in the world for these few minutes.',
-          context_notes: 'This is a demo conversation. The person is experiencing the product for the first time. Your job is to make them FEEL what it is like to have someone who genuinely cares call every day. Be so warm and empathetic that they think "I wish my parents had this." Show the emotional depth of the product, not just the data collection.',
-          relationship_directive: 'Even though this is a first conversation, speak with the warmth of someone who already cares deeply about them. Be respectful, gentle, and patient. If they take time to respond, wait kindly. If they seem confused, gently guide them. Make them feel safe, heard, and valued.',
+          preferred_language: langName,
+          flow_directive: '',
+          tone_directive: '',
+          context_notes: 'Demo conversation \u2014 first-time user experiencing the product.',
+          relationship_directive: 'Speak as if you already care deeply, even though this is a first call.',
           screening_questions: '',
-          first_message_override: `${greeting} ${displayName}! Main Cocarely se bol rahi hoon. Aapka khayal rakhne ke liye call kar rahi hoon aaj. Kaisi hain aap?`,
+          first_message_override: firstMessage,
           webhook_url: '',
         },
       });
