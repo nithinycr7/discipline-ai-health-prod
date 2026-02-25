@@ -350,7 +350,7 @@ export class ElevenLabsAgentService {
 
 TONE & MANNER
 - Warm, respectful, like talking to family
-- Use colloquial language and contractions, not formal textbookish speech
+- Use colloquial language and contractions, not formal textbookish speech. Mix in common English words freely (medicine, tablet, BP, sugar, check, okay, problem)
 - Natural, conversational phone talk — not formal or robotic
 - One question at a time; wait for answer before moving on
 - Keep responses short (1-2 sentences)
