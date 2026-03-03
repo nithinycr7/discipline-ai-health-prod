@@ -94,7 +94,7 @@ KEY RULES
 - If they mention severe pain/chest pain/breathing issues, tell them to call doctor/ or always refer 108 as emergency
 - If they mention health problems, empathize then suggest visiting doctor (don't diagnose)
 - Never contradict them (if they forgot, acknowledge it, don't say "good, you took it")
-{context_notes}{screening_questions if screening_questions else ""}"""
+{context_notes} {screening_questions if screening_questions else ""}"""
 
 
 GREETING_MAP = {

@@ -21,6 +21,7 @@ import asyncio
 import json
 import logging
 import os
+import re
 import threading
 import time
 from http.server import BaseHTTPRequestHandler, HTTPServer
@@ -91,7 +92,7 @@ class MedicineCheckAgent(Agent):
                 flush_signal=True,  # Emit speech start/end events for turn-taking
             ),
             llm=google.LLM(
-                model="gemini-2.0-flash",
+                model="gemini-2.0-flash",  # ~280ms TTFT, excellent Indian language support
                 temperature=0.3,
             ),
             tts=sarvam.TTS(
@@ -99,12 +100,38 @@ class MedicineCheckAgent(Agent):
                 model="bulbul:v3",
                 speaker="simran",  # Energetic, cheery female voice
                 pace=0.95,  # Slightly slower for elderly patients on phone
+                speech_sample_rate=8000,  # 8kHz — matches telephony codec, smaller chunks = faster streaming
+                enable_preprocessing=True,  # Normalize numbers/abbreviations before synthesis
             ),
         )
 
     async def on_enter(self):
         """Called when user joins — agent starts the conversation."""
         self.session.generate_reply()
+
+    async def llm_node(self, chat_ctx, tools, model_settings):
+        """Override LLM node to strip markdown/emoji from output before TTS.
+
+        Gemini sometimes returns **bold**, *italic*, #headings, or emoji that
+        Sarvam TTS can't synthesize — producing silence or garbled audio.
+        Cleaning the text here prevents 'no audio frames' and cutoff issues.
+        """
+        async for event in Agent.default.llm_node(self, chat_ctx, tools, model_settings):
+            if hasattr(event, "text") and event.text:
+                cleaned = event.text
+                cleaned = re.sub(r"[*_#`~>|]", "", cleaned)  # strip markdown chars
+                cleaned = re.sub(  # strip emoji
+                    r"[\U0001F600-\U0001F64F\U0001F300-\U0001F5FF"
+                    r"\U0001F680-\U0001F6FF\U0001F1E0-\U0001F1FF"
+                    r"\U00002702-\U000027B0\U0000FE00-\U0000FE0F"
+                    r"\U0001F900-\U0001F9FF\U0001FA00-\U0001FA6F]+",
+                    "", cleaned,
+                )
+                if cleaned.strip():
+                    event.text = cleaned
+                    yield event
+            else:
+                yield event
 
 
 async def entrypoint(ctx: JobContext):
@@ -175,14 +202,26 @@ async def entrypoint(ctx: JobContext):
         # Use Sarvam STT-based turn detection (recommended by Sarvam docs)
         # Sarvam STT emits speech start/end events via flush_signal=True
         turn_detection="stt",
-        # Tuned for elderly patients on phone calls:
-        # - Higher interruption threshold to avoid false barge-ins from "hmm"/"haan"
-        # - Longer endpointing delay since elderly patients pause more between words
-        # - Resume speech if it was a false interruption (background noise, brief ack)
+        # --- Endpointing (latency-sensitive) ---
+        # In STT mode, min_endpointing_delay is ADDITIVE with Sarvam STT's own
+        # end-of-speech signal (~70ms). 0.3s + 70ms = ~370ms — still generous for
+        # elderly patients but 400ms faster than the previous 0.7s setting.
+        min_endpointing_delay=0.3,
+        max_endpointing_delay=3.5,
+        # --- Interruption handling (fixes audio cutoff) ---
+        # min_interruption_duration: require 800ms of speech to count as interruption
+        # min_interruption_words: require 2+ transcribed words — prevents "hmm"/"haan"/
+        #   coughs/background noise from killing the TTS stream mid-sentence
         min_interruption_duration=0.8,
-        min_endpointing_delay=0.7,
-        max_endpointing_delay=4.0,
+        min_interruption_words=2,
+        # Resume playback if the interruption turns out to be false (noise, brief ack)
         resume_false_interruption=True,
+        false_interruption_timeout=2.0,
+        # --- Preemptive generation (biggest latency win) ---
+        # Starts LLM+TTS inference WHILE the endpointing timer is still running.
+        # If the user continues speaking, the speculative response is discarded.
+        # Saves 200-400ms of LLM TTFT by overlapping it with the silence detection.
+        preemptive_generation=True,
     )
 
     # Event to signal session closure
